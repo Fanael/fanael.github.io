@@ -392,7 +392,8 @@ DIRECTORY."
           (if (uiop:directory-pathname-p path)
               (unless (dotfile-name-p (car (last (pathname-directory path))))
                 (uiop:delete-directory-tree path :validate t :if-does-not-exist :ignore))
-              (unless (dotfile-name-p (pathname-name path))
+              ;; If the path has no name, it can only be a dotfile.
+              (unless (dotfile-name-p (or (pathname-name path) "."))
                 (delete-file path)))))
   (values))
 
