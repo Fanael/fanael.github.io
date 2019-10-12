@@ -19,9 +19,13 @@ body {
     padding: 0;
 }
 
-a:link, a:visited {
+a:link {
     color: #137;
     text-decoration: underline;
+}
+
+a:visited {
+    color: #617;
 }
 
 a:active {
@@ -303,8 +307,12 @@ pre.codeblock::before {
         color: #eee;
     }
 
-    a:link, a:visited {
+    a:link {
         color: #8da;
+    }
+
+    a:visited {
+        color: #a8d;
     }
 
     a:active {
