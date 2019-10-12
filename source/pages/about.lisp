@@ -12,7 +12,7 @@
   (p "I don't really " (em "like") " any of the programming languages I've had the (mis)fortune of working with, of which there are many, as every extant language is inevitably flawed in multiple ways, in part due to working on similarly — if not moreso — flawed hardware; nevertheless, I do appreciate some of the " (em "ideas") " behind some languages, such as Lisp or Rust, if not the actual languages themselves.")
   (p "I used to be pretty active in the Emacs community, so "
      ((a :href "https://github.com/Fanael/") "my GitHub profile")
-     " is dominated by my Emacs packages. I'm no longer as active as I used to due to health issues, but I still use Emacs a lot.")
+     " is dominated by my Emacs packages. I'm no longer as active due to health issues, but I still use Emacs a lot.")
   (p "I'm also a non-binary person, preferred pronouns she/her."))
 
 (defsection about-blog
