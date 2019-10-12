@@ -8,7 +8,7 @@
   (p "I decided to have a go at designing and implementing something better as a part of my custom lisp-dialect implementation, and this blog post is an attempt to describe and organize this design. "
      (strong "Since my toy lisp is single-threaded, so is its garbage collector")
      ". It is possible to extend this design into a parallel one, it just is not one of my goals.")
-  (p "It should be noted that this is design is in no way revolutionary, I'm merely following existing techniques. In particular, "
+  (p "It should be noted that this design is in no way revolutionary, I'm merely following existing techniques. In particular, "
      ((a :href "https://wiki.openjdk.java.net/display/shenandoah/Main") "Red Hat's excellent Shenandoah")
      " has been a major inspiration."))
 
