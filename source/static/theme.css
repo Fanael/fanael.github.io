@@ -268,40 +268,9 @@ pre.codeblock::before {
 }
 
 /* -----------------------------------------------
- * Print-friendly overrides
- */
-@media print {
-    html {
-        background-color: initial;
-        font-size: 100%;
-        widows: 2;
-        orphans: 2;
-    }
-
-    nav {
-        display: none;
-    }
-
-    .section-header-link {
-        display: none;
-    }
-
-    a:link, a:visited {
-        color: inherit;
-        text-decoration: none;
-    }
-
-    pre.codeblock {
-        page-break-inside: avoid;
-        white-space: pre-wrap;
-        overflow: initial;
-    }
-}
-
-/* -----------------------------------------------
  * Dark mode
  */
-@media (prefers-color-scheme: dark) {
+@media screen and (prefers-color-scheme: dark) {
     html {
         background-color: #223;
         color: #eee;
@@ -349,5 +318,38 @@ pre.codeblock::before {
 
     #footerstuff li {
         color: #aaa;
+    }
+}
+
+/* -----------------------------------------------
+ * Print-friendly overrides
+ */
+@media print {
+    html {
+        background-color: initial;
+        font-size: 100%;
+        width: initial;
+        max-width: initial;
+        widows: 2;
+        orphans: 2;
+    }
+
+    nav {
+        display: none;
+    }
+
+    .section-header-link {
+        display: none;
+    }
+
+    a:link, a:visited {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    pre.codeblock {
+        page-break-inside: avoid;
+        white-space: pre-wrap;
+        overflow: initial;
     }
 }
