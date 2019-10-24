@@ -144,7 +144,7 @@ aside {
 /* -----------------------------------------------
  * Code blocks and syntax highlighting
  */
-pre, code, samp, kbd {
+pre, code, samp, kbd, cite.program-name {
     font-family: monospace;
     font-size: 0.8125rem;
     margin: 0;

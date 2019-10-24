@@ -99,7 +99,7 @@
                            :allowed-contexts '(:flow :phrasing)
                            :child-context :phrasing)))))
 
-(define-simple-phrasing-tags em strong code var samp kbd span b i)
+(define-simple-phrasing-tags em strong code var samp kbd span b i sup sub cite)
 
 (define-tag time
     :allowed-contexts '(:flow :phrasing)
