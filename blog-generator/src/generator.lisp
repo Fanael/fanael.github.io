@@ -12,11 +12,12 @@
    (#:template #:blog-generator.template))
   (:export
    #:destination-directory
+   #:generate-everything
+   #:generate-single-article
    #:get-article-source-paths
    #:get-non-article-page-source-paths
    #:make-default-generator
    #:prepare-destination-directory
-   #:generate-everything
    #:reload-article-and-retry
    #:source-directory))
 (in-package #:blog-generator)
@@ -304,6 +305,24 @@ quarterly archives."
     (uiop:ensure-all-directories-exist (list archives-directory))
     (let ((quarters (generate-quarterly-archives articles archives-directory)))
       (generate-archives-index articles quarters archives-directory))))
+
+(-> generate-single-article (t pathname) (values))
+(defun generate-single-article (generator path)
+  "Use GENERATOR to regenerate only a single article indicated by PATH.
+
+PATH should be a pathname relative to the source directory of the
+GENERATOR.
+
+This is mainly useful for rendering an article while writing, as all it
+regenerates is that one article, it doesn't maintain archives nor copy
+over static files."
+  (let ((*current-generator* generator)
+        (*source-directory* (source-directory generator))
+        (*destination-directory* (destination-directory generator))
+        (*template-engine* (get-template-engine generator)))
+    (syntax-hl:with-highlighting-server
+      (generate-article
+       (make-seq-article (load-article path) path nil nil)))))
 
 (-> generate-everything (t) (values))
 (defun generate-everything (generator)
