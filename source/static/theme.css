@@ -133,6 +133,14 @@ p {
     text-indent: 3.5ch;
 }
 
+aside {
+    font-size: 0.875rem;
+    border: thin solid #777;
+    border-width: thin thick;
+    border-radius: 1.5ch;
+    padding: 0.5rem 1ch;
+}
+
 /* -----------------------------------------------
  * Code blocks and syntax highlighting
  */
