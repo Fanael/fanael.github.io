@@ -258,7 +258,7 @@ pre.codeblock::before {
  */
 #footerstuff, #footerstuff li {
     margin: 0;
-    padding: 0;
+    padding: 0 0 1em 0;
 }
 
 #footerstuff {
