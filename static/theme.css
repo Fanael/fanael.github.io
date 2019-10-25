@@ -258,13 +258,14 @@ pre.codeblock::before {
  */
 #footerstuff, #footerstuff li {
     margin: 0;
-    padding: 0 0 1em 0;
+    padding: 0;
 }
 
 #footerstuff {
     list-style: none;
     text-align: center;
     padding-top: 0.5rem;
+    padding-bottom: 1em;
     border-top: thin dotted #777;
 }
 
