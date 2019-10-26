@@ -69,6 +69,7 @@ artifacts."))
 (defvar *current-generator*)
 (defvar *source-directory*)
 (defvar *destination-directory*)
+(defvar *archive-directory*)
 (defvar *article-paths*)
 (defvar *non-article-paths*)
 (defvar *template-engine*)
@@ -133,6 +134,16 @@ created."
     (write-string html stream))
   (values))
 
+(-> topic-archive-path (string) pathname)
+(defun topic-archive-path (topic)
+  (values (uiop:merge-pathnames* (format nil "topic-~A.html" topic) *archive-directory*)))
+
+(-> get-topic-archive-link (string) string)
+(defun get-topic-archive-url (topic)
+  "Return a domain-relative URL of the archive page of TOPIC."
+  (domain-relative-path
+   (uiop:enough-pathname (topic-archive-path topic) *destination-directory*)))
+
 (-> generate-article (seq-article) (values))
 (defun generate-article (article)
   "Generate the HTML of the given ARTICLE to the `article-html-path'
@@ -143,12 +154,13 @@ of its source path."
           (iter
             (restart-case
                 (return
-                  (template:generate-article-html
-                   *template-engine*
-                   (seq-article-article article)
-                   :canonical-url (domain-relative-path relative-destination-path)
-                   :previous-url (domain-relative-path (seq-article-predecessor-path article))
-                   :next-url (domain-relative-path (seq-article-successor-path article))))
+                  (let ((template:*topic-to-archive-function* #'get-topic-archive-url))
+                    (template:generate-article-html
+                     *template-engine*
+                     (seq-article-article article)
+                     :canonical-url (domain-relative-path relative-destination-path)
+                     :previous-url (domain-relative-path (seq-article-predecessor-path article))
+                     :next-url (domain-relative-path (seq-article-successor-path article)))))
               (reload-article-and-retry ()
                 :report "Reload the article's source and retry evaluation."
                 (setf (seq-article-article article) (load-article source-path))))))
@@ -213,39 +225,43 @@ by their article's date, ascending."
   (make-quarter (article:date-year date)
                 (1+ (truncate (1- (article:date-month date)) 3))))
 
-(-> quarterly-archive-path (quarter pathname) pathname)
-(defun quarterly-archive-path (quarter archives-directory)
+(-> quarterly-archive-path (quarter) pathname)
+(defun quarterly-archive-path (quarter)
   (values
    (uiop:merge-pathnames*
     (format nil "~D-q~D.html" (quarter-year quarter) (quarter-quarter quarter))
-    archives-directory)))
+    *archive-directory*)))
 
-(-> generate-quarterly-archive (list quarter pathname) (values))
-(defun generate-quarterly-archive (articles quarter archives-directory)
+(-> convert-seq-articles-to-template-articles (list) list)
+(defun convert-seq-articles-to-template-articles (articles)
+  "Given a list ARTICLES of `seq-article' objects, convert it to the
+format expected by `template:generate-archive-html'."
+  (flet ((convert-article (article)
+           (let ((source-path (seq-article-source-path article)))
+             (list (seq-article-article article)
+                   (uiop:split-name-type (pathname-name source-path))
+                   (domain-relative-path (article-html-path source-path))))))
+    (declare (ftype (-> (seq-article) list)))
+    (mapcar #'convert-article articles)))
+
+(-> generate-quarterly-archive (list quarter) (values))
+(defun generate-quarterly-archive (articles quarter)
   "Generate a single quarterly archive of ARTICLES in QUARTER."
-  (let* ((path (quarterly-archive-path quarter archives-directory))
+  (let* ((path (quarterly-archive-path quarter))
          (relative-path (uiop:enough-pathname path *destination-directory*))
          (html
-          (let ((articles-for-template
-                 (iter
-                   (for article in articles)
-                   (collect
-                       (let ((source-path (seq-article-source-path article)))
-                         (list (seq-article-article article)
-                               (uiop:split-name-type (pathname-name source-path))
-                               (domain-relative-path (article-html-path source-path))))))))
-            (template:generate-archive-html
-             *template-engine*
-             articles-for-template
-             :year (quarter-year quarter)
-             :quarter (quarter-quarter quarter)
-             :canonical-url (uiop:unix-namestring relative-path)))))
+          (template:generate-quarterly-archive-html
+           *template-engine*
+           (convert-seq-articles-to-template-articles articles)
+           :year (quarter-year quarter)
+           :quarter (quarter-quarter quarter)
+           :canonical-url (uiop:unix-namestring relative-path))))
     (write-html-to html path)))
 
-(-> generate-quarterly-archives (list pathname) list)
-(defun generate-quarterly-archives (articles archives-directory)
+(-> generate-quarterly-archives (list) list)
+(defun generate-quarterly-archives (articles)
   "Generate the quarterly archives of ARTICLES.
-The archives are written to ARCHIVES-DIRECTORY.
+The archives are written to `*archive-directory*'.
 Return a list of quarters for which archives were generated, i.e. those
 in which there was at least one published article."
   (let ((current-quarter nil)
@@ -253,7 +269,7 @@ in which there was at least one published article."
         (result '()))
     (flet ((emit-current-quarter ()
              (push current-quarter result)
-             (generate-quarterly-archive current-articles current-quarter archives-directory)))
+             (generate-quarterly-archive current-articles current-quarter)))
       (declare (ftype (-> () (values)) emit-current-quarter))
       (iter (for article in articles)
             (let ((publication-quarter
@@ -266,11 +282,38 @@ in which there was at least one published article."
             (finally (when current-articles (emit-current-quarter)))))
     result))
 
-(-> generate-archives-index (list list pathname) (values))
-(defun generate-archives-index (articles quarters archives-directory)
-  "Generate the index of the archives, by listing all ARTICLES and all
-quarterly archives."
-  (let* ((path (uiop:merge-pathnames* "index.html" archives-directory))
+(-> generate-topic-archive (list string) (values))
+(defun generate-topic-archive (articles topic)
+  "Generate a single archive of all ARTICLES about the given TOPIC."
+  (let* ((path (topic-archive-path topic))
+         (relative-path (uiop:enough-pathname path *destination-directory*))
+         (html
+          (template:generate-topic-archive-html
+           *template-engine*
+           (convert-seq-articles-to-template-articles articles)
+           :topic topic
+           :canonical-url (uiop:unix-namestring relative-path))))
+    (write-html-to html path)))
+
+(-> generate-topic-archives (list) list)
+(defun generate-topic-archives (articles)
+  "Generate the topic archives of ARTICLES.
+The archives are written to `*archive-directory*'.
+Return a list of topics for which archives were generated, sorted
+ascending by topic name."
+  (let ((articles-by-topic (make-string-hash-table)))
+    (iter (for article in articles)
+          (iter (for topic in (article:article-topics (seq-article-article article)))
+                (push article (gethash topic articles-by-topic))))
+    (iter (for (topic articles*) in-hashtable articles-by-topic)
+          (generate-topic-archive articles* topic))
+    (sort (the list (alx:hash-table-keys articles-by-topic)) #'string<)))
+
+(-> generate-archives-index (list list list) (values))
+(defun generate-archives-index (articles quarters topics)
+  "Generate the index of the archives, by listing all ARTICLES, all
+quarterly archives and all topic archives."
+  (let* ((path (uiop:merge-pathnames* "index.html" *archive-directory*))
          (relative-path (uiop:enough-pathname path *destination-directory*))
          (html
           (let ((quarterly-archives-for-template
@@ -281,8 +324,16 @@ quarterly archives."
                              (quarter-quarter q)
                              (domain-relative-path
                               (uiop:enough-pathname
-                               (quarterly-archive-path q archives-directory)
+                               (quarterly-archive-path q)
                                *destination-directory*))))))
+                (topic-archives-for-template
+                 (iter
+                   (for topic in topics)
+                   (collect (cons topic
+                                  (domain-relative-path
+                                   (uiop:enough-pathname
+                                    (topic-archive-path topic)
+                                    *destination-directory*))))))
                 (articles-for-template
                  (iter
                    (for a in articles)
@@ -293,6 +344,7 @@ quarterly archives."
             (template:generate-archive-index-html
              *template-engine*
              quarterly-archives-for-template
+             topic-archives-for-template
              articles-for-template
              :canonical-url (uiop:unix-namestring relative-path)))))
     (write-html-to html path)))
@@ -301,10 +353,10 @@ quarterly archives."
 (defun generate-archives (articles)
   "Given ARTICLES, a list of `seq-articles' as returned by
 `generate-articles', generate the blog archives."
-  (let ((archives-directory (uiop:merge-pathnames* "archives/" *destination-directory*)))
-    (uiop:ensure-all-directories-exist (list archives-directory))
-    (let ((quarters (generate-quarterly-archives articles archives-directory)))
-      (generate-archives-index articles quarters archives-directory))))
+  (uiop:ensure-all-directories-exist (list *archive-directory*))
+  (let ((quarters (generate-quarterly-archives articles))
+        (topics (generate-topic-archives articles)))
+    (generate-archives-index articles quarters topics)))
 
 (-> generate-single-article (t pathname) (values))
 (defun generate-single-article (generator path)
@@ -328,12 +380,13 @@ over static files."
 (defun generate-everything (generator)
   "Given a GENERATOR, generate all articles, archives and
 non-article pages."
-  (let ((*current-generator* generator)
-        (*source-directory* (source-directory generator))
-        (*destination-directory* (destination-directory generator))
-        (*article-paths* (get-article-source-paths generator))
-        (*non-article-paths* (get-non-article-page-source-paths generator))
-        (*template-engine* (get-template-engine generator)))
+  (let* ((*current-generator* generator)
+         (*source-directory* (source-directory generator))
+         (*destination-directory* (destination-directory generator))
+         (*archive-directory* (uiop:merge-pathnames* "archives/" *destination-directory*))
+         (*article-paths* (get-article-source-paths generator))
+         (*non-article-paths* (get-non-article-page-source-paths generator))
+         (*template-engine* (get-template-engine generator)))
     (prepare-destination-directory generator)
     (syntax-hl:with-highlighting-server
       (generate-non-articles)

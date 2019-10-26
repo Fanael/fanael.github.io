@@ -76,7 +76,7 @@ article header {
     padding-bottom: 1rem;
 }
 
-article header .publishdate {
+article header .publishdate, .article-topics {
     padding-top: 0;
     font-size: 0.8125rem;
     text-indent: 0;
@@ -297,7 +297,7 @@ pre.codeblock::before {
         color: #da8;
     }
 
-    article header .publishdate {
+    article header .publishdate, .article-topics {
         color: #ccc;
     }
 

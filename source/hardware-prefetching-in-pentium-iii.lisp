@@ -3,6 +3,7 @@
   :title "Hardware prefetching in Pentium III"
   :description "Determining the existence and discovering the basic characteristics of the hardware prefetcher in Pentium III"
   :date (2019 10 25)
+  :topics ("microarchitecture-archeology")
   :children (test results conclusion)
   (p "Nowadays pretty much every processor featuring cache hierarchy has some form of automatic memory prefetch mechanism. In small low-power processors it may be very simplistic and only prefetch if the addresses are increasing, in high-performance processors it may try to predict all sorts of regular and semi-regular patterns, but the basic mechanism "
      (em "will be")

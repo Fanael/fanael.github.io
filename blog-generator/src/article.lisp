@@ -14,6 +14,7 @@
    #:article-date
    #:article-description
    #:article-root-section
+   #:article-topics
    #:article-title
    #:date
    #:date-day
@@ -125,6 +126,7 @@ Slots:
  - DATE: the publication date of this article, a `date' structure.
  - INHIBIT-TABLE-OF-CONTENTS: if non-nil, the generated document will
    not contain a table of contents.
+ - TOPICS: a list of strings indicating the article topics.
  - ROOT-SECTION: a `section' structure representing the root section of
    this article, can be used as the excerpt in the blog archive.
  - SECTIONS-BY-ID: a hash table mapping symbolic section IDs to the
@@ -133,6 +135,7 @@ Slots:
   (description nil :read-only t :type string)
   (date nil :read-only t :type date)
   (inhibit-table-of-contents nil :read-only t :type boolean)
+  (topics nil :read-only t :type list)
   (root-section nil :read-only t :type section)
   (sections-by-id (make-hash-table :test 'eq) :read-only t :type hash-table))
 
@@ -159,12 +162,15 @@ to be filled later."
   (trivia:match defarticle-form
     ((cons 'reader.article:defarticle form-body)
      (multiple-value-bind (article-metadata root-section-body) (extract-plist-prefix form-body)
-       (destructuring-bind (&key title description date children inhibit-table-of-contents)
+       (destructuring-bind (&key title description date children inhibit-table-of-contents topics)
            article-metadata
+         (alx:when-let ((first-non-string (car (member-if-not #'stringp topics))))
+           (malformed-article :non-string-topic first-non-string))
          (make-article
           :title title
           :description description
           :date (apply #'make-date date)
+          :topics topics
           :inhibit-table-of-contents inhibit-table-of-contents
           :root-section (make-section :id +root-section-id+
                                       :header ""

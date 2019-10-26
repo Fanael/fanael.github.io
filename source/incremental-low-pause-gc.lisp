@@ -3,6 +3,7 @@
   :title "A simple incremental low-pause GC design"
   :description "Notes on a mostly-concurrent single-threaded incremental regionalized mark-copy garbage collector design."
   :date (2019 10 12)
+  :topics ("garbage-collection")
   :children (intended-characteristics heap-layout phases invariants-and-barriers conclusion)
   (p "There are too many garbage-collected runtimes using very simplistic designs, such as reference counting or naïve stop the world mark and sweep. These are valid choices in that they're simple and correct, but unfortunately they induce undue costs, such as unpredictable and unbounded pause times.")
   (p "I decided to have a go at designing and implementing something better as a part of my custom lisp-dialect implementation, and this blog post is an attempt to describe and organize this design. "

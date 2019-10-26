@@ -11,12 +11,15 @@
   (:export
    #:*current-engine*
    #:*inhibit-publication-date*
-   #:generate-archive-html
-   #:generate-archive-htsl
+   #:*topic-to-archive-function*
    #:generate-archive-index-html
    #:generate-archive-index-htsl
    #:generate-article-html
    #:generate-article-htsl
+   #:generate-quarterly-archive-html
+   #:generate-quarterly-archive-htsl
+   #:generate-topic-archive-html
+   #:generate-topic-archive-htsl
    #:make-default-engine
    #:wrap-highlighted-code))
 (in-package #:blog-generator.template)
@@ -28,10 +31,17 @@
 
 (defvar *current-engine* nil
   "The current templating engine, dynamically bound to allow use from
-within tag macros.")
+within HTSL tag macros.")
 
 (defvar *inhibit-publication-date* nil
   "If non-nil, the publication date will be omitted from the output.")
+
+(-type *topic-to-archive-function* (nullable (-> (string) string)))
+(defvar *topic-to-archive-function* nil
+  "The function converting an article topic name to an URL to the
+corresponding topic archive page.
+
+May be nil, in which case no links will be created.")
 
 (defgeneric generate-article-htsl (engine article canonical-url previous-url next-url)
   (:documentation "Use ENGINE to generate the whole document HTSL of the
@@ -43,7 +53,7 @@ article for the purposes of <link rel=\"canonical\">.
 If PREVIOUS-URL and/or NEXT-URL is non-nil, it's the domain-relative
 URLs of the previous (resp. next) blog article."))
 
-(defgeneric generate-archive-htsl (engine articles year quarter canonical-url)
+(defgeneric generate-quarterly-archive-htsl (engine articles year quarter canonical-url)
   (:documentation "Use ENGINE to generate the whole document HTSL of a
 single quarterly archive page.
 
@@ -52,11 +62,21 @@ ARTICLES is a list of (ARTICLE ARTICLE-ID ARTICLE-URL).
 CANONICAL-URL is the string representing the canonical URL of the page
 for the purposes of <link rel=\"canonical\">."))
 
-(defgeneric generate-archive-index-htsl (engine quarters articles canonical-url)
+(defgeneric generate-topic-archive-htsl (engine articles topic canonical-url)
+  (:documentation "Use ENGINE to generate the whole document HTSL of a
+single topic archive page.
+
+ARTICLES is a list of (ARTICLE ARTICLE-ID ARTICLE-URL).
+
+CANONICAL-URL is the string representing the canonical URL of the page
+for the purposes of <link rel=\"canonical\">."))
+
+(defgeneric generate-archive-index-htsl (engine quarters topics articles canonical-url)
   (:documentation "Use ENGINE to generate the whole document HTSL of the
 archive index page.
 
 QUARTERS is a list of (YEAR QUARTER QUARTERLY-ARCHIVE-URL).
+TOPICS is a list of (TOPIC . TOPIC-ARCHIVE-URL).
 ARTICLES is a list of (ARTICLE . ARTICLE-URL).
 
 CANONICAL-URL is the string representing the canonical URL of the page
@@ -81,7 +101,7 @@ name of the programming language."))
 convert it to HTML.
 
 This function is the preferred way of using a templating engine to
-generate an article, as it allows tag macros to access the current
+generate an article, as it allows HTSL tag macros to access the current
 templating engine."
   (let ((*current-engine* engine))
     (htsl:convert-document
@@ -95,28 +115,40 @@ templating engine."
      (:quarter (integer 1 4))
      (:canonical-url string))
     string)
-(defun generate-archive-html (engine article &key year quarter canonical-url)
-  "Use `generate-archive-htsl' to generate the archive page HTSL, then
-convert it to HTML.
+(defun generate-quarterly-archive-html (engine articles &key year quarter canonical-url)
+  "Use `generate-quarterly-archive-htsl' to generate the quarterly
+archive page HTSL, then convert it to HTML.
 
 This function is the preferred way of using a templating engine to
-generate an archive page, as it allows tag macros to access the current
-templating engine."
+generate an archive page, as it allows HTSL tag macros to access the
+current templating engine."
   (let ((*current-engine* engine))
     (htsl:convert-document
-     (generate-archive-htsl engine article year quarter canonical-url))))
+     (generate-quarterly-archive-htsl engine articles year quarter canonical-url))))
 
-(-> generate-archive-index-html (t list list &key (:canonical-url string)) string)
-(defun generate-archive-index-html (engine quarters articles &key canonical-url)
+(-> generate-topic-archive-html (t list &key (:topic string) (:canonical-url string)) string)
+(defun generate-topic-archive-html (engine articles &key topic canonical-url)
+  "Use `generate-topic-archive-htsl' to generate the topic archive page
+HTSL, then convert it to HTML.
+
+This function is the preferred way of using a templating engine to
+generate an archive page, as it allows HTSL tag macros to access the
+current templating engine."
+  (let ((*current-engine* engine))
+    (htsl:convert-document
+     (generate-topic-archive-htsl engine articles topic canonical-url))))
+
+(-> generate-archive-index-html (t list list list &key (:canonical-url string)) string)
+(defun generate-archive-index-html (engine quarters topics articles &key canonical-url)
   "Use `generate-archive-index-htsl' to generate the archive index HTSL,
 then convert it to HTML.
 
 This function is the preferred way of using a templating engine to
-generate the archive index page, as it allows tag macros to access the
-current templating engine."
+generate the archive index page, as it allows HTSL tag macros to access
+the current templating engine."
   (let ((*current-engine* engine))
     (htsl:convert-document
-     (generate-archive-index-htsl engine quarters articles canonical-url))))
+     (generate-archive-index-htsl engine quarters topics articles canonical-url))))
 
 
 ;;; Syntax highlighting support
@@ -248,16 +280,31 @@ tag containing (human-readable) English."
     "Published on the "
     ,(generate-pretty-date date)))
 
+(-> generate-article-topics (list) list)
+(defun generate-article-topics (topics)
+  "Generate markup for the list of article TOPICS."
+  (flet ((make-link-to-archive-if-possible (topic)
+           (alx:if-let ((func *topic-to-archive-function*))
+             `((a :href ,(funcall func topic)) ,topic)
+             topic)))
+    `((p :class "article-topics")
+      "Topics: "
+      ,@(iter (for (topic . rest) on topics)
+              (collect (make-link-to-archive-if-possible topic))
+              (when rest (collect ", "))))))
+
 (-> generate-article-header (article:article) list)
 (defun generate-article-header (article)
-  "Generate the article header, i.e. the article title inside `h1' and
-the article's publication date."
+  "Generate the article header, i.e. the article title inside `h1', the
+article topics and the article's publication date."
   `(header
     (h1
      ,+article-root-header-link+
      ,(article:article-title article))
     ,@(unless *inhibit-publication-date*
-        (list (generate-publication-date (article:article-date article))))))
+        (list (generate-publication-date (article:article-date article))))
+    ,@(alx:when-let ((topics (article:article-topics article)))
+        (list (generate-article-topics topics)))))
 
 (alx:define-constant +footer-htsl+
     '(footer
@@ -338,7 +385,8 @@ list of excerpts of each article."
                ,(generate-publication-date (article:article-date article)))
               ,@(article:section-body (article:article-root-section article))))))
 
-(defmethod generate-archive-htsl ((engine default-engine) articles year quarter canonical-url)
+(defmethod generate-quarterly-archive-htsl
+    ((engine default-engine) articles year quarter canonical-url)
   (let ((pretty-quarter (generate-pretty-quarter year quarter)))
     `((html :lang "en")
       ,(generate-htsl-head
@@ -354,7 +402,23 @@ list of excerpts of each article."
        ,(generate-bottom-nav nil nil)
        ,+footer-htsl+))))
 
-(defmethod generate-archive-index-htsl ((engine default-engine) quarters articles canonical-url)
+(defmethod generate-topic-archive-htsl ((engine default-engine) articles topic canonical-url)
+  `((html :lang "en")
+    ,(generate-htsl-head
+      canonical-url
+      (format nil "Blog archives for topic ~A" (the string topic)))
+    (body
+     ,+main-header-htsl+
+     ,+nav-menu-htsl+
+     (main
+      (header (h1 "Archives for topic " ,topic))
+      ,(generate-archive-toc articles)
+      ,@(generate-excerpts articles))
+     ,(generate-bottom-nav nil nil)
+     ,+footer-htsl+)))
+
+(defmethod generate-archive-index-htsl
+    ((engine default-engine) quarters topics articles canonical-url)
   `((html :lang "en")
     ,(generate-htsl-head
       canonical-url
@@ -369,6 +433,11 @@ list of excerpts of each article."
        (unordered-list
         ,@(iter (for (year quarter url) in quarters)
                 (collect `((a :href ,url) "The " ,(generate-pretty-quarter year quarter))))))
+      (section
+       (h2 "By topic")
+       (unordered-list
+        ,@(iter (for (topic . url) in topics)
+                (collect `((a :href ,url) ,topic)))))
       (section
        (h2 "By article title")
        (unordered-list
