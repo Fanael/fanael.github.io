@@ -8,6 +8,7 @@
    (#:article #:blog-generator.article)
    (#:htsl #:blog-generator.htsl)
    (#:reader #:blog-generator.reader)
+   (#:string-table #:blog-generator.string-table)
    (#:syntax-hl #:blog-generator.syntax-hl)
    (#:template #:blog-generator.template))
   (:export
@@ -301,13 +302,13 @@ in which there was at least one published article."
 The archives are written to `*archive-directory*'.
 Return a list of topics for which archives were generated, sorted
 ascending by topic name."
-  (let ((articles-by-topic (make-string-hash-table)))
+  (let ((articles-by-topic (string-table:make-string-table)))
     (iter (for article in articles)
           (iter (for topic in (article:article-topics (seq-article-article article)))
-                (push article (gethash topic articles-by-topic))))
-    (iter (for (topic articles*) in-hashtable articles-by-topic)
+                (push article (string-table:get articles-by-topic topic))))
+    (iter (for (topic articles*) in-string-table articles-by-topic)
           (generate-topic-archive articles* topic))
-    (sort (the list (alx:hash-table-keys articles-by-topic)) #'string<)))
+    (sort (string-table:key-list articles-by-topic) #'string<)))
 
 (-> generate-archives-index (list list list) (values))
 (defun generate-archives-index (articles quarters topics)

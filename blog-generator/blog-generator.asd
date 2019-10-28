@@ -11,13 +11,15 @@
                 :components
                 ((:static-file "pygments_server.py")
                  (:file "utils")
+                 (:file "string-table" :depends-on ("utils"))
                  (:file "reader" :depends-on ("utils"))
-                 (:file "htsl" :depends-on ("utils"))
+                 (:file "htsl" :depends-on ("utils" "string-table"))
                  (:file "tags" :depends-on ("utils" "htsl"))
                  (:file "article" :depends-on ("utils" "reader"))
                  (:file "syntax-hl" :depends-on ("utils" "reader"))
                  (:file "template" :depends-on ("utils" "htsl" "article" "syntax-hl"))
-                 (:file "generator" :depends-on ("utils" "htsl" "article" "template")))))
+                 (:file "generator"
+                        :depends-on ("utils" "string-table" "htsl" "article" "template")))))
   :description ""
   :around-compile "(lambda (next) (let ((iterate::*always-declare-variables* t)) (funcall next)))"
   :in-order-to ((test-op (test-op "blog-generator/tests"))))

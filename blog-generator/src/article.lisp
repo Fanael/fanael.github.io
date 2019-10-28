@@ -137,7 +137,7 @@ Slots:
   (inhibit-table-of-contents nil :read-only t :type boolean)
   (topics nil :read-only t :type list)
   (root-section nil :read-only t :type section)
-  (sections-by-id (make-hash-table :test 'eq) :read-only t :type hash-table))
+  (sections-by-id (make-hash-table :test #'eq) :read-only t :type hash-table))
 
 (-> extract-plist-prefix (list) (values list list))
 (defun extract-plist-prefix (list)
@@ -208,7 +208,7 @@ A valid section graph meets the following invariants:
  - each section is referenced only once,
  - the root section is not referenced by any other section."
   (assert (zerop (hash-table-count sections-by-id)))
-  (let ((section-references (make-hash-table :test 'eq)))
+  (let ((section-references (make-hash-table :test #'eq)))
     (iter (for section in sections)
           (let ((id (section-id section)))
             (when (gethash id sections-by-id)
@@ -217,7 +217,7 @@ A valid section graph meets the following invariants:
             (setf (gethash id section-references) '())))
     ;; Use depth-first search because it's the easiest way to verify the
     ;; invariants.
-    (let ((seen-sections (make-hash-table :test 'eq))
+    (let ((seen-sections (make-hash-table :test #'eq))
           (stack (list (cons nil +root-section-id+))))
       (iter (while stack)
             (trivia:let-match1 (cons parent-id section-id) (pop stack)

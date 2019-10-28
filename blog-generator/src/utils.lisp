@@ -10,7 +10,6 @@
    #:->
    #:define-condition*
    #:eval-and-compile
-   #:make-string-hash-table
    #:nullable
    #:unsigned-fixnum))
 (in-package #:blog-generator.utils)
@@ -145,14 +144,3 @@ omitted."
                    (error ',name
                           ,@(iter (for (slot-name . properties) in cooked-slots)
                                   (nconcing `(,(getf properties :initarg) ,slot-name))))))))))))
-
-;; A string-specific hash function, to catch non-string keys early.
-(-> string-hash (string) unsigned-fixnum)
-(defun string-hash (str)
-  (sxhash str))
-
-(-> make-string-hash-table () hash-table)
-(defun make-string-hash-table ()
-  "Return a new hash table that uses `string=' as the test.
-Attempts to get or put non-string keys will result in a type error."
-  (make-hash-table :test 'string= :hash-function 'string-hash))

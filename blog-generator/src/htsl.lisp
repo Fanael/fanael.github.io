@@ -4,7 +4,8 @@
 (defpackage #:blog-generator.htsl
   (:use #:cl #:iterate #:blog-generator.utils)
   (:local-nicknames
-   (#:alx #:alexandria))
+   (#:alx #:alexandria)
+   (#:string-table #:blog-generator.string-table))
   (:export
    #:convert-document
    #:define-tag
@@ -105,9 +106,9 @@ Slots:
      :read-only t
      :type list)))
 
-(-type *tag-hash-table* hash-table)
-(defvar *tag-hash-table* (make-string-hash-table)
-  "Hash table mapping tag names (i.e. strings coming from downcasing the
+(-type *tag-table* string-table:string-table)
+(defvar *tag-table* (string-table:make-string-table)
+  "String table mapping tag names (i.e. strings coming from downcasing the
 symbol used as the name in `define-tag') to their corresponding tag
 structs.")
 
@@ -126,11 +127,11 @@ structs.")
 
 (-> get-tag-by-name ((or symbol string)) (nullable tag))
 (defun get-tag-by-name (tag-name)
-  (gethash (encode-tag-name tag-name) *tag-hash-table*))
+  (string-table:get *tag-table* (encode-tag-name tag-name)))
 
 (-> %define-tag (tag) tag)
 (defun %define-tag (tag)
-  (setf (gethash (tag-name tag) *tag-hash-table*) tag))
+  (setf (string-table:get *tag-table* (tag-name tag)) tag))
 
 (defmacro define-tag
     (tag-name
