@@ -121,12 +121,10 @@ structs.")
 (defmacro define-tag
     (tag-name
      &key
-       allowed-contexts
-       (child-context nil child-context-specified)
+       (allowed-contexts (alx:required-argument 'allowed-contexts))
+       (child-context (alx:required-argument 'child-context))
        omit-closing-tag
        attributes)
-  (assert allowed-contexts nil "Refusing to define a tag with no allowed contexts")
-  (assert child-context-specified nil "Refusing to define a tag with no specified child context")
   `(%define-tag
     (make-tag
      :name ,(encode-tag-name tag-name)

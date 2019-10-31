@@ -52,7 +52,11 @@ Name from Emacs Lisp."
      ,@body))
 
 (defmacro define-condition*
-    (name (&rest parents) (&rest slots) &key documentation report omit-error-function)
+    (name (&rest parents) (&rest slots)
+     &key
+       (documentation (alx:required-argument 'documentation))
+       (report (alx:required-argument 'report))
+       omit-error-function)
   "Define a condition type using `define-condition' and a boa function
 with the same name as the condition itself that signals the condition
 using `error'.
@@ -81,10 +85,6 @@ omitted."
   ;; Dear SBCL, please don't report missed optimization in the *macro
   ;; body itself*.
   #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-  (unless documentation
-    (error "Refusing to define a condition type ~S with no documentation" name))
-  (unless report
-    (error "Refusing to define a condition type ~S with no report formatting" name))
   (let ((package (symbol-package name)))
     (flet
         ((cook-slot (slot-spec)
@@ -99,7 +99,7 @@ omitted."
                        form (alx:make-keyword slot-name)))
                     (make-initform (slot-name form)
                       (use-if-specified-else-default
-                       form `(error ,(format nil "Condition slot ~S is required" slot-name))))
+                       form `(alx:required-argument ',slot-name)))
                     (make-reader (slot-name form)
                       (use-if-specified-else-default
                        form (intern (format nil "~S-~S" name slot-name) package))))
