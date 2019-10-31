@@ -189,7 +189,7 @@ the current templating engine."
   :documentation "List of known syntax highlighting languages.
 Each element is of the form (KEYWORD PYGMENTS-NAME . PRETTY-NAME).")
 
-(htsl:define-tag-macro highlighted-code (attributes &rest children)
+(htsl:define-tag-macro highlighted-code (attributes children)
   (destructuring-bind (&key language) attributes
     (trivia:let-match
         (((list* _ pygments-name pretty-name)

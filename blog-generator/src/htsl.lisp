@@ -51,31 +51,31 @@
 
 Slots:
  - NAME: the normalized tag name, a string.
- - EXPANDER: a function (ATTRIBUTES &rest BODY) that performs the
+ - EXPANDER: a function taking (ATTRIBUTES CHILD-FORMS) that performs the
    macro-expansion of a tag macro, in which case the following slots are
-   ignored because they don't make sense for tag macros, or nil, in
-   which case it's a regular tag.
+   ignored because they don't make sense for tag macros, or nil, in which
+   case it's a regular tag.
  - ALLOWED-CONTEXTS: may be one of:
     - T, which allows the tag to be used anywhere,
     - a keyword, which allows the tag to be used only in that one
       particular context,
     - a list of keywords, which allows the tag to be used in any of the
       listed contexts,
-    - an arbitrary function taking (CURRENT-CONTEXT) and returning
-      non-nil iff the tag is allowed there.
+    - an arbitrary function taking (CURRENT-CONTEXT) and returning non-nil
+      iff the tag is allowed there.
  - CHILD-CONTEXT: may be one of:
     - nil, which prohibits any children whatsoever,
     - a keyword, which allows children that are allowed in that context,
     - an arbitrary function taking (CURRENT-CONTEXT) and returning a
       keyword representing the child context or nil.
- - OMIT-CLOSING-TAG: a boolean determining whether the closing tag will
-   be omitted in the generated HTML.
- - ATTRIBUTES: a list of attributes allowed for the tag in addition to
-   the global attributes. The elements are of the form (NAME . TYPE),
-   where NAME is a keyword representing the name of the attribute, and
-   TYPE is either `string', `integer' or `boolean'."
+ - OMIT-CLOSING-TAG: a boolean determining whether the closing tag will be
+   omitted in the generated HTML.
+ - ATTRIBUTES: a list of attributes allowed for the tag in addition to the
+   global attributes. The elements are of the form (NAME . TYPE), where
+   NAME is a keyword representing the name of the attribute, and TYPE is
+   either `string', `integer' or `boolean'."
     ((name string))
-    ((expander (nullable (-> (t &rest t) t))) nil)
+    ((expander (nullable (-> (list list) t))) nil)
     ((allowed-contexts
       (or
        (eql t)
@@ -127,17 +127,16 @@ structs.")
        attributes)
   (assert allowed-contexts nil "Refusing to define a tag with no allowed contexts")
   (assert child-context-specified nil "Refusing to define a tag with no specified child context")
-  `(progn
-     (%define-tag
-      (make-tag
-       :name ,(encode-tag-name tag-name)
-       :allowed-contexts ,allowed-contexts
-       :child-context ,child-context
-       :omit-closing-tag ,omit-closing-tag
-       :attributes ,attributes))
-     nil))
+  `(%define-tag
+    (make-tag
+     :name ,(encode-tag-name tag-name)
+     :allowed-contexts ,allowed-contexts
+     :child-context ,child-context
+     :omit-closing-tag ,omit-closing-tag
+     :attributes ,attributes)))
 
-(defmacro define-tag-macro (tag-name lambda-list &body body)
+(defmacro define-tag-macro (tag-name (&whole lambda-list attributes-var children-var) &body body)
+  (declare (ignore attributes-var children-var))
   `(%define-tag
     (make-tag
      :name ,(encode-tag-name tag-name)
@@ -354,12 +353,12 @@ See `encode-attributes' for the description of the encoded format."
         (funcall child-context context)
         child-context)))
 
-(-> convert-known-tag (tag list t keyword) t)
+(-> convert-known-tag (tag list list keyword) t)
 (defun convert-known-tag (tag attributes children context)
   ;; Deal with tag macros before doing anything else, so the rest of this
   ;; function doesn't have to worry about them at all.
   (alx:when-let ((expander (tag-expander tag)))
-    (return-from convert-known-tag (convert (apply expander attributes children) context)))
+    (return-from convert-known-tag (convert (funcall expander attributes children) context)))
   (verify-tag-context tag context)
   (let ((tag-name (tag-name tag)))
     (let ((encoded-attributes (encode-attributes tag attributes)))

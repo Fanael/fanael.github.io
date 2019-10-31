@@ -5,7 +5,7 @@
         #:blog-generator.htsl))
 (in-package #:blog-generator.htsl.test)
 
-(define-tag-macro test-scaffolding (attributes &rest children)
+(define-tag-macro test-scaffolding (attributes children)
   (declare (ignore attributes))
   `(html
     (head

@@ -76,11 +76,11 @@
     :allowed-contexts :list-element
     :child-context :flow)
 
-(define-tag-macro unordered-list (attributes &rest children)
+(define-tag-macro unordered-list (attributes children)
   `((ul ,@attributes)
     ,@(iter (for child in children) (collect `(li ,child)))))
 
-(define-tag-macro ordered-list (attributes &rest children)
+(define-tag-macro ordered-list (attributes children)
   `((ol ,@attributes)
     ,@(iter (for child in children) (collect `(li ,child)))))
 
