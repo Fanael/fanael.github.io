@@ -239,10 +239,11 @@ by their article's date, ascending."
 format expected by `template:generate-archive-html'."
   (flet ((convert-article (article)
            (let ((source-path (seq-article-source-path article)))
-             (list (seq-article-article article)
-                   (uiop:split-name-type (pathname-name source-path))
-                   (domain-relative-path (article-html-path source-path))))))
-    (declare (ftype (-> (seq-article) list)))
+             (template:make-archived-article
+              (seq-article-article article)
+              (uiop:split-name-type (pathname-name source-path))
+              (domain-relative-path (article-html-path source-path))))))
+    (declare (ftype (-> (seq-article) template:archived-article)))
     (mapcar #'convert-article articles)))
 
 (-> generate-quarterly-archive (list quarter) (values))
@@ -314,41 +315,29 @@ ascending by topic name."
 (defun generate-archives-index (articles quarters topics)
   "Generate the index of the archives, by listing all ARTICLES, all
 quarterly archives and all topic archives."
-  (let* ((path (uiop:merge-pathnames* "index.html" *archive-directory*))
-         (relative-path (uiop:enough-pathname path *destination-directory*))
-         (html
-          (let ((quarterly-archives-for-template
-                 (iter
-                   (for q in quarters)
-                   (collect (list
-                             (quarter-year q)
-                             (quarter-quarter q)
-                             (domain-relative-path
-                              (uiop:enough-pathname
-                               (quarterly-archive-path q)
-                               *destination-directory*))))))
-                (topic-archives-for-template
-                 (iter
-                   (for topic in topics)
-                   (collect (cons topic
-                                  (domain-relative-path
-                                   (uiop:enough-pathname
-                                    (topic-archive-path topic)
-                                    *destination-directory*))))))
-                (articles-for-template
-                 (iter
-                   (for a in articles)
-                   (collect
-                       (cons
-                        (seq-article-article a)
-                        (domain-relative-path (article-html-path (seq-article-source-path a))))))))
+  (labels
+      ((destination-url (path)
+         (domain-relative-path (uiop:enough-pathname path *destination-directory*)))
+       (make-quarterly-archive (quarter)
+         (template:make-quarterly-archive
+          (quarter-year quarter)
+          (quarter-quarter quarter)
+          (destination-url (quarterly-archive-path quarter))))
+       (make-topic-archive (topic)
+         (template:make-topic-archive topic (destination-url (topic-archive-path topic)))))
+    (declare (ftype (-> (pathname) string) destination-url))
+    (declare (ftype (-> (quarter) template:quarterly-archive) make-quarterly-archive))
+    (declare (ftype (-> (string) template:topic-archive) make-topic-archive))
+    (let* ((path (uiop:merge-pathnames* "index.html" *archive-directory*))
+           (relative-path (uiop:enough-pathname path *destination-directory*))
+           (html
             (template:generate-archive-index-html
              *template-engine*
-             quarterly-archives-for-template
-             topic-archives-for-template
-             articles-for-template
-             :canonical-url (uiop:unix-namestring relative-path)))))
-    (write-html-to html path)))
+             (mapcar #'make-quarterly-archive quarters)
+             (mapcar #'make-topic-archive topics)
+             (convert-seq-articles-to-template-articles articles)
+             :canonical-url (uiop:unix-namestring relative-path))))
+      (write-html-to html path))))
 
 (-> generate-archives (list) (values))
 (defun generate-archives (articles)

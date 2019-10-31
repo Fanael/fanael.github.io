@@ -12,6 +12,10 @@
    #:*current-engine*
    #:*inhibit-publication-date*
    #:*topic-to-archive-function*
+   #:archived-article
+   #:archived-article-article
+   #:archived-article-id
+   #:archived-article-url
    #:generate-archive-index-html
    #:generate-archive-index-htsl
    #:generate-article-html
@@ -20,7 +24,17 @@
    #:generate-quarterly-archive-htsl
    #:generate-topic-archive-html
    #:generate-topic-archive-htsl
+   #:make-archived-article
    #:make-default-engine
+   #:make-quarterly-archive
+   #:make-topic-archive
+   #:quarterly-archive
+   #:quarterly-archive-quarter
+   #:quarterly-archive-url
+   #:quarterly-archive-year
+   #:topic-archive
+   #:topic-archive-topic
+   #:topic-archive-url
    #:wrap-highlighted-code))
 (in-package #:blog-generator.template)
 
@@ -28,6 +42,29 @@
 
 
 ;;; Template engine protocol
+
+(defstruct (archived-article
+             (:copier nil)
+             (:predicate nil)
+             (:constructor make-archived-article (article id url)))
+  (article nil :type article:article :read-only t)
+  (id nil :type string :read-only t)
+  (url nil :type string :read-only t))
+
+(defstruct (quarterly-archive
+             (:copier nil)
+             (:predicate nil)
+             (:constructor make-quarterly-archive (year quarter url)))
+  (year nil :type unsigned-fixnum :read-only t)
+  (quarter nil :type (integer 1 4) :read-only t)
+  (url nil :type string :read-only t))
+
+(defstruct (topic-archive
+             (:copier nil)
+             (:predicate nil)
+             (:constructor make-topic-archive (topic url)))
+  (topic nil :type string :read-only t)
+  (url nil :type string :read-only t))
 
 (defvar *current-engine* nil
   "The current templating engine, dynamically bound to allow use from
@@ -45,7 +82,7 @@ May be nil, in which case no links will be created.")
 
 (defgeneric generate-article-htsl (engine article canonical-url previous-url next-url)
   (:documentation "Use ENGINE to generate the whole document HTSL of the
-given ARTICLE.
+given ARTICLE, which is an `article:article' object.
 
 CANONICAL-URL is the string representing the canonical URL of the
 article for the purposes of <link rel=\"canonical\">.
@@ -57,7 +94,7 @@ URLs of the previous (resp. next) blog article."))
   (:documentation "Use ENGINE to generate the whole document HTSL of a
 single quarterly archive page.
 
-ARTICLES is a list of (ARTICLE ARTICLE-ID ARTICLE-URL).
+ARTICLES is a list of `archived-article' objects.
 
 CANONICAL-URL is the string representing the canonical URL of the page
 for the purposes of <link rel=\"canonical\">."))
@@ -66,7 +103,7 @@ for the purposes of <link rel=\"canonical\">."))
   (:documentation "Use ENGINE to generate the whole document HTSL of a
 single topic archive page.
 
-ARTICLES is a list of (ARTICLE ARTICLE-ID ARTICLE-URL).
+ARTICLES is a list of `archived-article' objects.
 
 CANONICAL-URL is the string representing the canonical URL of the page
 for the purposes of <link rel=\"canonical\">."))
@@ -75,9 +112,9 @@ for the purposes of <link rel=\"canonical\">."))
   (:documentation "Use ENGINE to generate the whole document HTSL of the
 archive index page.
 
-QUARTERS is a list of (YEAR QUARTER QUARTERLY-ARCHIVE-URL).
-TOPICS is a list of (TOPIC . TOPIC-ARCHIVE-URL).
-ARTICLES is a list of (ARTICLE . ARTICLE-URL).
+QUARTERS is a list of `quarterly-archive' objects.
+TOPICS is a list of `topic-archive' objects.
+ARTICLES is a list of `archived-article' objects.
 
 CANONICAL-URL is the string representing the canonical URL of the page
 for the purposes of <link rel=\"canonical\">."))
@@ -369,21 +406,23 @@ table of contents linking each article title to the corresponding
 excerpt."
   `((nav :class "toc")
     (ordered-list
-     ,@(iter (for (article id) in articles)
-             (collect `((a :href ,(format nil "#~A" (the string id)))
-                        ,(article:article-title article)))))))
+     ,@(iter (for article in articles)
+             (collect `((a :href ,(format nil "#~A" (archived-article-id article)))
+                        ,(article:article-title (archived-article-article article))))))))
 
 (-> generate-excerpts (list) list)
 (defun generate-excerpts (articles)
   "Given a list of ARTICLES as for `generate-archives-htsl', generate a
 list of excerpts of each article."
-  (iter (for (article id url) in articles)
-        (collect
-            `((article :id ,id)
-              (header
-               (h2 ((a :href ,url) ,(article:article-title article)))
-               ,(generate-publication-date (article:article-date article)))
-              ,@(article:section-body (article:article-root-section article))))))
+  (iter (for article in articles)
+        (let ((article* (archived-article-article article)))
+          (collect
+              `((article :id ,(archived-article-id article))
+                (header
+                 (h2 ((a :href ,(archived-article-url article))
+                      ,(article:article-title article*)))
+                 ,(generate-publication-date (article:article-date article*)))
+                ,@(article:section-body (article:article-root-section article*)))))))
 
 (defmethod generate-quarterly-archive-htsl
     ((engine default-engine) articles year quarter canonical-url)
@@ -431,21 +470,27 @@ list of excerpts of each article."
       (section
        (h2 "By date")
        (unordered-list
-        ,@(iter (for (year quarter url) in quarters)
-                (collect `((a :href ,url) "The " ,(generate-pretty-quarter year quarter))))))
+        ,@(iter (for archive in quarters)
+                (collect
+                    `((a :href ,(quarterly-archive-url archive))
+                      "The " ,(generate-pretty-quarter
+                               (quarterly-archive-year archive)
+                               (quarterly-archive-quarter archive)))))))
       (section
        (h2 "By topic")
        (unordered-list
-        ,@(iter (for (topic . url) in topics)
-                (collect `((a :href ,url) ,topic)))))
+        ,@(iter (for archive in topics)
+                (collect `((a :href ,(topic-archive-url archive))
+                           ,(topic-archive-topic archive))))))
       (section
        (h2 "By article title")
        (unordered-list
-        ,@(iter (for (article . url) in (reverse articles))
-                (collect
-                    `((a :href ,url)
-                      ,(generate-iso-date (article:article-date article))
-                      " — "
-                      ,(article:article-title article)))))))
+        ,@(iter (for article in (reverse articles))
+                (let ((article* (archived-article-article article)))
+                  (collect
+                      `((a :href ,(archived-article-url article))
+                        ,(generate-iso-date (article:article-date article*))
+                        " — "
+                        ,(article:article-title article*))))))))
      ,(generate-bottom-nav nil nil)
      ,+footer-htsl+)))

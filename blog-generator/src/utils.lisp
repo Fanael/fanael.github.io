@@ -6,8 +6,8 @@
   (:local-nicknames
    (#:alx #:alexandria))
   (:export
-   #:-type
    #:->
+   #:-type
    #:define-condition*
    #:eval-and-compile
    #:nullable
