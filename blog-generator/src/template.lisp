@@ -43,28 +43,19 @@
 
 ;;; Template engine protocol
 
-(defstruct (archived-article
-             (:copier nil)
-             (:predicate nil)
-             (:constructor make-archived-article (article id url)))
-  (article nil :type article:article :read-only t)
-  (id nil :type string :read-only t)
-  (url nil :type string :read-only t))
+(define-immutable-structure archived-article ((make-archived-article (article id url)))
+  ((article article:article))
+  ((id string))
+  ((url string)))
 
-(defstruct (quarterly-archive
-             (:copier nil)
-             (:predicate nil)
-             (:constructor make-quarterly-archive (year quarter url)))
-  (year nil :type unsigned-fixnum :read-only t)
-  (quarter nil :type (integer 1 4) :read-only t)
-  (url nil :type string :read-only t))
+(define-immutable-structure quarterly-archive ((make-quarterly-archive (year quarter url)))
+  ((year unsigned-fixnum))
+  ((quarter (integer 1 4)))
+  ((url string)))
 
-(defstruct (topic-archive
-             (:copier nil)
-             (:predicate nil)
-             (:constructor make-topic-archive (topic url)))
-  (topic nil :type string :read-only t)
-  (url nil :type string :read-only t))
+(define-immutable-structure topic-archive ((make-topic-archive (topic url)))
+  ((topic string))
+  ((url string)))
 
 (defvar *current-engine* nil
   "The current templating engine, dynamically bound to allow use from
@@ -212,7 +203,7 @@ Each element is of the form (KEYWORD PYGMENTS-NAME . PRETTY-NAME).")
 ;;; Default template engine
 
 (eval-and-compile
-  (defstruct (default-engine (:copier nil) (:predicate nil) (:constructor %make-default-engine))))
+  (define-immutable-structure default-engine ((%make-default-engine ()))))
 
 (eval-and-compile
   (defmethod make-load-form ((self default-engine) &optional environment)
@@ -286,29 +277,25 @@ generate the head section of the HTML document in HTSL form."
 (-> generate-iso-date (article:date) string)
 (defun generate-iso-date (date)
   "Convert DATE into YYYY-MM-DD formatted string."
-  (format nil "~D-~2,'0d-~2,'0d"
-          (article:date-year date)
-          (article:date-month date)
-          (article:date-day date)))
+  (trivia:let-match1 (article:date year month day) date
+    (format nil "~D-~2,'0d-~2,'0d" year month day)))
 
 (-> generate-pretty-date (article:date) list)
 (defun generate-pretty-date (date)
   "Pretty-print DATE into HTSL, returning a (machine-readable) `time'
 tag containing (human-readable) English."
-  (let* ((year (article:date-year date))
-         (month (article:date-month date))
-         (day (article:date-day date))
-         (pretty-date
-          (format nil "~D~A of ~A ~D"
-                  day
-                  (trivia:match (mod day 10)
-                    (1 (if (= day 11) "th" "st"))
-                    (2 (if (= day 12) "th" "nd"))
-                    (3 (if (= day 13) "th" "rd"))
-                    (_ "th"))
-                  (the string (aref +month-names+ (1- month)))
-                  year)))
-    `((time :datetime ,(generate-iso-date date)) ,pretty-date)))
+  (trivia:let-match1 (article:date year month day) date
+    (let ((pretty-date
+           (format nil "~D~A of ~A ~D"
+                   day
+                   (trivia:match (mod day 10)
+                     (1 (if (= day 11) "th" "st"))
+                     (2 (if (= day 12) "th" "nd"))
+                     (3 (if (= day 13) "th" "rd"))
+                     (_ "th"))
+                   (the string (aref +month-names+ (1- month)))
+                   year)))
+      `((time :datetime ,(generate-iso-date date)) ,pretty-date))))
 
 (-> generate-publication-date (article:date) list)
 (defun generate-publication-date (date)
@@ -407,19 +394,20 @@ excerpt."
   `((nav :class "toc")
     (ordered-list
      ,@(iter (for article in articles)
-             (collect `((a :href ,(format nil "#~A" (archived-article-id article)))
-                        ,(article:article-title (archived-article-article article))))))))
+             (trivia:let-match1 (archived-article article id _) article
+               (collect `((a :href ,(format nil "#~A" id))
+                          ,(article:article-title article))))))))
 
 (-> generate-excerpts (list) list)
 (defun generate-excerpts (articles)
   "Given a list of ARTICLES as for `generate-archives-htsl', generate a
 list of excerpts of each article."
   (iter (for article in articles)
-        (let ((article* (archived-article-article article)))
+        (trivia:let-match1 (archived-article article* id url) article
           (collect
-              `((article :id ,(archived-article-id article))
+              `((article :id ,id)
                 (header
-                 (h2 ((a :href ,(archived-article-url article))
+                 (h2 ((a :href ,url)
                       ,(article:article-title article*)))
                  ,(generate-publication-date (article:article-date article*)))
                 ,@(article:section-body (article:article-root-section article*)))))))
@@ -471,26 +459,23 @@ list of excerpts of each article."
        (h2 "By date")
        (unordered-list
         ,@(iter (for archive in quarters)
-                (collect
-                    `((a :href ,(quarterly-archive-url archive))
-                      "The " ,(generate-pretty-quarter
-                               (quarterly-archive-year archive)
-                               (quarterly-archive-quarter archive)))))))
+                (trivia:let-match1 (quarterly-archive year quarter url) archive
+                  (collect `((a :href ,url) "The " ,(generate-pretty-quarter year quarter)))))))
       (section
        (h2 "By topic")
        (unordered-list
         ,@(iter (for archive in topics)
-                (collect `((a :href ,(topic-archive-url archive))
-                           ,(topic-archive-topic archive))))))
+                (trivia:let-match1 (topic-archive topic url) archive
+                  (collect `((a :href ,url) ,topic))))))
       (section
        (h2 "By article title")
        (unordered-list
         ,@(iter (for article in (reverse articles))
-                (let ((article* (archived-article-article article)))
+                (trivia:let-match1 (archived-article article _ url) article
                   (collect
-                      `((a :href ,(archived-article-url article))
-                        ,(generate-iso-date (article:article-date article*))
+                      `((a :href ,url)
+                        ,(generate-iso-date (article:article-date article))
                         " — "
-                        ,(article:article-title article*))))))))
+                        ,(article:article-title article))))))))
      ,(generate-bottom-nav nil nil)
      ,+footer-htsl+)))

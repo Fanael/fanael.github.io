@@ -28,13 +28,9 @@
 ;; compilers like Python, so they can perform their magic.
 
 (declaim (inline string-table-p %make-string-table))
-#+sbcl(declaim (sb-ext:freeze-type string-table))
-(defstruct (string-table
-             (:predicate string-table-p)
-             (:copier nil)
-             (:constructor %make-string-table (ht)))
+(define-immutable-structure string-table ((%make-string-table (ht)))
   "A dictionary data type that only supports strings as the key type."
-  (ht nil :read-only t :type hash-table))
+  ((ht hash-table)))
 
 (declaim (inline make-string-table))
 (-> make-string-table () string-table)
@@ -61,6 +57,7 @@ DEFAULT is evaluated, but ignored."
   (declare (ignore default))
   (setf (gethash key (string-table-ht string-table)) new-value))
 
+(declaim (inline key-list))
 (-> key-list (string-table) list)
 (defun key-list (string-table)
   "Return the list of all keys present in STRING-TABLE."

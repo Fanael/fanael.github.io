@@ -9,6 +9,7 @@
    #:->
    #:-type
    #:define-condition*
+   #:define-immutable-structure
    #:eval-and-compile
    #:nullable
    #:unsigned-fixnum))
@@ -144,3 +145,75 @@ omitted."
                    (error ',name
                           ,@(iter (for (slot-name . properties) in cooked-slots)
                                   (nconcing `(,(getf properties :initarg) ,slot-name))))))))))))
+
+(defmacro define-immutable-structure (type-name (&rest constructors) &body slots)
+  "Define TYPE-NAME as a structure whose SLOTS are all read-only.
+
+Each slot should be of the form (SLOT-NAME-AND-TYPE) or
+\(SLOT-NAME-AND-TYPE INIT-FORM), where SLOT-NAME-AND-TYPE is either a list
+\(SLOT-NAME TYPE), or a bare symbol SLOT-NAME with TYPE assumed to be T.
+If INIT-FORM is not specified, it defaults to
+`(alexandria:required-argument 'SLOT-NAME)'.
+
+If the first slot is a string, it will be used as the documentation string
+of the type.
+
+The structure will have no type predicate or copier.
+
+CONSTRUCTORS is a list of constructors, where each constructor is passed
+to `defstruct' as `(:constructor …)' with no other changes.
+
+Additionally, a boa destructuring pattern for Trivia is defined under the
+name TYPE-NAME.
+
+While it is technically possible to inherit from a type defined with
+`define-immutable-structure', it is a bad idea, because on implementations
+that support it the type will be declared as frozen (sealed)."
+  (multiple-value-bind (documentation slots)
+      (trivia:match slots
+        ((list* (and (type string) documentation) rest)
+         (values documentation rest))
+        (_
+         (values nil slots)))
+    (let ((cooked-slots
+           (labels
+               ((get-name-and-type (name-and-type)
+                  (trivia:match name-and-type
+                    ((symbol) (values name-and-type t))
+                    ((list name type) (values name type))
+                    (_ (error "This is not a valid slot name and type: ~S" name-and-type))))
+                (cook-slot (slot)
+                  (trivia:match slot
+                    ((list slot-name-and-type)
+                     (multiple-value-bind (name type) (get-name-and-type slot-name-and-type)
+                       `(,name (alx:required-argument ',name) :read-only t :type ,type)))
+                    ((list slot-name-and-type initform)
+                     (multiple-value-bind (name type) (get-name-and-type slot-name-and-type)
+                       `(,name ,initform :read-only t :type ,type)))
+                    (_
+                     (error "This is not a valid slot: ~S" slot)))))
+             (mapcar #'cook-slot slots))))
+      `(progn
+         (defstruct (,type-name
+                      (:copier nil)
+                      (:predicate nil)
+                      ,@(iter (for constructor in constructors)
+                              (collect `(:constructor ,@constructor))))
+           ,@(alx:ensure-list documentation)
+           ,@cooked-slots)
+         #+sbcl(declaim (sb-ext:freeze-type ,type-name))
+         (trivia:defpattern ,type-name
+             ,(if cooked-slots
+                  `(&optional ,@(mapcar #'first cooked-slots))
+                  '())
+           (list 'and
+                 '(type ,type-name)
+                 ,@(let ((package (symbol-package type-name)))
+                     (iter (for slot in cooked-slots)
+                           (let ((slot-name (first slot)))
+                             (collect
+                                 `(list
+                                   'trivia:access
+                                   '#',(intern (format nil "~S-~S" type-name slot-name) package)
+                                   ,(first slot))))))))
+         ',type-name))))

@@ -41,11 +41,11 @@
 ;;; Simple date handling, for the publication date of articles
 
 (declaim (inline %make-date))
-(defstruct (date (:copier nil) (:predicate nil) (:constructor %make-date (year month day)))
+(define-immutable-structure date ((%make-date (year month day)))
   "A self-explanatory representation of a date."
-  (year nil :type unsigned-fixnum :read-only t)
-  (month nil :type (integer 1 12) :read-only t)
-  (day nil :type (integer 1 31) :read-only t))
+  ((year unsigned-fixnum))
+  ((month (integer 1 12)))
+  ((day (integer 1 31))))
 
 (defmacro define-byte-constant-array (name contents)
   #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
@@ -104,7 +104,7 @@ ERROR-CODE indicates what happened, DATA includes additional information."
   :test #'eq
   :documentation "The symbolic ID used for the root section only.")
 
-(defstruct (section (:copier nil) (:predicate nil))
+(define-immutable-structure section ()
   "A section of an article.
 
 Slots:
@@ -112,12 +112,12 @@ Slots:
  - HEADER: the title of this section, a string.
  - CHILDREN: a list of IDs of child sections.
  - BODY: a list of HTSL forms that form the body of this section."
-  (id nil :read-only t :type symbol)
-  (header nil :read-only t :type string)
-  (children '() :read-only t :type list)
-  (body nil :read-only t :type list))
+  ((id symbol))
+  ((header string))
+  ((children list))
+  ((body list)))
 
-(defstruct (article (:copier nil) (:predicate nil))
+(define-immutable-structure article ()
   "A parsed blog article.
 
 Slots:
@@ -131,13 +131,13 @@ Slots:
    this article, can be used as the excerpt in the blog archive.
  - SECTIONS-BY-ID: a hash table mapping symbolic section IDs to the
    corresponding `section' structures."
-  (title nil :read-only t :type string)
-  (description nil :read-only t :type string)
-  (date nil :read-only t :type date)
-  (inhibit-table-of-contents nil :read-only t :type boolean)
-  (topics nil :read-only t :type list)
-  (root-section nil :read-only t :type section)
-  (sections-by-id (make-hash-table :test #'eq) :read-only t :type hash-table))
+  ((title string))
+  ((description string))
+  ((date date))
+  ((inhibit-table-of-contents boolean) nil)
+  ((topics list))
+  ((root-section section))
+  ((sections-by-id hash-table) (make-hash-table :test #'eq)))
 
 (-> extract-plist-prefix (list) (values list list))
 (defun extract-plist-prefix (list)

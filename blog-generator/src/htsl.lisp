@@ -46,7 +46,7 @@
 ;;; Tag definition machinery
 
 (eval-and-compile
-  (defstruct (tag (:copier nil) (:predicate nil))
+  (define-immutable-structure tag ()
     "Represents a known HTML tag or a tag macro.
 
 Slots:
@@ -74,37 +74,22 @@ Slots:
    the global attributes. The elements are of the form (NAME . TYPE),
    where NAME is a keyword representing the name of the attribute, and
    TYPE is either `string', `integer' or `boolean'."
-    (name
-     nil
-     :read-only t
-     :type string)
-    (expander
-     nil
-     :read-only t
-     :type (nullable (-> (t &rest t) t)))
-    (allowed-contexts
-     nil
-     :read-only t
-     :type (or
-            (eql t)
-            keyword
-            list
-            (-> (keyword) t)))
-    (child-context
-     nil
-     :read-only t
-     :type (or
-            null
-            keyword
-            (-> (keyword) (nullable keyword))))
-    (omit-closing-tag
-     nil
-     :read-only t
-     :type boolean)
-    (attributes
-     '()
-     :read-only t
-     :type list)))
+    ((name string))
+    ((expander (nullable (-> (t &rest t) t))) nil)
+    ((allowed-contexts
+      (or
+       (eql t)
+       keyword
+       list
+       (-> (keyword) t))))
+    ((child-context
+      (or
+       null
+       keyword
+       (-> (keyword) (nullable keyword))))
+     nil)
+    ((omit-closing-tag boolean) nil)
+    ((attributes list) '())))
 
 (-type *tag-table* string-table:string-table)
 (defvar *tag-table* (string-table:make-string-table)
@@ -156,6 +141,7 @@ structs.")
   `(%define-tag
     (make-tag
      :name ,(encode-tag-name tag-name)
+     :allowed-contexts t
      :expander (lambda ,lambda-list ,@body))))
 
 

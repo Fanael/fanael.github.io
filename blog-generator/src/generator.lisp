@@ -209,28 +209,27 @@ by their article's date, ascending."
     (mapc #'generate-article articles)
     articles))
 
-(defstruct (quarter
-             (:copier nil)
-             (:predicate nil)
-             (:constructor make-quarter (year quarter)))
-  (year nil :read-only t :type unsigned-fixnum)
-  (quarter nil :read-only t :type (integer 1 4)))
+(define-immutable-structure quarter ((make-quarter (year quarter)))
+  ((year unsigned-fixnum))
+  ((quarter (integer 1 4))))
 
 (-> quarter= (quarter quarter) boolean)
 (defun quarter= (x y)
-  (and (= (quarter-year x) (quarter-year y))
-       (= (quarter-quarter x) (quarter-quarter y))))
+  (trivia:let-match (((quarter x-year x-quarter) x)
+                     ((quarter y-year y-quarter) y))
+    (and (= x-year y-year) (= x-quarter y-quarter))))
 
 (-> date-quarter (article:date) quarter)
 (defun date-quarter (date)
-  (make-quarter (article:date-year date)
-                (1+ (truncate (1- (article:date-month date)) 3))))
+  (trivia:let-match1 (article:date year month _) date
+    (make-quarter year (1+ (truncate (1- month) 3)))))
 
 (-> quarterly-archive-path (quarter) pathname)
 (defun quarterly-archive-path (quarter)
   (values
    (uiop:merge-pathnames*
-    (format nil "~D-q~D.html" (quarter-year quarter) (quarter-quarter quarter))
+    (trivia:let-match1 (quarter year quarter) quarter
+      (format nil "~D-q~D.html" year quarter))
     *archive-directory*)))
 
 (-> convert-seq-articles-to-template-articles (list) list)
@@ -252,12 +251,13 @@ format expected by `template:generate-archive-html'."
   (let* ((path (quarterly-archive-path quarter))
          (relative-path (uiop:enough-pathname path *destination-directory*))
          (html
-          (template:generate-quarterly-archive-html
-           *template-engine*
-           (convert-seq-articles-to-template-articles articles)
-           :year (quarter-year quarter)
-           :quarter (quarter-quarter quarter)
-           :canonical-url (uiop:unix-namestring relative-path))))
+          (trivia:let-match1 (quarter year quarter) quarter
+            (template:generate-quarterly-archive-html
+             *template-engine*
+             (convert-seq-articles-to-template-articles articles)
+             :year year
+             :quarter quarter
+             :canonical-url (uiop:unix-namestring relative-path)))))
     (write-html-to html path)))
 
 (-> generate-quarterly-archives (list) list)
@@ -319,10 +319,11 @@ quarterly archives and all topic archives."
       ((destination-url (path)
          (domain-relative-path (uiop:enough-pathname path *destination-directory*)))
        (make-quarterly-archive (quarter)
-         (template:make-quarterly-archive
-          (quarter-year quarter)
-          (quarter-quarter quarter)
-          (destination-url (quarterly-archive-path quarter))))
+         (trivia:let-match1 (quarter year quarter*) quarter
+           (template:make-quarterly-archive
+            year
+            quarter*
+            (destination-url (quarterly-archive-path quarter)))))
        (make-topic-archive (topic)
          (template:make-topic-archive topic (destination-url (topic-archive-path topic)))))
     (declare (ftype (-> (pathname) string) destination-url))
@@ -393,15 +394,9 @@ non-article pages."
 
 ;;; Default generator
 
-(defstruct (default-generator (:copier nil) (:predicate nil) (:constructor %make-default-generator))
-  (source-directory
-   (error "No source directory specified when creating a generator")
-   :read-only t
-   :type pathname)
-  (destination-directory
-   (error "No destination directory specified when creating a generator")
-   :read-only t
-   :type pathname))
+(define-immutable-structure default-generator ((%make-default-generator))
+  ((source-directory pathname))
+  ((destination-directory pathname)))
 
 (-> make-default-generator ((or string pathname) (or string pathname)) default-generator)
 (defun make-default-generator (source-directory destination-directory)
@@ -483,8 +478,7 @@ Copying is done recursively."
 directories except top-level dotfiles, to avoid messing up VCS files,
 then copying the \"static\" subdirectory of the source directory and all
 of its contents to the destination."
-  (let ((source (default-generator-source-directory generator))
-        (destination (default-generator-destination-directory generator)))
+  (trivia:let-match1 (default-generator source destination) generator
     (clean-up-directory destination)
     (copy-subdirectory "static" source destination)
     (uiop:ensure-all-directories-exist (list (uiop:merge-pathnames* "pages/" destination)))))
