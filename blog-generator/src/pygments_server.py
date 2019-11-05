@@ -5,18 +5,36 @@ A simple pygments server, communicating over pipes, to reuse the same process
 for multiple highlightings instead of spawning a new pygmentize process for
 every one.
 
-The protocol is very simple: every command is on its own line, followed by a
-constant number of arguments, also one per line.
+The protocol is very simple: there are two types, a simple string and a
+multiline string:
+ - A simple string is a single line of text followed by a newline.
+ - A multiline string consists of multiple lines that begin with ">", terminated
+   with a simple string ":done".
+Command names, arguments and responses are simple strings unless noted
+otherwise.
 
-When the server is done processing a command, it sends ":done" followed by a
-newline to the client.
+When the server is done processing a command, it sends the simple string
+":done". If the response is a multiline string, the multiline string terminating
+":done" and the command-finishing one are collapsed into one.
 
-On error, the server simply prints the stack trace to stderr and exits.
+On recoverable errors, the server sends ":error" followed by a multiline string
+describing the error.
+
+List of known commands:
+ - ":quit": initiate orderly shutdown of the server.
+   No arguments.
+   No response.
+ - ":highlight": highlight the syntax of some code.
+   Two arguments:
+    - pygments lexer name
+    - source code to highlight (multiline string)
+   Reponse: A multiline string representing a lisp list of HTSL forms.
 """
 import sys
+import traceback
 import pygments as p
-import pygments.lexers as lex
 import pygments.formatter as fmt
+import pygments.lexers as lex
 import pygments.token as tok
 
 # Dict of known token types and a boolean indicating if it should be styled
@@ -53,6 +71,32 @@ class _SexpFormatter(fmt.Formatter):
                 out.write(')')
         out.write(')\n')
 
+def _read_multiline_string():
+    source_lines = []
+    while True:
+        line = input()
+        if line.startswith('>'):
+            source_lines.append(line[1:])
+        elif line == ':done':
+            break
+        else:
+            raise ValueError(f'Unexpected terminator of multiline string: "{line}"')
+    source_lines.append('')
+    return '\n'.join(source_lines)
+
+def _finish_command():
+    print(':done', flush=True)
+
+def _print_multiline_string(string):
+    for line in string.splitlines():
+        print(f'>{line}')
+    _finish_command()
+
+def _print_exception(exception):
+    print(':error')
+    trace = traceback.format_exception(type(exception), exception, exception.__traceback__)
+    _print_multiline_string(''.join(trace))
+
 _COMMAND_MAP = {}
 
 def _define_command(name):
@@ -63,25 +107,23 @@ def _define_command(name):
 
 @_define_command(':quit')
 def _quit_server():
-    print(':done')
+    _finish_command()
     sys.exit(0)
 
 @_define_command(':highlight')
 def _highlight_code():
     lexer_name = input()
-    source_path = input()
-    destination_path = input()
+    source_code = _read_multiline_string()
     lexer = lex.get_lexer_by_name(lexer_name)
-    with open(source_path, 'r') as input_file:
-        source_code = input_file.read()
-    with open(destination_path, 'w') as output_file:
-        p.highlight(source_code, lexer, _SexpFormatter(), outfile=output_file)
-    print(':done')
+    _print_multiline_string(p.highlight(source_code, lexer, _SexpFormatter()))
 
 def _main():
     while True:
         command = input()
-        _COMMAND_MAP[command]()
+        try:
+            _COMMAND_MAP[command]()
+        except Exception as exception:
+            _print_exception(exception)
 
 if __name__ == '__main__':
     _main()
