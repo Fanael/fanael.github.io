@@ -56,7 +56,6 @@ _STRING_ESCAPES = {
 class _SexpFormatter(fmt.Formatter):
     @staticmethod
     def format_unencoded(token_source, out):
-        out.write('(')
         for token_type, value in token_source:
             known_type = token_type
             while True:
@@ -69,7 +68,6 @@ class _SexpFormatter(fmt.Formatter):
             out.write(f' "{value.translate(_STRING_ESCAPES)}"')
             if needs_styling:
                 out.write(')')
-        out.write(')\n')
 
 def _read_multiline_string():
     source_lines = []

@@ -239,7 +239,7 @@ leaves normally or abnormally."
    (with-highlighting-server
      (let ((string (run-highlighting-command (make-highlight-command language code))))
        (with-input-from-string (stream string)
-         (first (reader:read-forms stream)))))))
+         (reader:read-forms stream))))))
 
 (-> highlight-code (string string) list)
 (defun highlight-code (code language)
