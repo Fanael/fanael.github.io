@@ -150,11 +150,13 @@ omitted."
 (defmacro define-immutable-structure (type-name (&rest constructors) &body slots)
   "Define TYPE-NAME as a structure whose SLOTS are all read-only.
 
-Each slot should be of the form (SLOT-NAME-AND-TYPE) or
-\(SLOT-NAME-AND-TYPE INIT-FORM), where SLOT-NAME-AND-TYPE is either a list
-\(SLOT-NAME TYPE), or a bare symbol SLOT-NAME with TYPE assumed to be T.
-If INIT-FORM is not specified, it defaults to
-`(alexandria:required-argument 'SLOT-NAME)'.
+Each slot should be of the form (SLOT-NAME &rest OPTIONS), where OPTIONS
+is a plist of slot options:
+ - `:type': the type of the slot, as in `defstruct'. If not specified,
+   defaults to T.
+ - `:initform': the form used to initialize the slot if left unspecified
+   in the constructor. If not specified, defaults to
+   `(alexandria:required-argument 'SLOT-NAME)'.
 
 If the first slot is a string, it will be used as the documentation string
 of the type.
@@ -177,22 +179,18 @@ that support it the type will be declared as frozen (sealed)."
         (_
          (values nil slots)))
     (let ((cooked-slots
-           (labels
-               ((get-name-and-type (name-and-type)
-                  (trivia:match name-and-type
-                    ((symbol) (values name-and-type t))
-                    ((list name type) (values name type))
-                    (_ (error "This is not a valid slot name and type: ~S" name-and-type))))
-                (cook-slot (slot)
-                  (trivia:match slot
-                    ((list slot-name-and-type)
-                     (multiple-value-bind (name type) (get-name-and-type slot-name-and-type)
-                       `(,name (alx:required-argument ',name) :read-only t :type ,type)))
-                    ((list slot-name-and-type initform)
-                     (multiple-value-bind (name type) (get-name-and-type slot-name-and-type)
-                       `(,name ,initform :read-only t :type ,type)))
-                    (_
-                     (error "This is not a valid slot: ~S" slot)))))
+           (flet ((cook-slot (slot)
+                    (trivia:match slot
+                      ((list* name options)
+                       (let* ((unspecified-tag '#:unspecified-tag)
+                              (type (getf options :type t))
+                              (initform (let ((value (getf options :initform unspecified-tag)))
+                                          (if (eq value unspecified-tag)
+                                              `(alx:required-argument ',name)
+                                              value))))
+                         `(,name ,initform :type ,type :read-only t)))
+                      (_
+                       (error "This is not a valid slot: ~S" slot)))))
              (mapcar #'cook-slot slots))))
       `(progn
          (defstruct (,type-name
@@ -210,13 +208,12 @@ that support it the type will be declared as frozen (sealed)."
            (list 'and
                  '(type ,type-name)
                  ,@(let ((package (symbol-package type-name)))
-                     (iter (for slot in cooked-slots)
-                           (let ((slot-name (first slot)))
-                             (collect
-                                 `(list
-                                   'trivia:access
-                                   '#',(intern (format nil "~S-~S" type-name slot-name) package)
-                                   ,(first slot))))))))
+                     (iter (for (slot-name) in cooked-slots)
+                           (collect
+                               `(list
+                                 'trivia:access
+                                 '#',(intern (format nil "~S-~S" type-name slot-name) package)
+                                 ,slot-name))))))
          ',type-name))))
 
 (defmacro define-unbound-variable (name documentation)

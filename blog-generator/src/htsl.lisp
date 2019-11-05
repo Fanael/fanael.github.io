@@ -74,22 +74,22 @@ Slots:
    global attributes. The elements are of the form (NAME . TYPE), where
    NAME is a keyword representing the name of the attribute, and TYPE is
    either `string', `integer' or `boolean'."
-    ((name string))
-    ((expander (nullable (-> (list list) t))) nil)
-    ((allowed-contexts
-      (or
-       (eql t)
-       keyword
-       list
-       (-> (keyword) t))))
-    ((child-context
-      (or
-       null
-       keyword
-       (-> (keyword) (nullable keyword))))
-     nil)
-    ((omit-closing-tag boolean) nil)
-    ((attributes list) '())))
+    (name :type string)
+    (expander :type (nullable (-> (list list) t)) :initform nil)
+    (allowed-contexts
+     :type (or
+            (eql t)
+            keyword
+            list
+            (-> (keyword) t)))
+    (child-context
+     :type (or
+            null
+            keyword
+            (-> (keyword) (nullable keyword)))
+     :initform nil)
+    (omit-closing-tag :type boolean :initform nil)
+    (attributes :type list :initform '())))
 
 (-type *tag-table* string-table:string-table)
 (defvar *tag-table* (string-table:make-string-table)

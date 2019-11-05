@@ -44,18 +44,18 @@
 ;;; Template engine protocol
 
 (define-immutable-structure archived-article ((make-archived-article (article id url)))
-  ((article article:article))
-  ((id string))
-  ((url string)))
+  (article :type article:article)
+  (id :type string)
+  (url :type string))
 
 (define-immutable-structure quarterly-archive ((make-quarterly-archive (year quarter url)))
-  ((year unsigned-fixnum))
-  ((quarter (integer 1 4)))
-  ((url string)))
+  (year :type unsigned-fixnum)
+  (quarter :type (integer 1 4))
+  (url :type string))
 
 (define-immutable-structure topic-archive ((make-topic-archive (topic url)))
-  ((topic string))
-  ((url string)))
+  (topic :type string)
+  (url :type string))
 
 (defvar *current-engine* nil
   "The current templating engine, dynamically bound to allow use from

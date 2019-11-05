@@ -43,9 +43,9 @@
 (declaim (inline %make-date))
 (define-immutable-structure date ((%make-date (year month day)))
   "A self-explanatory representation of a date."
-  ((year unsigned-fixnum))
-  ((month (integer 1 12)))
-  ((day (integer 1 31))))
+  (year :type unsigned-fixnum)
+  (month :type (integer 1 12))
+  (day :type (integer 1 31)))
 
 (defmacro define-byte-constant-array (name contents)
   #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
@@ -112,10 +112,10 @@ Slots:
  - HEADER: the title of this section, a string.
  - CHILDREN: a list of IDs of child sections.
  - BODY: a list of HTSL forms that form the body of this section."
-  ((id symbol))
-  ((header string))
-  ((children list))
-  ((body list)))
+  (id :type symbol)
+  (header :type string)
+  (children :type list)
+  (body :type list))
 
 (define-immutable-structure article ()
   "A parsed blog article.
@@ -131,13 +131,13 @@ Slots:
    this article, can be used as the excerpt in the blog archive.
  - SECTIONS-BY-ID: a hash table mapping symbolic section IDs to the
    corresponding `section' structures."
-  ((title string))
-  ((description string))
-  ((date date))
-  ((inhibit-table-of-contents boolean) nil)
-  ((topics list))
-  ((root-section section))
-  ((sections-by-id hash-table) (make-hash-table :test #'eq)))
+  (title :type string)
+  (description :type string)
+  (date :type date)
+  (inhibit-table-of-contents :type boolean :initform nil)
+  (topics :type list)
+  (root-section :type section)
+  (sections-by-id :type hash-table :initform (make-hash-table :test #'eq)))
 
 (-> extract-plist-prefix (list) (values list list))
 (defun extract-plist-prefix (list)

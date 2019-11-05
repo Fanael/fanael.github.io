@@ -210,8 +210,8 @@ by their article's date, ascending."
     articles))
 
 (define-immutable-structure quarter ((make-quarter (year quarter)))
-  ((year unsigned-fixnum))
-  ((quarter (integer 1 4))))
+  (year :type unsigned-fixnum)
+  (quarter :type (integer 1 4)))
 
 (-> quarter= (quarter quarter) boolean)
 (defun quarter= (x y)
@@ -395,8 +395,8 @@ non-article pages."
 ;;; Default generator
 
 (define-immutable-structure default-generator ((%make-default-generator))
-  ((source-directory pathname))
-  ((destination-directory pathname)))
+  (source-directory :type pathname)
+  (destination-directory :type pathname))
 
 (-> make-default-generator ((or string pathname) (or string pathname)) default-generator)
 (defun make-default-generator (source-directory destination-directory)

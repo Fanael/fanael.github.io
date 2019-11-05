@@ -156,8 +156,8 @@ error is signaled."
   (receive-confirmation stream))
 
 (define-immutable-structure highlight-command ((make-highlight-command (language code)))
-  ((language string))
-  ((code string)))
+  (language :type string)
+  (code :type string))
 
 (defmethod send-command ((command highlight-command) stream)
   (trivia:let-match1 (highlight-command language code) command

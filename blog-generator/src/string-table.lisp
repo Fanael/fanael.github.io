@@ -30,7 +30,7 @@
 (declaim (inline string-table-p %make-string-table))
 (define-immutable-structure string-table ((%make-string-table (ht)))
   "A dictionary data type that only supports strings as the key type."
-  ((ht hash-table)))
+  (ht :type hash-table))
 
 (declaim (inline make-string-table))
 (-> make-string-table () string-table)
