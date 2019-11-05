@@ -222,7 +222,7 @@ See the documentation of `define-simple-structure' for more details."
   (flet ((make-slot-read-only (slot)
            (trivia:match slot
              ((list* name options)
-              (unless (let* ((unspecified-tag '#:unspecified-tag))
+              (unless (let ((unspecified-tag '#:unspecified-tag))
                         (eq (getf options :read-only unspecified-tag) unspecified-tag))
                 (alx:simple-program-error
                  "Redundant/ineffectual ~S specified for slot ~S" :read-only name))
