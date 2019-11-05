@@ -186,12 +186,11 @@ If an error occurs serverside, a lisp error is signaled."
 (-> stop-highlighting-server () (values))
 (defun stop-highlighting-server ()
   (alx:when-let ((process *pygments-server-process*))
-    (flet ((terminate-process-if-still-active (e)
-             (declare (ignore e))
-             (ignore-errors (uiop:terminate-process process))))
-      (handler-bind ((error #'terminate-process-if-still-active))
-        (run-highlighting-command (make-quit-command))))
-    (cleanup-highlighting-server process)))
+    (unwind-protect (run-highlighting-command (make-quit-command))
+      (ignore-errors (uiop:terminate-process process))
+      (ignore-errors (cleanup-highlighting-server process))
+      ;; In case `cleanup-highlight-server' signals an error.
+      (setf *pygments-server-process* nil))))
 
 (-> restart-highlighting-server () t)
 (defun relaunch-highlighting-server-if-needed ()
