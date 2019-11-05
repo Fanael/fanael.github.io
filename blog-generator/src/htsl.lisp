@@ -197,9 +197,8 @@ ALLOWED-CONTEXTS."
 ;;; Conversion machinery
 
 (-type *output-stream* stream)
-(defvar *output-stream*)
-(setf (documentation '*output-stream* 'variable)
-      "The output stream used during conversion process, dynamically bound
+(define-unbound-variable *output-stream*
+    "The output stream used during conversion process, dynamically bound
 purely for convenience, to avoid passing it around everywhere.")
 
 (-> escape-string (string t) string)

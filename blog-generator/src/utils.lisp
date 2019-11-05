@@ -10,6 +10,7 @@
    #:-type
    #:define-condition*
    #:define-immutable-structure
+   #:define-unbound-variable
    #:eval-and-compile
    #:nullable
    #:unsigned-fixnum))
@@ -217,3 +218,11 @@ that support it the type will be declared as frozen (sealed)."
                                    '#',(intern (format nil "~S-~S" type-name slot-name) package)
                                    ,(first slot))))))))
          ',type-name))))
+
+(defmacro define-unbound-variable (name documentation)
+  "Convenience macro to declare an unbound special variable with a
+documentation string."
+  `(progn
+     (defvar ,name)
+     (setf (documentation ',name 'variable) ,documentation)
+     ',name))
