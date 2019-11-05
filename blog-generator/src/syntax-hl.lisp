@@ -235,11 +235,11 @@ leaves normally or abnormally."
 (-> %highlight-code (string string) list)
 (defun %highlight-code (code language)
   "Syntax highlight CODE in LANGUAGE, returning HTSL forms."
-  (values
-   (with-highlighting-server
-     (let ((string (run-highlighting-command (make-highlight-command language code))))
-       (with-input-from-string (stream string)
-         (reader:read-forms stream))))))
+  (let ((string
+         (with-highlighting-server
+           (run-highlighting-command (make-highlight-command language code)))))
+    (with-input-from-string (stream string)
+      (reader:read-forms stream))))
 
 (-> highlight-code (string string) list)
 (defun highlight-code (code language)
