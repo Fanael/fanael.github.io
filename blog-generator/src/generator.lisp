@@ -93,10 +93,8 @@ To make the caller's life easier, return nil with nil PATH."
   (when path
     (format nil "/~A" (the string (uiop:unix-namestring path)))))
 
-(defstruct (seq-article
-             (:copier nil)
-             (:predicate nil)
-             (:constructor make-seq-article (article source-path predecessor-path successor-path)))
+(define-simple-structure seq-article
+    ((make-seq-article (article source-path predecessor-path successor-path)))
   "An article tagged with its source path, predecessor, and
 successor, for archive building.
 
@@ -104,10 +102,10 @@ The PREDECESSOR-PATH and SUCCESSOR-PATH slots are the relative
 pathnames of the *generated HTML files*, or nil if it's the first
 (resp. last) article."
   ;; Mutable to allow reloading of the article in a restart.
-  (article nil :read-only nil :type article:article)
-  (source-path nil :read-only t :type pathname)
-  (predecessor-path nil :read-only t :type (nullable pathname))
-  (successor-path nil :read-only t :type (nullable pathname)))
+  (article :read-only nil :type article:article)
+  (source-path :read-only t :type pathname)
+  (predecessor-path :read-only t :type (nullable pathname))
+  (successor-path :read-only t :type (nullable pathname)))
 
 (-> load-article (pathname) article:article)
 (defun load-article (source-path)
@@ -149,24 +147,25 @@ created."
 (defun generate-article (article)
   "Generate the HTML of the given ARTICLE to the `article-html-path'
 of its source path."
-  (let* ((source-path (seq-article-source-path article))
-         (relative-destination-path (article-html-path source-path))
-         (article-html
-          (iter
-            (restart-case
-                (return
-                  (let ((template:*topic-to-archive-function* #'get-topic-archive-url))
-                    (template:generate-article-html
-                     *template-engine*
-                     (seq-article-article article)
-                     :canonical-url (domain-relative-path relative-destination-path)
-                     :previous-url (domain-relative-path (seq-article-predecessor-path article))
-                     :next-url (domain-relative-path (seq-article-successor-path article)))))
-              (reload-article-and-retry ()
-                :report "Reload the article's source and retry evaluation."
-                (setf (seq-article-article article) (load-article source-path))))))
-         (destination-path
-          (uiop:merge-pathnames* relative-destination-path *destination-directory*)))
+  (trivia:let-match*
+      (((seq-article _ source-path predecessor-path successor-path) article)
+       (relative-destination-path (article-html-path source-path))
+       (article-html
+        (iter
+          (restart-case
+              (return
+                (let ((template:*topic-to-archive-function* #'get-topic-archive-url))
+                  (template:generate-article-html
+                   *template-engine*
+                   (seq-article-article article)
+                   :canonical-url (domain-relative-path relative-destination-path)
+                   :previous-url (domain-relative-path predecessor-path)
+                   :next-url (domain-relative-path successor-path))))
+            (reload-article-and-retry ()
+              :report "Reload the article's source and retry evaluation."
+              (setf (seq-article-article article) (load-article source-path))))))
+       (destination-path
+        (uiop:merge-pathnames* relative-destination-path *destination-directory*)))
     (write-html-to article-html destination-path)))
 
 (-> generate-non-articles () (values))
@@ -190,10 +189,8 @@ by their article's date, ascending."
               (make-destination-path (article)
                 (article-html-path (seq-article-source-path article)))
               (make-cooked-article (article predecessor-path successor-path)
-                (make-seq-article (seq-article-article article)
-                                  (seq-article-source-path article)
-                                  predecessor-path
-                                  successor-path)))
+                (trivia:let-match1 (seq-article article source-path _ _) article
+                  (make-seq-article article source-path predecessor-path successor-path))))
            (declare (ftype (-> (pathname) seq-article) load-raw-article))
            (declare (ftype (-> (seq-article seq-article) boolean) article-date<))
            (declare (ftype (-> (seq-article) pathname) make-destination-path))
@@ -237,9 +234,9 @@ by their article's date, ascending."
   "Given a list ARTICLES of `seq-article' objects, convert it to the
 format expected by `template:generate-archive-html'."
   (flet ((convert-article (article)
-           (let ((source-path (seq-article-source-path article)))
+           (trivia:let-match1 (seq-article article source-path _ _) article
              (template:make-archived-article
-              (seq-article-article article)
+              article
               (uiop:split-name-type (pathname-name source-path))
               (domain-relative-path (article-html-path source-path))))))
     (declare (ftype (-> (seq-article) template:archived-article)))

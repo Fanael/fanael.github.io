@@ -10,6 +10,7 @@
    #:-type
    #:define-condition*
    #:define-immutable-structure
+   #:define-simple-structure
    #:define-unbound-variable
    #:eval-and-compile
    #:nullable
@@ -147,16 +148,14 @@ omitted."
                           ,@(iter (for (slot-name . properties) in cooked-slots)
                                   (nconcing `(,(getf properties :initarg) ,slot-name))))))))))))
 
-(defmacro define-immutable-structure (type-name (&rest constructors) &body slots)
-  "Define TYPE-NAME as a structure whose SLOTS are all read-only.
+(defmacro define-simple-structure (type-name (&rest constructors) &body slots)
+  "Define TYPE-NAME as a simple structure.
 
-Each slot should be of the form (SLOT-NAME &rest OPTIONS), where OPTIONS
-is a plist of slot options:
- - `:type': the type of the slot, as in `defstruct'. If not specified,
-   defaults to T.
- - `:initform': the form used to initialize the slot if left unspecified
-   in the constructor. If not specified, defaults to
-   `(alexandria:required-argument 'SLOT-NAME)'.
+Each slot should be of the form (SLOT-NAME . OPTIONS), where OPTIONS can
+be any option recognized by `defstruct', and additionally `:initform',
+signifying the form used to initialize the slot if left unspecified in the
+constructor. If `:initform' is not specified, it defaults to
+`(alexandria:required-argument 'SLOT-NAME)'.
 
 If the first slot is a string, it will be used as the documentation string
 of the type.
@@ -170,25 +169,25 @@ Additionally, a boa destructuring pattern for Trivia is defined under the
 name TYPE-NAME.
 
 While it is technically possible to inherit from a type defined with
-`define-immutable-structure', it is a bad idea, because on implementations
+`define-simple-structure', it is a bad idea, because on implementations
 that support it the type will be declared as frozen (sealed)."
   (multiple-value-bind (documentation slots)
       (trivia:match slots
         ((list* (and (type string) documentation) rest)
-         (values documentation rest))
+         (values (list documentation) rest))
         (_
-         (values nil slots)))
+         (values '() slots)))
     (let ((cooked-slots
            (flet ((cook-slot (slot)
                     (trivia:match slot
                       ((list* name options)
-                       (let* ((unspecified-tag '#:unspecified-tag)
-                              (type (getf options :type t))
-                              (initform (let ((value (getf options :initform unspecified-tag)))
-                                          (if (eq value unspecified-tag)
-                                              `(alx:required-argument ',name)
-                                              value))))
-                         `(,name ,initform :type ,type :read-only t)))
+                       (multiple-value-bind (init-form remaining-options)
+                           (let* ((unspecified-tag '#:unspecified-tag)
+                                  (form (getf options :initform unspecified-tag)))
+                             (if (eq form unspecified-tag)
+                                 (values `(alx:required-argument ',name) options)
+                                 (values form (alx:remove-from-plist options :initform))))
+                         `(,name ,init-form ,@remaining-options)))
                       (_
                        (error "This is not a valid slot: ~S" slot)))))
              (mapcar #'cook-slot slots))))
@@ -215,6 +214,24 @@ that support it the type will be declared as frozen (sealed)."
                                  '#',(intern (format nil "~S-~S" type-name slot-name) package)
                                  ,slot-name))))))
          ',type-name))))
+
+(defmacro define-immutable-structure (type-name (&rest constructors) &body slots)
+  "Define TYPE-NAME as a simple structure whose SLOTS are all read-only.
+
+See the documentation of `define-simple-structure' for more details."
+  (flet ((make-slot-read-only (slot)
+           (trivia:match slot
+             ((list* name options)
+              (unless (let* ((unspecified-tag '#:unspecified-tag))
+                        (eq (getf options :read-only unspecified-tag) unspecified-tag))
+                (alx:simple-program-error
+                 "Redundant/ineffectual ~S specified for slot ~S" :read-only name))
+              `(,name :read-only t ,@options))
+             (_
+              ;; Pass the documentation string as is.
+              slot))))
+    `(define-simple-structure ,type-name ,constructors
+       ,@(mapcar #'make-slot-read-only slots))))
 
 (defmacro define-unbound-variable (name documentation)
   "Convenience macro to declare an unbound special variable with a
