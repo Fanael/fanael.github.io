@@ -1,5 +1,5 @@
 ;;; String-keyed dictionary
-;;
+;; Copyright © 2019  Fanael Linithien
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 (defpackage #:blog-generator.string-table
   (:use #:cl #:iterate #:blog-generator.utils)

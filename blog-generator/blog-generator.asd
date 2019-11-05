@@ -1,3 +1,4 @@
+;; Copyright © 2019  Fanael Linithien
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 (defsystem "blog-generator"
   :version "0.1.0"

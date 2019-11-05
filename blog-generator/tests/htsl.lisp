@@ -1,3 +1,5 @@
+;;; Test suite for HTSL -> HTML conversion engine
+;; Copyright © 2019  Fanael Linithien
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 (defpackage blog-generator.htsl.test
   (:use #:cl

@@ -1,5 +1,5 @@
 ;;; HTML tag definitions
-;;
+;; Copyright © 2019  Fanael Linithien
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 (defpackage #:blog-generator.tags
   (:use #:cl #:iterate #:blog-generator.htsl))

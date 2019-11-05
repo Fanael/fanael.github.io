@@ -1,5 +1,5 @@
 ;;; Article file processing
-;;
+;; Copyright © 2019  Fanael Linithien
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 (defpackage #:blog-generator.article
   (:use #:cl #:iterate #:blog-generator.utils)

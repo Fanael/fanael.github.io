@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Copyright © 2019  Fanael Linithien
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
 A simple pygments server, communicating over pipes, to reuse the same process

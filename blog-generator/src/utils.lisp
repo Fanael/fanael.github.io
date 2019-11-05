@@ -1,5 +1,5 @@
 ;;; Various utilities
-;;
+;; Copyright © 2019  Fanael Linithien
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 (defpackage #:blog-generator.utils
   (:use #:cl #:iterate)
