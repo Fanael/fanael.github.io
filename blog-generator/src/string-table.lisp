@@ -11,8 +11,7 @@
    #:key-list
    #:make-string-table
    #:map
-   #:string-table
-   #:string-table-p))
+   #:string-table))
 (in-package #:blog-generator.string-table)
 
 (declaim (optimize (speed 2) (safety 3) (debug 2) (space 1) (compilation-speed 0)))
@@ -27,7 +26,7 @@
 ;; functions inline to expose the underlying implementation to optimizing
 ;; compilers like Python, so they can perform their magic.
 
-(declaim (inline string-table-p %make-string-table))
+(declaim (inline %make-string-table))
 (define-immutable-structure string-table ((%make-string-table (ht)))
   "A dictionary data type that only supports strings as the key type."
   (ht :type hash-table))
