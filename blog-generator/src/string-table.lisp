@@ -10,7 +10,6 @@
    #:get
    #:key-list
    #:make-string-table
-   #:map
    #:string-table))
 (in-package #:blog-generator.string-table)
 
