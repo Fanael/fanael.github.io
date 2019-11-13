@@ -190,7 +190,8 @@ If an error occurs serverside, a lisp error is signaled."
       (ignore-errors (uiop:terminate-process process))
       (ignore-errors (cleanup-highlighting-server process))
       ;; In case `cleanup-highlight-server' signals an error.
-      (setf *pygments-server-process* nil))))
+      (setf *pygments-server-process* nil)))
+  (values))
 
 (-> restart-highlighting-server () t)
 (defun relaunch-highlighting-server-if-needed ()
@@ -203,7 +204,7 @@ stack, i.e. `*pygments-server-guarded-p*' must be non-nil."
   (unless *pygments-server-process*
     (setf *pygments-server-process* (launch-highlighting-server))))
 
-(-> %with-highlighting-server ((-> () t)) t)
+(-> %with-highlighting-server ((-> () *)) *)
 (defun %with-highlighting-server (thunk)
   (if (boundp '*pygments-server-process*)
       (if *pygments-server-process*

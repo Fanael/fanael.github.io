@@ -75,18 +75,18 @@ Slots:
    NAME is a keyword representing the name of the attribute, and TYPE is
    either `string', `integer' or `boolean'."
     (name :type string)
-    (expander :type (nullable (-> (list list) t)) :initform nil)
+    (expander :type (nullable (function (list list) t)) :initform nil)
     (allowed-contexts
      :type (or
             (eql t)
             keyword
             list
-            (-> (keyword) t)))
+            (function (keyword) t)))
     (child-context
      :type (or
             null
             keyword
-            (-> (keyword) (nullable keyword)))
+            (function (keyword) (nullable keyword)))
      :initform nil)
     (omit-closing-tag :type boolean :initform nil)
     (attributes :type list :initform '())))
@@ -112,7 +112,7 @@ structs.")
 
 (-> get-tag-by-name ((or symbol string)) (nullable tag))
 (defun get-tag-by-name (tag-name)
-  (string-table:get *tag-table* (encode-tag-name tag-name)))
+  (values (string-table:get *tag-table* (encode-tag-name tag-name))))
 
 (-> %define-tag (tag) tag)
 (defun %define-tag (tag)
@@ -332,7 +332,7 @@ See `encode-attributes' for the description of the encoded format."
   :test #'equal
   :documentation "The list of contexts in which a raw text node is allowed.")
 
-(-> verify-tag-context (tag keyword) t)
+(-> verify-tag-context (tag keyword) (values))
 (defun verify-tag-context (tag context)
   "Signal an `nesting-error' if TAG is not allowed in CONTEXT."
   (let ((allowed-contexts (tag-allowed-contexts tag)))
@@ -341,7 +341,8 @@ See `encode-attributes' for the description of the encoded format."
               ((type keyword) (eq context allowed-contexts))
               ((type list) (member context allowed-contexts :test #'eq))
               ((type function) (funcall allowed-contexts context)))
-      (nesting-error tag allowed-contexts context))))
+      (nesting-error tag allowed-contexts context)))
+  (values))
 
 (-> get-child-context (tag keyword) (nullable keyword))
 (defun get-child-context (tag context)
@@ -350,7 +351,7 @@ See `encode-attributes' for the description of the encoded format."
         (funcall child-context context)
         child-context)))
 
-(-> convert-known-tag (tag list list keyword) t)
+(-> convert-known-tag (tag list list keyword) (values))
 (defun convert-known-tag (tag attributes children context)
   ;; Deal with tag macros before doing anything else, so the rest of this
   ;; function doesn't have to worry about them at all.
@@ -365,9 +366,10 @@ See `encode-attributes' for the description of the encoded format."
     (let ((child-context (get-child-context tag context)))
       (iter (for child in children) (convert child child-context)))
     (unless (tag-omit-closing-tag tag)
-      (format *output-stream* "</~A>" tag-name))))
+      (format *output-stream* "</~A>" tag-name)))
+  (values))
 
-(-> convert (t keyword) t)
+(-> convert (t keyword) (values))
 (defun convert (sexp context)
   "Convert an arbitrary SEXP.
 This function checks if the element represented by SEXP is allowed in
@@ -387,7 +389,8 @@ the specified CONTEXT."
     ((type string)
      (unless (member context +raw-text-contexts+ :test #'eq)
        (nesting-error :raw-text +raw-text-contexts+ context))
-     (write-string (escape-string sexp nil) *output-stream*))
+     (write-string (escape-string sexp nil) *output-stream*)
+     (values))
     (_ (invalid-sexp sexp))))
 
 

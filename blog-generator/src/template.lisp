@@ -64,7 +64,7 @@ within HTSL tag macros.")
 (defvar *inhibit-publication-date* nil
   "If non-nil, the publication date will be omitted from the output.")
 
-(-type *topic-to-archive-function* (nullable (-> (string) string)))
+(-type *topic-to-archive-function* (nullable (function (string) string)))
 (defvar *topic-to-archive-function* nil
   "The function converting an article topic name to an URL to the
 corresponding topic archive page.

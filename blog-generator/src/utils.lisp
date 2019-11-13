@@ -30,11 +30,24 @@
   `(or null ,type))
 
 (deftype -> (lambda-list values)
-  "Convenience alias for (function LAMBDA-LIST VALUES)."
-  `(function ,lambda-list ,values))
+  "Similar to (`function' LAMBDA-LIST VALUES), but with exact return type.
+
+If VALUES is an object type, the denoted function type returns exactly one
+value; if VALUES is a list (`values' . REST) and REST doesn't contain any
+lambda keywords, then the denoted function type returns exactly that many
+values."
+  `(function
+    ,lambda-list
+    ,(trivia:match values
+       ('* '*)
+       ((list* 'values rest)
+        (if (intersection rest lambda-list-keywords :test #'eq)
+            values
+            `(values ,@rest &optional)))
+       (_ `(values ,values &optional)))))
 
 (defmacro -> (function lambda-list values)
-  "Declaim that FUNCTION is of the type (function LAMBDA-LIST VALUES).
+  "Declaim that FUNCTION is of the type (`->' LAMBDA-LIST VALUES).
 FUNCTION may be a list, in which case all functions named in that list are
 declaimed to be of that type."
   `(declaim (ftype (-> ,lambda-list ,values) ,@(alx:ensure-list function))))

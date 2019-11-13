@@ -302,7 +302,7 @@ returned by `resolve-section-nesting'."
     (first (impl nested-sections))))
 
 ;; These hooks are public customization points.
-(-type *table-of-contents-hook* (-> (list) list))
+(-type *table-of-contents-hook* (function (list) list))
 (defvar *table-of-contents-hook* #'identity
   "Hook enabling the user to transform the generated table of contents.
 
@@ -312,7 +312,7 @@ The returned value is used directly as a HTSL form.
 The default is just `cl:identity', returning the table of contents
 unchanged.")
 
-(-type *section-heading-hook* (-> (section list) list))
+(-type *section-heading-hook* (function (section list) list))
 (defvar *section-heading-hook*
   (lambda (section form)
     (declare (ignore section))

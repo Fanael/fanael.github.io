@@ -37,7 +37,7 @@
   (%make-string-table (make-hash-table :test #'equal)))
 
 (declaim (inline get))
-(-> get (string-table string &optional t) (values t t &optional))
+(-> get (string-table string &optional t) (values t t))
 (defun get (string-table key &optional default)
   "Return the value corresponding to KEY in STRING-TABLE.
 If KEY is not present, return DEFAULT instead.
