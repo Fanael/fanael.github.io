@@ -52,12 +52,14 @@ on the call stack, so care must be taken to test if it is bound.")
                        :error-output :output
                        :input :stream))
 
+(-> cleanup-highlighting-server (t) (values))
 (defun cleanup-highlighting-server (process)
   "Cleanup the remainders of the syntax highlighting server process.
 If the server is still running, this function will wait for it to end."
   (uiop:close-streams process)
   (uiop:wait-process process)
-  (setf *pygments-server-process* nil))
+  (setf *pygments-server-process* nil)
+  (values))
 
 (defgeneric send-command (command stream)
   (:documentation "Write COMMAND and its arguments to STREAM in serialized form."))
@@ -189,11 +191,11 @@ If an error occurs serverside, a lisp error is signaled."
     (unwind-protect (run-highlighting-command (make-quit-command))
       (ignore-errors (uiop:terminate-process process))
       (ignore-errors (cleanup-highlighting-server process))
-      ;; In case `cleanup-highlight-server' signals an error.
+      ;; In case `cleanup-highlighting-server' signals an error.
       (setf *pygments-server-process* nil)))
   (values))
 
-(-> restart-highlighting-server () t)
+(-> restart-highlighting-server () (values))
 (defun relaunch-highlighting-server-if-needed ()
   "Restart the highlighting server if it has died.
 
@@ -202,7 +204,8 @@ stack, i.e. `*pygments-server-guarded-p*' must be non-nil."
   (unless (boundp '*pygments-server-process*)
     (error "Cannot restart the Pygments server without an active guard"))
   (unless *pygments-server-process*
-    (setf *pygments-server-process* (launch-highlighting-server))))
+    (setf *pygments-server-process* (launch-highlighting-server)))
+  (values))
 
 (-> %with-highlighting-server ((-> () *)) *)
 (defun %with-highlighting-server (thunk)
