@@ -39,15 +39,16 @@
     :allowed-contexts :head-and-body
     :child-context :flow)
 
-(defmacro define-simple-flow-tags (&rest tag-names)
-  `(progn
-     ,@(iter (for tag-name in tag-names)
-             (collect `(define-tag ,tag-name
-                           :allowed-contexts :flow
-                           :child-context :flow)))))
-
-(define-simple-flow-tags main article section nav header footer aside)
-(define-simple-flow-tags h1 h2 h3 h4 h5 h6)
+(macrolet
+    ((define-simple-flow-tags (&rest tag-names)
+       `(progn
+          ,@(iter (for tag-name in tag-names)
+                  (collect `(define-tag ,tag-name
+                                :allowed-contexts :flow
+                                :child-context :flow))))))
+  (define-simple-flow-tags main article section nav header footer aside)
+  (define-simple-flow-tags h1 h2 h3 h4 h5 h6)
+  (define-simple-flow-tags blockquote div))
 
 (define-tag p
     :allowed-contexts :flow
@@ -84,7 +85,6 @@
   `((ol ,@attributes)
     ,@(iter (for child in children) (collect `(li ,child)))))
 
-(define-simple-flow-tags blockquote div)
 
 (define-tag a
     :allowed-contexts '(:flow :phrasing)
@@ -92,14 +92,14 @@
     :attributes '((:href . string)
                   (:rel . string)))
 
-(defmacro define-simple-phrasing-tags (&rest tag-names)
-  `(progn
-     ,@(iter (for tag-name in tag-names)
-             (collect `(define-tag ,tag-name
-                           :allowed-contexts '(:flow :phrasing)
-                           :child-context :phrasing)))))
-
-(define-simple-phrasing-tags em strong code var samp kbd span b i sup sub cite)
+(macrolet
+    ((define-simple-phrasing-tags (&rest tag-names)
+       `(progn
+          ,@(iter (for tag-name in tag-names)
+                  (collect `(define-tag ,tag-name
+                                :allowed-contexts '(:flow :phrasing)
+                                :child-context :phrasing))))))
+  (define-simple-phrasing-tags em strong code var samp kbd span b i sup sub cite))
 
 (define-tag time
     :allowed-contexts '(:flow :phrasing)
