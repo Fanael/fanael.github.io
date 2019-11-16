@@ -47,21 +47,16 @@
   (month :type (integer 1 12))
   (day :type (integer 1 31)))
 
-(defmacro define-byte-constant-array (name contents)
-  #+sbcl(declare (sb-ext:muffle-conditions sb-ext:compiler-note))
-  (let ((length (length contents)))
-    `(progn
-       (-type ,name (simple-array (unsigned-byte 8) ,length))
-       (alx:define-constant ,name
-           (make-array ,length
-                       :element-type '(unsigned-byte 8)
-                       :initial-contents ',contents)
-         :test #'equalp))))
-
-(define-byte-constant-array +common-year-month-lengths+
-    (31 28 31 30 31 30 31 31 30 31 30 31))
-(define-byte-constant-array +leap-year-month-lengths+
-    (31 29 31 30 31 30 31 31 30 31 30 31))
+(macrolet
+    ((def (name contents)
+       (let ((length (length contents)))
+         `(progn
+            (-type ,name (simple-array (unsigned-byte 8) (,length)))
+            (alx:define-constant ,name
+                (make-array ,length :element-type '(unsigned-byte 8) :initial-contents ',contents)
+              :test #'equalp)))))
+  (def +common-year-month-lengths+ (31 28 31 30 31 30 31 31 30 31 30 31))
+  (def +leap-year-month-lengths+ (31 29 31 30 31 30 31 31 30 31 30 31)))
 
 (-> make-date (unsigned-fixnum unsigned-fixnum unsigned-fixnum) date)
 (defun make-date (year month day)
