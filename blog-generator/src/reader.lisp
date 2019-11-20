@@ -43,6 +43,7 @@ disabled.")
 
 ;; There's no :use anything, not even cl, because articles aren't really code.
 (defpackage #:blog-generator.reader.article
+  (:use)
   ;; For boolean settings.
   (:import-from #:cl #:nil #:t)
   ;; Export the few pseudo-macros the article processor recognizes.
