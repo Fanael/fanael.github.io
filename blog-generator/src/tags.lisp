@@ -99,7 +99,7 @@
                   (collect `(define-tag ,tag-name
                                 :allowed-contexts '(:flow :phrasing)
                                 :child-context :phrasing))))))
-  (define-simple-phrasing-tags em strong code var samp kbd span b i sup sub cite))
+  (define-simple-phrasing-tags em strong code var samp kbd span b i sup sub cite dfn))
 
 (define-tag time
     :allowed-contexts '(:flow :phrasing)
