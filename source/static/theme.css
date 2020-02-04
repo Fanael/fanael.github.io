@@ -74,12 +74,12 @@ main {
 }
 
 article header {
-    padding-bottom: 1rem;
+    padding-bottom: 1em;
 }
 
 article header .publishdate, .article-topics {
     padding-top: 0;
-    font-size: 0.8125rem;
+    font-size: 81.25%;
     text-indent: 0;
     text-align: center;
     color: #333;
@@ -130,16 +130,16 @@ h6 {
 
 p {
     margin: 0;
-    padding: 0.5rem 0;
+    padding: 0.5em 0;
     text-indent: 3.5ch;
 }
 
 aside {
-    font-size: 0.875rem;
+    font-size: 87.5%;
     border: thin solid #777;
     border-width: thin thick;
     border-radius: 1.5ch;
-    padding: 0.5rem 1ch;
+    padding: 0.5625em 1ch;
 }
 
 /* -----------------------------------------------
@@ -147,23 +147,27 @@ aside {
  */
 pre, code, samp, kbd, cite.program-name {
     font-family: monospace;
-    font-size: 0.8125rem;
+    font-size: 107.8125%;
     margin: 0;
     padding: 0;
+}
+
+pre code, pre samp, pre kbd {
+    font-size: inherit;
 }
 
 pre.codeblock {
     text-indent: 0;
     border: thin solid #aaa;
     border-radius: 1.5ch;
-    padding: 0.375rem 1ch;
+    padding: 0.5em 1ch;
     overflow: auto;
-    margin: 0.5rem 0;
+    margin: 0.625em 0;
 }
 
 pre.codeblock::before {
     display: block;
-    font-size: 0.75rem;
+    font-size: 93.75%;
     content: attr(data-code-language);
     border-bottom: thin solid #aaa;
 }
