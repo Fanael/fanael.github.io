@@ -146,8 +146,10 @@ aside {
  * Code blocks and syntax highlighting
  */
 pre, code, samp, kbd, cite.program-name {
-    font-family: monospace;
-    font-size: 107.8125%;
+    /* Browsers completely break relative font sizing when the font family
+       is just "monospace", so work around this misbehavior. */
+    font-family: monospace, monospace;
+    font-size: 81.25%;
     margin: 0;
     padding: 0;
 }
