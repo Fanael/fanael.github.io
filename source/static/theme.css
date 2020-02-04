@@ -1,4 +1,4 @@
-/* Copyright © 2019  Fanael Linithien */
+/* Copyright © 2019-2020  Fanael Linithien */
 /* SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 */
 /* -----------------------------------------------
  * Basics
@@ -247,12 +247,6 @@ pre.codeblock::before {
 
 #prevnext .next {
     text-align: right;
-}
-
-#prevnext::after {
-    content: "";
-    display: block;
-    clear: both;
 }
 
 /* -----------------------------------------------
