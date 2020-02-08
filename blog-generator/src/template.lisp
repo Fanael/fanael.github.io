@@ -1,5 +1,5 @@
 ;;; HTML templating
-;; Copyright © 2019  Fanael Linithien
+;; Copyright © 2019-2020  Fanael Linithien
 ;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
 (defpackage #:blog-generator.template
   (:use #:cl #:iterate #:blog-generator.utils)
@@ -334,7 +334,7 @@ article topics and the article's publication date."
     '(footer
       ((ul :id "footerstuff")
        (li "Powered by HTML & CSS")
-       (li "Copyright © 2019 Fanael Linithien")
+       (li "Copyright © 2019-2020 Fanael Linithien")
        (li "Licensed under a "
         ((a :rel "license" :href "https://creativecommons.org/licenses/by-sa/4.0/")
          "Creative Commons Attribution-ShareAlike 4.0 International License"))))
