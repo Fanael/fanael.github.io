@@ -239,6 +239,16 @@ generate the head section of the HTML document in HTSL form."
     ((link :rel "license" :href "https://creativecommons.org/licenses/by-sa/4.0/"))
     (title ,(format nil "~A - Fanael's random ruminations" title))))
 
+(alx:define-constant +main-tag-htsl+
+    '(main :id "main")
+  :test #'equal
+  :documentation "The tag portion of the main HTSL element.")
+
+(alx:define-constant +skip-to-content-htsl+
+    '((a :id "skip-nav" :href "#main") "Skip to main content")
+  :test #'equal
+  :documentation "The skip-nav element in HTSL form.")
+
 (alx:define-constant +main-header-htsl+
     '((header :id "mainheader") "Fanael's random ruminations")
   :test #'equal
@@ -252,11 +262,14 @@ generate the head section of the HTML document in HTSL form."
        ((a :href "https://github.com/Fanael/fanael.github.io/") "GitHub")
        ((a :rel "author" :href "/pages/about.html") "About")))
   :test #'equal
-  :documentation "The navigation menu under the main header, in HTSL form.")
+  :documentation "The navigation menu after the main header, in HTSL form.")
 
-(alx:define-constant +article-root-id+ "root-section"
-  :test #'string=
-  :documentation "The ID of the root section of an article.")
+(alx:define-constant +document-header-htsl+
+    (list +skip-to-content-htsl+
+          +main-header-htsl+
+          +nav-menu-htsl+)
+  :test #'equal
+  :documentation "List of shared document prologue, in the form of HTSL elements.")
 
 (-> generate-section-header-link (string) list)
 (eval-and-compile
@@ -265,7 +278,7 @@ generate the head section of the HTML document in HTSL form."
     `((a :class "section-header-link" :href ,section-href) "§")))
 
 (alx:define-constant +article-root-header-link+
-    (generate-section-header-link (format nil "#~A" +article-root-id+))
+    (generate-section-header-link "#main")
   :test #'equal
   :documentation "The section header link for the root section of an article.")
 
@@ -362,10 +375,9 @@ article topics and the article's publication date."
       (article:article-title article)
       (article:article-description article))
     (body
-     ,+main-header-htsl+
-     ,+nav-menu-htsl+
-     (main
-      ((article :id ,+article-root-id+)
+     ,@+document-header-htsl+
+     (,+main-tag-htsl+
+      (article
        ,(generate-article-header article)
        ,@(flet ((wrap-table-of-contents (form)
                   `((nav :class "toc") ,form))
@@ -420,9 +432,8 @@ list of excerpts of each article."
         canonical-url
         (format nil "Blog archives for the ~A" pretty-quarter))
       (body
-       ,+main-header-htsl+
-       ,+nav-menu-htsl+
-       (main
+       ,@+document-header-htsl+
+       (,+main-tag-htsl+
         (header (h1 "Archives for the " ,pretty-quarter))
         ,(generate-archive-toc articles)
         ,@(generate-excerpts articles))
@@ -435,9 +446,8 @@ list of excerpts of each article."
       canonical-url
       (format nil "Blog archives for topic ~A" (the string topic)))
     (body
-     ,+main-header-htsl+
-     ,+nav-menu-htsl+
-     (main
+     ,@+document-header-htsl+
+     (,+main-tag-htsl+
       (header (h1 "Archives for topic " ,topic))
       ,(generate-archive-toc articles)
       ,@(generate-excerpts articles))
@@ -451,9 +461,8 @@ list of excerpts of each article."
       canonical-url
       "Blog archive index")
     (body
-     ,+main-header-htsl+
-     ,+nav-menu-htsl+
-     (main
+     ,@+document-header-htsl+
+     (,+main-tag-htsl+
       (header (h1 "Blog archives"))
       (section
        (h2 "By date")
