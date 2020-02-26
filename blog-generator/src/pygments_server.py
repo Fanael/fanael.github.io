@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright © 2019-2020  Fanael Linithien
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""
+'''
 A simple pygments server, communicating over pipes, to reuse the same process
 for multiple highlightings instead of spawning a new pygmentize process for
 every one.
@@ -30,7 +30,7 @@ List of known commands:
     - pygments lexer name
     - source code to highlight (multiline string)
    Reponse: A multiline string representing a lisp list of HTSL forms.
-"""
+'''
 import sys
 import traceback
 import pygments as p
@@ -71,7 +71,7 @@ class _SexpFormatter(fmt.Formatter):
         for token_type, value in token_source:
             class_name = _TOKEN_TYPE_CLASSES[token_type]
             if class_name:
-                out.write(f' ((span :class \"{class_name}\")')
+                out.write(f' ((span :class "{class_name}")')
             out.write(f' "{value.translate(_STRING_ESCAPES)}"')
             if class_name:
                 out.write(')')
