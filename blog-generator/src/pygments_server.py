@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright © 2019  Fanael Linithien
+# Copyright © 2019-2020  Fanael Linithien
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
 A simple pygments server, communicating over pipes, to reuse the same process
@@ -54,20 +54,26 @@ _STRING_ESCAPES = {
     ord('\\'): '\\\\',
 }
 
+def _get_effective_class_name(token_type):
+    known_type = token_type
+    while True:
+        needs_styling = _KNOWN_TOKENS.get(known_type)
+        if needs_styling is not None:
+            break
+        known_type = known_type.parent
+    return 'c-' + tok.STANDARD_TYPES[known_type] if needs_styling else None
+
+_TOKEN_TYPE_CLASSES = {t: _get_effective_class_name(t) for t in tok.STANDARD_TYPES}
+
 class _SexpFormatter(fmt.Formatter):
     @staticmethod
     def format_unencoded(token_source, out):
         for token_type, value in token_source:
-            known_type = token_type
-            while True:
-                needs_styling = _KNOWN_TOKENS.get(known_type)
-                if needs_styling is not None:
-                    break
-                known_type = known_type.parent
-            if needs_styling:
-                out.write(f' ((span :class \"c-{tok.STANDARD_TYPES[known_type]}\")')
+            class_name = _TOKEN_TYPE_CLASSES[token_type]
+            if class_name:
+                out.write(f' ((span :class \"{class_name}\")')
             out.write(f' "{value.translate(_STRING_ESCAPES)}"')
-            if needs_styling:
+            if class_name:
                 out.write(')')
 
 def _read_multiline_string():
