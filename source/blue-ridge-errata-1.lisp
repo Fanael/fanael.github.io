@@ -44,7 +44,7 @@ frob(blue_widget);"))
 (defsection tradeoff
   :header "It's a tradeoff"
   (p ((a :href "https://en.wikipedia.org/wiki/Food_Not_Bombs") "There is such thing as a free lunch")
-     ", but this is not it, so naturally, there is a catch. Updating pointers is almost trivial: look at the pointee to see if it has a forwarding pointer, and change the pointer being updated to that value if it does. Evacuation is more involved, as it requires copying the object, so naturally, it is slower. Since this is a stop-the-world phase, the worst-case latency is going to rise. It's still affected only by the root set size, though, only the constant factor is larger, which is acceptable in my case, as this approach is much simpler than the alternatives listed above, relative simplicity being another important factor of original the design after all."))
+     ", but this is not it, so naturally, there is a catch. Updating pointers is almost trivial: look at the pointee to see if it has a forwarding pointer, and change the pointer being updated to that value if it does. Evacuation is more involved, as it requires copying the object, so naturally, it is slower. Since this is a stop-the-world phase, the worst-case latency is going to rise. It's still affected only by the root set size, though, only the constant factor is larger, which is acceptable in my case, as this approach is much simpler than the alternatives listed above, relative simplicity being another important factor of the design after all."))
 
 (defsection phases-updated
   :header "Phase ordering, updated"
