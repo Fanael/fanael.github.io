@@ -39,14 +39,14 @@ a:active {
  */
 #skip-nav {
     display: block;
-    padding: 1.25rem 0;
+    padding-top: 1.25rem;
     text-align: center;
     font-size: 0.8125rem;
 }
 
 #mainheader {
     margin: 0;
-    padding-bottom: 1.25rem;
+    padding: 1.25rem 0;
     text-align: center;
     font-variant: small-caps;
     font-size: 2.5rem;
@@ -353,7 +353,7 @@ pre.codeblock::before {
         orphans: 2;
     }
 
-    nav {
+    nav, #skip-nav {
         display: none;
     }
 
