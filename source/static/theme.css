@@ -349,8 +349,6 @@ pre.codeblock::before {
         font-size: 100%;
         width: initial;
         max-width: initial;
-        widows: 2;
-        orphans: 2;
     }
 
     nav, #skip-nav {
