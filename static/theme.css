@@ -22,16 +22,16 @@ body {
 }
 
 a:link {
-    color: #137;
+    color: #149;
     text-decoration: underline;
 }
 
 a:visited {
-    color: #617;
+    color: #819;
 }
 
 a:active {
-    color: #731;
+    color: #941;
 }
 
 /* -----------------------------------------------
