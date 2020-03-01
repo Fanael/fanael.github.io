@@ -254,7 +254,7 @@ format expected by `template:generate-archive-html'."
              (convert-seq-articles-to-template-articles articles)
              :year year
              :quarter quarter
-             :canonical-url (uiop:unix-namestring relative-path)))))
+             :canonical-url (domain-relative-path relative-path)))))
     (write-html-to html path)))
 
 (-> generate-quarterly-archives (list) list)
@@ -291,7 +291,7 @@ in which there was at least one published article."
            *template-engine*
            (convert-seq-articles-to-template-articles articles)
            :topic topic
-           :canonical-url (uiop:unix-namestring relative-path))))
+           :canonical-url (domain-relative-path relative-path))))
     (write-html-to html path)))
 
 (-> generate-topic-archives (list) list)
@@ -334,7 +334,7 @@ quarterly archives and all topic archives."
              (mapcar #'make-quarterly-archive quarters)
              (mapcar #'make-topic-archive topics)
              (convert-seq-articles-to-template-articles articles)
-             :canonical-url (uiop:unix-namestring relative-path))))
+             :canonical-url (domain-relative-path relative-path))))
       (write-html-to html path))))
 
 (-> generate-archives (list) (values))
