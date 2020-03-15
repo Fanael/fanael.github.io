@@ -49,7 +49,7 @@ a:active {
     padding: 1.25rem 0;
     text-align: center;
     font-variant: small-caps;
-    font-size: 2.5rem;
+    font-size: 2.027rem;
 }
 
 /* -----------------------------------------------
@@ -108,21 +108,21 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-    font-size: 2.25rem;
+    font-size: 1.802rem;
     font-variant: small-caps;
     padding-bottom: 0;
 }
 
 h2 {
-    font-size: 1.75rem;
+    font-size: 1.602rem;
 }
 
 h3 {
-    font-size: 1.375rem;
+    font-size: 1.424rem;
 }
 
 h4 {
-    font-size: 1.25rem;
+    font-size: 1.266rem;
     font-weight: bold;
 }
 
