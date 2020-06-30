@@ -2,7 +2,7 @@
 ;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "The legend of \"x86 CPUs decode instructions into RISC form interally\""
-  :description ""
+  :description "A dive into what x86 instruction are decoded into various processors, to determine the truth of the idea that they're just RISC-like internally."
   :children
   (setting-the-stage
    p6-long-long-ago
