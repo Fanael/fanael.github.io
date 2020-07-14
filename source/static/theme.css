@@ -7,8 +7,8 @@ html {
     background-color: #ddc;
     color: #111;
     font-family: serif;
-    font-size: 112.5%; /* fallback */
-    font-size: calc(100% + 0.5vmin);
+    font-size: 1.125em; /* fallback */
+    font-size: calc(1em + 0.5vmin);
     padding: 0;
     margin: 0 auto;
     width: 100ch;
