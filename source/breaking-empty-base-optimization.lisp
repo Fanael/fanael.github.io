@@ -104,5 +104,5 @@ static_assert(sizeof(bar) == sizeof(foo));")
 // the last member.
 static_assert(sizeof(foo) == sizeof(int));")
   (p "An alternative, arguably semantically the cleanest, solution is to wait until "
-     ((a :href "http://open-std.org/JTC1/SC22/WG21/docs/papers/2019/p0707r4.pdf") "the metaclass proposal")
+     ((a :href "http://open-std.org/JTC1/SC22/WG21/docs/papers/2019/p0707r4.pdf") "the metaclass proposal (PDF, 1.5 MB)")
      " lands and implement " (code "noncopyable") " as a metaclass. There's no guarantee however when (and " (em "if") ") it will land, while C++20 is coming soon, and GCC 9 and Clang 9 already implement " (code "[[no_unique_address]]") "."))
