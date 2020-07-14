@@ -290,11 +290,11 @@ pre.codeblock::before {
     text-align: center;
     padding-top: 0.5rem;
     padding-bottom: 1em;
+    line-height: 1.625;
     border-top: thin dotted #777;
 }
 
 #footerstuff li {
-    display: inline-block;
     font-size: 0.75rem;
     padding: 0 0.5ch;
     color: #555;
