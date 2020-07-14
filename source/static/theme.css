@@ -64,6 +64,7 @@ a:active {
     list-style: none;
     text-align: center;
     padding-bottom: 1em;
+    line-height: 1.625;
 }
 
 #navmenu li {
@@ -71,6 +72,19 @@ a:active {
     padding: 0 0.75ch;
     text-align: center;
     font-size: 1.125rem;
+}
+
+@supports (display: flex) and (min-width: max-content) {
+    #navmenu {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    #navmenu li {
+        min-width: max-content;
+        flex-basis: calc((40ch - 100%) * 1000);
+    }
 }
 
 /* -----------------------------------------------
