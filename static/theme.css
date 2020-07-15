@@ -1,8 +1,6 @@
 /* Copyright © 2019-2020  Fanael Linithien */
 /* SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 */
-/* -----------------------------------------------
- * Basics
- */
+/* Basics */
 html {
     background-color: #ddc;
     color: #111;
@@ -34,9 +32,7 @@ a:active {
     color: #941;
 }
 
-/* -----------------------------------------------
- * Banner-header
- */
+/* Banner-header */
 #skip-nav {
     display: block;
     padding-top: 1.25rem;
@@ -52,9 +48,7 @@ a:active {
     font-size: 2.027rem;
 }
 
-/* -----------------------------------------------
- * Navigation menu
- */
+/* Navigation menu */
 #navmenu, #navmenu li {
     padding: 0;
     margin: 0;
@@ -87,9 +81,7 @@ a:active {
     }
 }
 
-/* -----------------------------------------------
- * Articles
- */
+/* Articles */
 main {
     line-height: 1.625;
     border-top: thin dotted #777;
@@ -164,9 +156,7 @@ aside {
     padding: 0.5625em 1ch;
 }
 
-/* -----------------------------------------------
- * Code blocks and syntax highlighting
- */
+/* Code blocks and syntax highlighting */
 pre, code, samp, kbd, cite.program-name {
     /* Browsers completely break relative font sizing when the font family
        is just "monospace", so work around this misbehavior. */
@@ -214,9 +204,7 @@ pre.codeblock::before {
     font-style: italic;
 }
 
-/* -----------------------------------------------
- * Table of contents
- */
+/* Table of contents */
 .toc {
     border: thin dashed #777;
     border-radius: 1.5ch;
@@ -241,9 +229,7 @@ pre.codeblock::before {
     padding: 0 1.5ch;
 }
 
-/* -----------------------------------------------
- * In-order post navigation
- */
+/* In-order post navigation */
 #prevnext, #prevnext li {
     margin: 0;
     padding: 0;
@@ -277,9 +263,7 @@ pre.codeblock::before {
     text-align: right;
 }
 
-/* -----------------------------------------------
- * Footer
- */
+/* Footer */
 #footerstuff, #footerstuff li {
     margin: 0;
     padding: 0;
@@ -299,9 +283,7 @@ pre.codeblock::before {
     color: #555;
 }
 
-/* -----------------------------------------------
- * Dark mode
- */
+/* Dark mode */
 @media screen and (prefers-color-scheme: dark) {
     html {
         background-color: #223;
@@ -353,9 +335,7 @@ pre.codeblock::before {
     }
 }
 
-/* -----------------------------------------------
- * Print-friendly overrides
- */
+/* Print-friendly overrides */
 @media print {
     html {
         background-color: initial;
