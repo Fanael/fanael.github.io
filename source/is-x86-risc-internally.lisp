@@ -85,7 +85,7 @@
   (p "The successor of P6 was Pentium M, where the \"M\" likely stood for \"mobile\". It was used primarily in laptops, where the concurrent NetBurst wasn't feasible due to its excessive power consumption and thermal requirements. There were a few Pentium M-based server processors, and there were socket adapters that let one use these processors in standard desktop socket 478 motherboards, but weren't very common.")
   (p "Pentium M introduced "
      (dfn "micro-operation fusion")
-     ", or micro-fusion for short, where some pairs of micro-operations decoded from the same instructions could be joined together. These fused pairs were kept together in as much of the pipeline as possible: they were generated as as one by the instruction decoders, they were treated as one micro-operation by the register renaming mechanism, they were using a single entry in the reorder buffer, and they were treated as one in retirement stations. Just about the only place where they weren't treated as one micro-operation was in the execution units themselves, therefore arguably they "
+     ", or micro-fusion for short, where some pairs of micro-operations decoded from the same instructions could be joined together. These fused pairs were kept together in as much of the pipeline as possible: they were generated as as one by the instruction decoders, they were treated as one micro-operation by the register renaming mechanism, they were using a single entry in the reorder buffer, and they were treated as one in retirement stations. Just about the only place where they weren't treated as one micro-operation was in the execution units themselves, as for example the memory load unit wouldn't know what to do with integer addition, so it never received that portion of the micro-fused pair. Therefore, arguably, micro-fused pairs "
      (em "were single micro-operations")
      " for all intents and purposes, splitting was just an implementation detail of the execution units.")
   (p "The only instruction that was decoded into multiple micro-operations in P6 was the addition to a memory location. Can it benefit from micro-fusion in Pentium M? Indeed, it can, it's now decoded into three micro-operations that pretty much "
@@ -115,7 +115,7 @@
      (code "add eax, [edx]")
      ". Unfortunately, when the memory location was the "
      (em "destination")
-     " operand, Pentium M could only fuse the two parts of a store. Core, however, lifted this restriction, allowing it do perform both kinds of micro-fusion at once. Thus on Core the first instruction of our loop consists is decoded into just "
+     " operand, Pentium M could only fuse the two parts of a store. Core, however, lifted this restriction, allowing it do perform both kinds of micro-fusion at once. Thus on Core the first instruction of our loop is decoded into just "
      (strong "two")
      " micro-operations:")
   (ol (li "Load a 32-bit value from the address contained in "
