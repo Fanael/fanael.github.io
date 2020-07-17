@@ -82,7 +82,7 @@
 
 (defsection pentium-m-micro-fusion
   :header "Pentium M: introduction of micro-fusion"
-  (p "The successor of P6 was Pentium M, where the \"M\" likely stood for \"mobile\". It was used primarily in laptops, where the concurrent NetBurst wasn't feasible due to its excessive power consumption and thermal requirements. There were a few Pentium M-based server processors, and there were socket adapters that let one use these processors in standard desktop socket 478 motherboards, but weren't very common.")
+  (p "The successor of P6 was Pentium M, where the \"M\" likely stood for \"mobile\". It was used primarily in laptops, where the contemporary NetBurst wasn't feasible due to its excessive power consumption and thermal requirements. There were a few Pentium M-based server processors, and there were socket adapters that let one use these processors in standard desktop socket 478 motherboards, but weren't very common.")
   (p "Pentium M introduced "
      (dfn "micro-operation fusion")
      ", or micro-fusion for short, where some pairs of micro-operations decoded from the same instructions could be joined together. These fused pairs were kept together in as much of the pipeline as possible: they were generated as as one by the instruction decoders, they were treated as one micro-operation by the register renaming mechanism, they were using a single entry in the reorder buffer, and they were treated as one in retirement stations. Just about the only place where they weren't treated as one micro-operation was in the execution units themselves, as for example the memory load unit wouldn't know what to do with integer addition, so it never received that portion of the micro-fused pair. Therefore, arguably, micro-fused pairs "
