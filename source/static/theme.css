@@ -12,6 +12,7 @@ html {
     width: 100ch;
     max-width: 93.75%;
     line-height: 1.25;
+    color-scheme: light dark;
 }
 
 body {
