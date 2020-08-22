@@ -345,11 +345,7 @@ pre.codeblock::before {
         max-width: initial;
     }
 
-    nav, #skip-nav {
-        display: none;
-    }
-
-    .section-header-link {
+    nav, #skip-nav, .section-header-link {
         display: none;
     }
 
