@@ -161,6 +161,10 @@ diff --git a/mingw-w64-libraries/winpthreads/src/thread.c b/mingw-w64-libraries/
      (code "TryEnterCriticalSection")
      " actually works as described: if the critical section is not currently locked, it expects the call to take ownership of the critical section and succeed, but on Windows 98, this will never happen.")
 
+  (aside (p "Critical sections are the Win32 name for regular user-mode "
+            ((a :href "https://en.wikipedia.org/wiki/Lock_(computer_science)") "mutexes")
+            ". Win32 also offers kernel-mode mutexes, which are heavy and slow, as they require system calls for every operation, so they're usually only used for inter-process communication."))
+
   (p "It's not possible to work around that problem by patching away "
      (code "TryEnterCriticalSection")
      " calls without a significant re-architecture of "
@@ -170,7 +174,7 @@ diff --git a/mingw-w64-libraries/winpthreads/src/thread.c b/mingw-w64-libraries/
 (defsection implementing-try-enter-critical-section
   :header "Implementing that one missing function ourselves"
   (p (code "TryEnterCriticalSection")
-     " being present, but not actually implemented on Windows 98 is the only obstacle left, albeit a significant one. The algorithm itself is simple: find out where the atomic indicating whether the section is locked is, and use an operation like atomic compare-and-swap to change it, returning true if the section wasn't locked before. Unfortunately, the structure of critical sections is completely undocumented, and there aren't many good sources that are still alive on what critical sections looked like in that old operating system, so finding out where the atomic variable"
+     " being present, but not actually implemented on Windows 98 is the only obstacle left, albeit a significant one. The algorithm itself is simple: find out where the atomic indicating whether the section is locked is, and use an operation like atomic compare-and-swap to change it, returning true if the section wasn't locked before. Unfortunately, the structure of critical sections is completely undocumented, and there aren't many good sources that are still alive on what critical sections looked like in that old operating system, so finding out where the atomic variable "
      (em "is")
      " requires some work.")
 
