@@ -105,3 +105,25 @@
     :allowed-contexts '(:flow :phrasing)
     :child-context :phrasing
     :attributes '((:datetime . string)))
+
+(define-tag figure
+    :allowed-contexts :flow
+    :child-context :figure)
+
+(define-tag figcaption
+    :allowed-contexts :figure
+    :child-context :flow)
+
+(define-tag img
+    :allowed-contexts :figure
+    :child-context nil
+    :attributes '((:src . string)
+                  (:alt . string)
+                  (:height . integer)
+                  (:width . integer))
+    :omit-closing-tag t)
+
+(define-tag-macro image-figure (attributes children)
+  `(figure
+    ((img ,@attributes))
+    (figcaption ,@children)))

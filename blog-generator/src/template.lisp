@@ -184,6 +184,7 @@ the current templating engine."
 (alx:define-constant +syntax-highlighting-languages+
     '((:c++ "c++" . "C++")
       (:common-lisp "common-lisp" . "Common Lisp")
+      (:diff "diff" . "Unified diff")
       (:java "java" . "Java"))
   :test #'equal
   :documentation "List of known syntax highlighting languages.

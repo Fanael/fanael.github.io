@@ -47,6 +47,10 @@ _KNOWN_TOKENS = {
     tok.String.Escape: True,
     tok.String.Interpol: True,
     tok.Number: True,
+    tok.Generic.Deleted: True,
+    tok.Generic.Inserted: True,
+    tok.Generic.Heading: True,
+    tok.Generic.Subheading: True,
 }
 
 _STRING_ESCAPES = {
