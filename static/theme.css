@@ -157,7 +157,7 @@ aside {
     padding: 0.5625em 1ch;
 }
 
-/* Code blocks and syntax highlighting */
+/* Figures, code blocks and syntax highlighting */
 pre, code, samp, kbd, cite.program-name {
     /* Browsers completely break relative font sizing when the font family
        is just "monospace", so work around this misbehavior. */
@@ -171,13 +171,30 @@ pre code, pre samp, pre kbd {
     font-size: inherit;
 }
 
-pre.codeblock {
+figure, pre.codeblock {
     text-indent: 0;
     border: thin solid #aaa;
     border-radius: 1.5ch;
     padding: 0.5em 1ch;
-    overflow: auto;
     margin: 0.625em 0;
+}
+
+figure {
+    text-align: center;
+}
+
+figcaption {
+    border-top: thin solid #aaa;
+}
+
+figure img {
+    max-height: 100%;
+    max-width: 100%;
+    width: auto;
+}
+
+pre.codeblock {
+    overflow: auto;
 }
 
 pre.codeblock::before {
@@ -192,8 +209,8 @@ pre.codeblock::before {
     font-weight: bold;
 }
 
-.c-s {
-    color: #118;
+.c-s, .c-gi {
+    color: #138;
 }
 
 .c-m {
@@ -203,6 +220,14 @@ pre.codeblock::before {
 .c-c {
     color: #555;
     font-style: italic;
+}
+
+.c-gh, .c-gu {
+    color: #153;
+}
+
+.c-gd {
+    color: #541;
 }
 
 /* Table of contents */
@@ -307,8 +332,12 @@ pre.codeblock::before {
         color: #ccc;
     }
 
-    pre.codeblock {
+    figure, pre.codeblock {
         border-color: #555;
+    }
+
+    figcaption {
+        border-top-color: #555;
     }
 
     pre.codeblock::before {
@@ -319,7 +348,7 @@ pre.codeblock::before {
         color: #e77;
     }
 
-    .c-s {
+    .c-s, .c-gi {
         color: #7ea;
     }
 
@@ -329,6 +358,14 @@ pre.codeblock::before {
 
     .c-c {
         color: #aaa;
+    }
+
+    .c-gh, .c-gu {
+        color: #eac;
+    }
+
+    .c-gd {
+        color: #aae;
     }
 
     #footerstuff li {
@@ -358,5 +395,9 @@ pre.codeblock::before {
         page-break-inside: avoid;
         white-space: pre-wrap;
         overflow: initial;
+    }
+
+    figure {
+        page-break-inside: avoid;
     }
 }
