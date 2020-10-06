@@ -170,7 +170,7 @@ of its source path."
 
 (-> generate-non-articles () (values))
 (defun generate-non-articles ()
-  (let ((template:*inhibit-publication-date* t))
+  (let ((template:*inhibit-article-header* t))
     ;; Non-articles are just like articles, so reuse article code.
     (iter (for path in *non-article-paths*)
           (generate-article (make-seq-article (load-article path) path nil nil))))

@@ -10,7 +10,7 @@
    (#:syntax-hl #:blog-generator.syntax-hl))
   (:export
    #:*current-engine*
-   #:*inhibit-publication-date*
+   #:*inhibit-article-header*
    #:*topic-to-archive-function*
    #:archived-article
    #:archived-article-article
@@ -61,8 +61,10 @@
   "The current templating engine, dynamically bound to allow use from
 within HTSL tag macros.")
 
-(defvar *inhibit-publication-date* nil
-  "If non-nil, the publication date will be omitted from the output.")
+(defvar *inhibit-article-header* nil
+  "If non-nil, extra information in the article header, like permalink
+and date, will be omitted from the output, only the article title will
+remain.")
 
 (-type *topic-to-archive-function* (nullable (function (string) string)))
 (defvar *topic-to-archive-function* nil
@@ -337,9 +339,9 @@ article topics, the publication date and the permalink."
     (h1
      ,+article-root-header-link+
      ,(article:article-title article))
-    (p ((a :href ,permalink-url) "Article permalink"))
-    ,@(unless *inhibit-publication-date*
-        (list (generate-publication-date (article:article-date article))))
+    ,@(unless *inhibit-article-header*
+        `((p ((a :href ,permalink-url) "Article permalink"))
+          ,(generate-publication-date (article:article-date article))))
     ,@(alx:when-let ((topics (article:article-topics article)))
         (list (generate-article-topics topics)))))
 
