@@ -314,9 +314,8 @@ tag containing (human-readable) English."
 (-> generate-publication-date (article:date) list)
 (defun generate-publication-date (date)
   "Generate markup for the publication DATE of an article."
-  `((p :class "publishdate")
-    "Published on the "
-    ,(generate-pretty-date date)))
+  `(p "Published on the "
+      ,(generate-pretty-date date)))
 
 (-> generate-article-topics (list) list)
 (defun generate-article-topics (topics)
@@ -325,20 +324,20 @@ tag containing (human-readable) English."
            (alx:if-let ((func *topic-to-archive-function*))
              `((a :href ,(funcall func topic)) ,topic)
              topic)))
-    `((p :class "article-topics")
-      "Topics: "
-      ,@(iter (for (topic . rest) on topics)
-              (collect (make-link-to-archive-if-possible topic))
-              (when rest (collect ", "))))))
+    `(p "Topics: "
+        ,@(iter (for (topic . rest) on topics)
+                (collect (make-link-to-archive-if-possible topic))
+                (when rest (collect ", "))))))
 
-(-> generate-article-header (article:article) list)
-(defun generate-article-header (article)
+(-> generate-article-header (article:article string) list)
+(defun generate-article-header (article permalink-url)
   "Generate the article header, i.e. the article title inside `h1', the
-article topics and the article's publication date."
+article topics, the publication date and the permalink."
   `(header
     (h1
      ,+article-root-header-link+
      ,(article:article-title article))
+    (p ((a :href ,permalink-url) "Article permalink"))
     ,@(unless *inhibit-publication-date*
         (list (generate-publication-date (article:article-date article))))
     ,@(alx:when-let ((topics (article:article-topics article)))
@@ -379,7 +378,7 @@ article topics and the article's publication date."
      ,@+document-header-htsl+
      (,+main-tag-htsl+
       (article
-       ,(generate-article-header article)
+       ,(generate-article-header article canonical-url)
        ,@(flet ((wrap-table-of-contents (form)
                   `((nav :class "toc" :aria-labelledby "toc-label")
                     ((span :id "toc-label") "Table of contents")
