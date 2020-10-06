@@ -406,7 +406,8 @@ article topics and the article's publication date."
   "Given a list of ARTICLES as for `generate-archives-htsl', generate a
 table of contents linking each article title to the corresponding
 excerpt."
-  `((nav :class "toc")
+  `((nav :class "toc" :aria-labelledby "toc-label")
+    ((span :id "toc-label") "Table of contents")
     (ordered-list
      ,@(iter (for article in articles)
              (trivia:let-match1 (archived-article article id _) article
