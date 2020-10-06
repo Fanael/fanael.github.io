@@ -426,7 +426,8 @@ list of excerpts of each article."
                  (h2 ((a :href ,url)
                       ,(article:article-title article*)))
                  ,(generate-publication-date (article:article-date article*)))
-                ,@(article:section-body (article:article-root-section article*)))))))
+                ,@(article:section-body (article:article-root-section article*))
+                ((a :class "read-full" :href ,url) "Read the full article…"))))))
 
 (defmethod generate-quarterly-archive-htsl
     ((engine default-engine) articles year quarter canonical-url)

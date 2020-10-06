@@ -305,6 +305,14 @@ pre.codeblock::before {
     color: #555;
 }
 
+/* Archives */
+.read-full {
+    display: block;
+    margin: 0.5em 0 2.5em;
+    font-weight: bold;
+    font-style: italic;
+}
+
 /* Dark mode */
 @media screen and (prefers-color-scheme: dark) {
     html {
