@@ -256,7 +256,7 @@ generate the head section of the HTML document in HTSL form."
   :documentation "The main header (banner) in HTSL form.")
 
 (alx:define-constant +nav-menu-htsl+
-    '(nav
+    '((nav :aria-label "Primary")
       ((unordered-list :id "navmenu")
        ((a :href "/") "Main page")
        ((a :href "/archives/") "Archives")
@@ -357,7 +357,7 @@ article topics and the article's publication date."
 
 (-> generate-bottom-nav ((nullable string) (nullable string)) list)
 (defun generate-bottom-nav (previous-url next-url)
-  `(nav
+  `((nav :aria-label "Chronological, secondary")
     ((ul :id "prevnext")
      ((li :class "top") ((a :href "#") "↑ Top ↑"))
      ((li :class "prev")
@@ -381,7 +381,9 @@ article topics and the article's publication date."
       (article
        ,(generate-article-header article)
        ,@(flet ((wrap-table-of-contents (form)
-                  `((nav :class "toc") ,form))
+                  `((nav :class "toc" :aria-labelledby "toc-label")
+                    ((span :id "toc-label") "Table of contents")
+                    ,form))
                 (add-section-header-link (section form)
                   `(,(first form)
                      ,(generate-section-header-link (article:section-href section))

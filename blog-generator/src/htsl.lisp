@@ -256,7 +256,9 @@ values, otherwise encode it for use as regular text node."
       (_ (dispatch string)))))
 
 (alx:define-constant +global-attributes+
-    '((:class . string)
+    '((:aria-label . string)
+      (:aria-labelledby . string)
+      (:class . string)
       (:id . string)
       (:lang . string))
   :test #'equal

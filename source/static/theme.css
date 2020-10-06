@@ -237,10 +237,6 @@ pre.codeblock::before {
     padding: 1ch;
 }
 
-.toc::before {
-    content: "Table of contents";
-}
-
 .toc ol, .toc ol li {
     margin: 0;
     padding: 0;
