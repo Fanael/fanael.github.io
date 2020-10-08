@@ -308,9 +308,13 @@ pre.codeblock::before {
 /* Archives */
 .read-full {
     display: block;
-    margin: 0.5em 0 2.5em;
+    margin: 0.5em 0;
     font-weight: bold;
     font-style: italic;
+}
+
+article:not(:last-child) .read-full {
+    margin-bottom: 2.5em;
 }
 
 /* Dark mode */
