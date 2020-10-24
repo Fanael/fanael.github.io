@@ -44,7 +44,7 @@ a:active {
 
 #mainheader {
     margin: 0;
-    padding: 1.25rem 0;
+    padding: 1.25rem 0 1rem;
     text-align: center;
     font-variant: small-caps;
     font-size: 2.027rem;
@@ -59,8 +59,8 @@ a:active {
 #navmenu {
     list-style: none;
     text-align: center;
-    padding-bottom: 1em;
-    line-height: 1.625;
+    padding-bottom: 0.75em;
+    line-height: 2;
 }
 
 #navmenu li {
@@ -236,6 +236,7 @@ pre.codeblock::before {
     border: thin dashed #777;
     border-radius: 1.5ch;
     padding: 1ch;
+    line-height: 2;
 }
 
 .toc ol, .toc ol li {
@@ -265,6 +266,7 @@ pre.codeblock::before {
     padding: 0.5rem 0;
     font-style: italic;
     font-size: 1.125rem;
+    line-height: 1.5;
 }
 
 #prevnext li {
