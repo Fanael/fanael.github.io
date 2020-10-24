@@ -1,6 +1,11 @@
 /* Copyright © 2019-2020  Fanael Linithien */
 /* SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 */
 /* Basics */
+* {
+    margin: 0;
+    padding: 0;
+}
+
 html {
     background-color: #ddc;
     color: #111;
@@ -8,17 +13,11 @@ html {
     font-size: 1.125em;
     font-size: calc(1em + 0.5vmin);
     font-size: max(1em, 0.6625em + 1vmin);
-    padding: 0;
     margin: 0 auto;
     width: 100ch;
     max-width: 93.75%;
     line-height: 1.25;
     color-scheme: light dark;
-}
-
-body {
-    margin: 0;
-    padding: 0;
 }
 
 a:link {
@@ -43,7 +42,6 @@ a:active {
 }
 
 #mainheader {
-    margin: 0;
     padding: 1.25rem 0 1rem;
     text-align: center;
     font-variant: small-caps;
@@ -51,11 +49,6 @@ a:active {
 }
 
 /* Navigation menu */
-#navmenu, #navmenu li {
-    padding: 0;
-    margin: 0;
-}
-
 #navmenu {
     list-style: none;
     text-align: center;
@@ -102,7 +95,6 @@ article header p {
 }
 
 h1, h2, h3, h4, h5, h6 {
-    margin: 0;
     padding: 0.5rem 0;
     font-weight: normal;
 }
@@ -145,7 +137,6 @@ h6 {
 }
 
 p {
-    margin: 0;
     padding: 0.5em 0;
     text-indent: 3.5ch;
 }
@@ -159,13 +150,11 @@ aside {
 }
 
 /* Figures, code blocks and syntax highlighting */
-pre, code, samp, kbd, cite.program-name {
+pre, code, samp, kbd, .program-name {
     /* Browsers completely break relative font sizing when the font family
        is just "monospace", so work around this misbehavior. */
     font-family: monospace, monospace;
     font-size: 81.25%;
-    margin: 0;
-    padding: 0;
 }
 
 pre code, pre samp, pre kbd {
@@ -239,11 +228,6 @@ pre.codeblock::before {
     line-height: 2;
 }
 
-.toc ol, .toc ol li {
-    margin: 0;
-    padding: 0;
-}
-
 .toc ol {
     padding: 0 1ch;
     list-style-position: inside;
@@ -254,11 +238,6 @@ pre.codeblock::before {
 }
 
 /* In-order post navigation */
-#prevnext, #prevnext li {
-    margin: 0;
-    padding: 0;
-}
-
 #prevnext {
     list-style: none;
     text-align: center;
@@ -289,11 +268,6 @@ pre.codeblock::before {
 }
 
 /* Footer */
-#footerstuff, #footerstuff li {
-    margin: 0;
-    padding: 0;
-}
-
 #footerstuff {
     list-style: none;
     text-align: center;
