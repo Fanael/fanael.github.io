@@ -150,7 +150,7 @@ aside {
 }
 
 /* Figures, code blocks and syntax highlighting */
-pre, code, samp, kbd, cite.program-name {
+pre, code, samp, kbd, .program-name {
     /* Browsers completely break relative font sizing when the font family
        is just "monospace", so work around this misbehavior. */
     font-family: monospace, monospace;
