@@ -326,16 +326,15 @@ quarterly archives and all topic archives."
     (declare (ftype (-> (pathname) string) destination-url))
     (declare (ftype (-> (quarter) template:quarterly-archive) make-quarterly-archive))
     (declare (ftype (-> (string) template:topic-archive) make-topic-archive))
-    (let* ((path (uiop:merge-pathnames* "index.html" *archive-directory*))
-           (relative-path (uiop:enough-pathname path *destination-directory*))
-           (html
-            (template:generate-archive-index-html
-             *template-engine*
-             (mapcar #'make-quarterly-archive quarters)
-             (mapcar #'make-topic-archive topics)
-             (convert-seq-articles-to-template-articles articles)
-             :canonical-url (domain-relative-path relative-path))))
-      (write-html-to html path))))
+    (let ((html
+           (template:generate-archive-index-html
+            *template-engine*
+            (mapcar #'make-quarterly-archive quarters)
+            (mapcar #'make-topic-archive topics)
+            (convert-seq-articles-to-template-articles articles)
+            :canonical-url (domain-relative-path
+                            (uiop:enough-pathname *archive-directory* *destination-directory*)))))
+      (write-html-to html (uiop:merge-pathnames* "index.html" *archive-directory*)))))
 
 (-> generate-archives (list) (values))
 (defun generate-archives (articles)
