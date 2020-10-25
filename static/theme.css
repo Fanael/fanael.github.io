@@ -283,6 +283,10 @@ pre.codeblock::before {
 }
 
 /* Archives */
+.archive-list {
+    line-height: 2;
+}
+
 .read-full {
     display: block;
     margin: 0.5em 0;
