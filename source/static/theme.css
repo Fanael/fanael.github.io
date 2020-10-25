@@ -33,6 +33,10 @@ a:active {
     color: #941;
 }
 
+li {
+    list-style-position: inside;
+}
+
 /* Banner-header */
 #skip-nav {
     display: block;
@@ -230,7 +234,6 @@ pre.codeblock::before {
 
 .toc ol {
     padding: 0 1ch;
-    list-style-position: inside;
 }
 
 .toc li li {
