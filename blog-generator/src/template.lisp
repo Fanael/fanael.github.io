@@ -472,19 +472,19 @@ list of excerpts of each article."
       (header (h1 "Blog archives"))
       (section
        (h2 "By date")
-       (unordered-list
+       ((unordered-list :class "archive-list")
         ,@(iter (for archive in quarters)
                 (trivia:let-match1 (quarterly-archive year quarter url) archive
                   (collect `((a :href ,url) "The " ,(generate-pretty-quarter year quarter)))))))
       (section
        (h2 "By topic")
-       (unordered-list
+       ((unordered-list :class "archive-list")
         ,@(iter (for archive in topics)
                 (trivia:let-match1 (topic-archive topic url) archive
                   (collect `((a :href ,url) ,topic))))))
       (section
        (h2 "By article title")
-       (unordered-list
+       ((unordered-list :class "archive-list")
         ,@(iter (for article in (reverse articles))
                 (trivia:let-match1 (archived-article article _ url) article
                   (collect
