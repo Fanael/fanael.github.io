@@ -355,13 +355,13 @@ int WINAPI TryEnterCriticalSection_compat(CRITICAL_SECTION* cs);
     :src "/static/stockfish-cmd.png"
     :width 652
     :height 359
-    :alt "A Windows 98 console window displaying a truncated list of Universal Chess Interface options supported by Stockfish and the information about the used compiler, as responses to the \"uci\" and \"compiler\" UCI commands respectively.")
+    :alt "A Windows 98 console window displaying a truncated list of Universal Chess Interface options supported by Stockfish and the information about the used compiler.")
    "Stockfish running in a Windows 98 console window")
   (p "Since it's just an engine, we should be able to use any Universal Chess Interface-capable graphical program with it, and indeed, the Arena chess interface version 1.1, from 2004, has no problems with using this build of Stockfish as an engine:")
   ((image-figure
     :src "/static/sos-vs-stockfish.png"
     :width 1024
     :height 744
-    :alt "Arena 1.1 running a match between SOS 5 playing white and current Stockfish playing black, with white to move. Stockfish has a material advantage of one pawn. Both engines agree that black is better, with advantage of 1.42 pawns according to ongoing SOS search and 2.41 pawns according to Stockfish. Stockfish raw nodes per second speed is only one-sixth of SOS's speed, but its reported search depth is twice of what SOS achieves.")
+    :alt "Arena 1.1 running a match between SOS 5 playing white and current Stockfish playing black, with white to move. Stockfish has a material advantage of one pawn. Both engines agree that black is better.")
    "SOS 5 for Arena (white) playing against current Stockfish (black) under Arena 1.1, running on Windows 98")
   (p "Now I can watch Stockfish demolish the old engines shipped with a 16-year-old chess program, running under a 22-year-old operating system, on 18-year-old hardware, in peace."))
