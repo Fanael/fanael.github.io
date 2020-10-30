@@ -12,6 +12,7 @@ html {
     font-family: serif;
     font-size: 1.125em;
     font-size: calc(1em + 0.5vmin);
+    font-size: min(1em + 0.5vmin, 2em);
     margin: 0 auto;
     width: 100ch;
     max-width: 93.75%;
