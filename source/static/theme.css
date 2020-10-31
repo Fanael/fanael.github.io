@@ -381,7 +381,7 @@ article:not(:last-child) .read-full {
         max-width: initial;
     }
 
-    nav, #skip-nav, .section-header-link {
+    nav, #skip-nav, .section-header-link, .permalink {
         display: none;
     }
 

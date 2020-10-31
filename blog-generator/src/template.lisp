@@ -340,7 +340,7 @@ article topics, the publication date and the permalink."
      ,+article-root-header-link+
      ,(article:article-title article))
     ,@(unless *inhibit-article-header*
-        `((p ((a :href ,permalink-url) "Article permalink"))
+        `(((p :class "permalink") ((a :href ,permalink-url) "Article permalink"))
           ,(generate-publication-date (article:article-date article))))
     ,@(alx:when-let ((topics (article:article-topics article)))
         (list (generate-article-topics topics)))))
