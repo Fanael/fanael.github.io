@@ -331,16 +331,8 @@ article:not(:last-child) .read-full {
         color: #ccc;
     }
 
-    figure, pre.codeblock {
+    figure, pre.codeblock, figcaption, pre.codeblock::before {
         border-color: #555;
-    }
-
-    figcaption {
-        border-top-color: #555;
-    }
-
-    pre.codeblock::before {
-        border-bottom-color: #555;
     }
 
     .c-k, .c-se {
