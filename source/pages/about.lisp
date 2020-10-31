@@ -14,7 +14,7 @@
   (p "I used to be pretty active in the Emacs community, so "
      ((a :href "https://github.com/Fanael/") "my GitHub profile")
      " is dominated by my Emacs packages. I'm no longer as active due to health issues, but I still use Emacs a lot.")
-  (p "I'm also a non-binary person, preferred pronouns she/her."))
+  (p "I'm also a non-binary person, preferred third person pronouns she/her."))
 
 (defsection about-blog
   :header "About the blog"
