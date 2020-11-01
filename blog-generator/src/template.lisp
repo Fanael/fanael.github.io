@@ -360,7 +360,7 @@ article topics, the publication date and the permalink."
 (defun generate-bottom-nav (previous-url next-url)
   `((nav :aria-label "Chronological, secondary")
     ((ul :id "prevnext")
-     ((li :class "top") ((a :href "#") "↑ Top ↑"))
+     ((li :class "top") ((a :href "#skip-nav") "↑ Top ↑"))
      ((li :class "prev")
       ,@(when previous-url
           `(((a :rel "prev" :href ,previous-url) "← Older"))))
