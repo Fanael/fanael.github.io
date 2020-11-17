@@ -33,8 +33,8 @@ a:active {
     color: #941;
 }
 
-li {
-    list-style-position: inside;
+ul, ol {
+    padding-left: 3.5ch;
 }
 
 /* Banner-header */
@@ -56,7 +56,7 @@ li {
 #navmenu {
     list-style: none;
     text-align: center;
-    padding-bottom: 0.75em;
+    padding: 0 0 0.75em 0;
     line-height: 2;
 }
 
@@ -236,14 +236,6 @@ pre.codeblock::before {
     line-height: 2;
 }
 
-.toc ol {
-    padding: 0 1ch;
-}
-
-.toc li li {
-    padding: 0 1.5ch;
-}
-
 /* In-order post navigation */
 #prevnext {
     list-style: none;
@@ -278,8 +270,7 @@ pre.codeblock::before {
 #footerstuff {
     list-style: none;
     text-align: center;
-    padding-top: 0.5rem;
-    padding-bottom: 1em;
+    padding: 0.5em 0 1em;
     line-height: 1.625;
     border-top: thin dotted #777;
 }
