@@ -33,7 +33,7 @@ a:active {
 }
 
 ul, ol {
-    padding-left: 3.5ch;
+    padding-left: 3ch;
 }
 
 /* Banner-header */
@@ -138,7 +138,7 @@ h6 {
 
 p {
     padding: 0.5em 0;
-    text-indent: 3.5ch;
+    text-indent: 3ch;
 }
 
 aside, .note {
@@ -165,7 +165,7 @@ pre, code, samp, kbd, .program-name {
 }
 
 pre code, pre samp, pre kbd {
-    font-size: inherit;
+    font-size: 100%;
 }
 
 figure, pre.codeblock {
