@@ -11,7 +11,7 @@ html {
     color: #111;
     font-family: serif;
     font-size: calc(1em + 0.3vmin);
-    font-size: min(1em + clamp(0vmin, 3000vmin - 24000px, 0.3vmin), 2em);
+    font-size: min(1em + clamp(0vmin, 3000vmin - 1500em, 0.3vmin), 2em);
     margin: 0 auto;
     width: 100ch;
     max-width: 93.75%;
