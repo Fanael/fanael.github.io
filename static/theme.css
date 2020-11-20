@@ -235,6 +235,23 @@ pre.codeblock::before {
     line-height: 2;
 }
 
+.toc ol {
+    counter-reset: item;
+}
+
+.toc > ol {
+    padding-left: 1.6ch;
+}
+
+.toc li {
+    counter-increment: item;
+    list-style-type: none;
+}
+
+.toc li::before {
+    content: counters(item, ".") ". ";
+}
+
 /* In-order post navigation */
 #prevnext {
     list-style: none;
