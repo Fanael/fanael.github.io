@@ -170,14 +170,25 @@ pre code, pre samp, pre kbd {
 
 figure, pre.codeblock {
     text-indent: 0;
-    border: thin solid #aaa;
-    border-radius: 1.5ch;
-    padding: 0.5em 1ch;
     margin: 0.625em 0;
 }
 
 figure {
     text-align: center;
+    border-top: medium solid #aaa;
+    border-bottom: medium solid #aaa;
+    padding: 0.5em 0;
+}
+
+@supports (width: max(1%, 1vw)) {
+    figure .holder {
+        position: relative;
+        width: max(100%, 90vw);
+        left: 50%;
+        right: 50%;
+        margin-left: min(-45vw, -50%);
+        margin-right: min(-45vw, -50%);
+    }
 }
 
 figcaption {
@@ -191,7 +202,10 @@ figure img {
 }
 
 pre.codeblock {
+    border: thin solid #aaa;
+    border-radius: 1.5ch;
     overflow: auto;
+    padding: 0.5em 1ch;
 }
 
 pre.codeblock::before {
