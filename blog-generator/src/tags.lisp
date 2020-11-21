@@ -48,7 +48,11 @@
                                 :child-context :flow))))))
   (define-simple-flow-tags main article section nav header footer aside)
   (define-simple-flow-tags h1 h2 h3 h4 h5 h6)
-  (define-simple-flow-tags blockquote div))
+  (define-simple-flow-tags blockquote))
+
+(define-tag div
+  :allowed-contexts '(:flow :figure)
+  :child-context #'identity)
 
 (define-tag p
     :allowed-contexts :flow
@@ -125,5 +129,6 @@
 
 (define-tag-macro image-figure (attributes children)
   `(figure
-    ((img ,@attributes))
+    ((div :class "holder")
+     ((img ,@attributes)))
     (figcaption ,@children)))
