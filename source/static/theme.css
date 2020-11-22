@@ -7,7 +7,6 @@
 }
 
 html {
-    color: #111;
     font-family: serif;
     line-height: 1.25;
     color-scheme: light dark;
@@ -15,12 +14,18 @@ html {
 
 @media screen {
     html {
+        color: #111;
         background-color: #ddc;
-        font-size: calc(1em + 0.3vmin);
-        font-size: min(1em + clamp(0vmin, 3000vmin - 1500em, 0.3vmin), 2em);
         margin: 0 auto;
         width: 100ch;
         max-width: 93.75%;
+    }
+}
+
+@media only screen and (min-height: 50em) and (min-width: 50em) {
+    html {
+        font-size: calc(1em + 0.3vmin);
+        font-size: min(1em + 0.3vmin, 2em);
     }
 }
 
@@ -46,14 +51,14 @@ ul, ol {
     display: block;
     padding-top: 1.25rem;
     text-align: center;
-    font-size: 0.8125rem;
+    font-size: 81.25%;
 }
 
 #mainheader {
     padding: 1.25rem 0 1rem;
     text-align: center;
     font-variant: small-caps;
-    font-size: 2.027rem;
+    font-size: 202.7%;
 }
 
 /* Navigation menu */
@@ -68,7 +73,7 @@ ul, ol {
     display: inline-block;
     padding: 0 0.75ch;
     text-align: center;
-    font-size: 1.125rem;
+    font-size: 112.5%;
 }
 
 @supports (display: flex) and (min-width: max-content) {
@@ -104,41 +109,45 @@ article header p {
 
 h1, h2, h3, h4, h5, h6 {
     padding: 0.5rem 0;
+}
+
+h1, h2, h3 {
     font-weight: normal;
 }
 
-a.section-header-link {
-    padding: 0 1ch;
-    text-decoration: none;
+h4, h5, h6 {
+    font-weight: bold;
 }
 
 h1 {
-    font-size: 1.802rem;
+    font-size: 180.2%;
     font-variant: small-caps;
     padding-bottom: 0;
 }
 
 h2 {
-    font-size: 1.602rem;
+    font-size: 160.2%;
 }
 
 h3 {
-    font-size: 1.424rem;
+    font-size: 142.4%;
 }
 
 h4 {
-    font-size: 1.266rem;
-    font-weight: bold;
+    font-size: 126.6%;
 }
 
 h5 {
-    font-size: 1.125rem;
-    font-weight: bold;
+    font-size: 112.5%;
 }
 
 h6 {
-    font-size: 1rem;
-    font-weight: bold;
+    font-size: 100%;
+}
+
+a.section-header-link {
+    padding: 0 1ch;
+    text-decoration: none;
 }
 
 p {
@@ -177,34 +186,6 @@ figure, pre.codeblock {
     text-indent: 0;
     margin: 0.625em 0;
     page-break-inside: avoid;
-}
-
-figure {
-    text-align: center;
-    border-top: medium solid #aaa;
-    border-bottom: medium solid #aaa;
-    padding: 0.5em 0;
-}
-
-@supports (width: max(1%, 1vw)) {
-    figure .holder {
-        position: relative;
-        width: max(100%, 90vw);
-        left: 50%;
-        right: 50%;
-        margin-left: min(-45vw, -50%);
-        margin-right: min(-45vw, -50%);
-    }
-}
-
-figcaption {
-    border-top: thin solid #aaa;
-}
-
-figure img {
-    max-width: 100%;
-    width: auto;
-    height: auto;
 }
 
 pre.codeblock {
@@ -252,6 +233,34 @@ pre.codeblock::before {
     color: #541;
 }
 
+figure {
+    text-align: center;
+    border: medium #aaa;
+    border-style: solid none;
+    padding: 0.5em 0;
+}
+
+@supports (width: max(1%, 1vw)) {
+    figure .holder {
+        position: relative;
+        width: max(100%, 90vw);
+        left: 50%;
+        right: 50%;
+        margin-left: min(-45vw, -50%);
+        margin-right: min(-45vw, -50%);
+    }
+}
+
+figcaption {
+    border-top: thin solid #aaa;
+}
+
+figure img {
+    max-width: 100%;
+    width: auto;
+    height: auto;
+}
+
 /* Table of contents */
 .toc {
     border: thin dashed #777;
@@ -284,7 +293,7 @@ pre.codeblock::before {
     border-top: thin dotted #777;
     padding: 0.5rem 0;
     font-style: italic;
-    font-size: 1.125rem;
+    font-size: 112.5%;
     line-height: 1.5;
 }
 
@@ -309,16 +318,13 @@ pre.codeblock::before {
 
 /* Footer */
 #footerstuff {
+    font-size: 75%;
+    color: #555;
     list-style: none;
     text-align: center;
-    padding: 0.5em 0 1em;
+    padding: 0.5rem 0 1rem;
     line-height: 1.625;
     border-top: thin dotted #777;
-}
-
-#footerstuff li {
-    font-size: 0.75rem;
-    color: #555;
 }
 
 /* Archives */
