@@ -132,3 +132,29 @@
     ((div :class "holder")
      ((img ,@attributes)))
     (figcaption ,@children)))
+
+(define-tag table
+    :allowed-contexts :figure
+    :child-context :table-section)
+
+(macrolet
+    ((define-table-section (&rest tag-names)
+       `(progn
+          ,@(iter (for tag-name in tag-names)
+                  (collect `(define-tag ,tag-name
+                                :allowed-contexts :table-section
+                                :child-context :table-row))))))
+  (define-table-section thead tbody tfoot))
+
+(define-tag tr
+    :allowed-contexts :table-row
+    :child-context :table-cell)
+
+(macrolet
+    ((define-table-cell (&rest tag-names)
+       `(progn
+          ,@(iter (for tag-name in tag-names)
+                  (collect `(define-tag ,tag-name
+                                :allowed-contexts :table-cell
+                                :child-context :flow))))))
+  (define-table-cell th td))
