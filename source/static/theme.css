@@ -7,16 +7,21 @@
 }
 
 html {
-    background-color: #ddc;
     color: #111;
     font-family: serif;
-    font-size: calc(1em + 0.3vmin);
-    font-size: min(1em + clamp(0vmin, 3000vmin - 1500em, 0.3vmin), 2em);
-    margin: 0 auto;
-    width: 100ch;
-    max-width: 93.75%;
     line-height: 1.25;
     color-scheme: light dark;
+}
+
+@media screen {
+    html {
+        background-color: #ddc;
+        font-size: calc(1em + 0.3vmin);
+        font-size: min(1em + clamp(0vmin, 3000vmin - 1500em, 0.3vmin), 2em);
+        margin: 0 auto;
+        width: 100ch;
+        max-width: 93.75%;
+    }
 }
 
 a:link {
@@ -171,6 +176,7 @@ pre code, pre samp, pre kbd {
 figure, pre.codeblock {
     text-indent: 0;
     margin: 0.625em 0;
+    page-break-inside: avoid;
 }
 
 figure {
@@ -204,8 +210,13 @@ figure img {
 pre.codeblock {
     border: thin solid #aaa;
     border-radius: 1.5ch;
-    overflow: auto;
     padding: 0.5em 1ch;
+}
+
+@media screen {
+    pre.codeblock {
+        overflow: auto;
+    }
 }
 
 pre.codeblock::before {
@@ -327,7 +338,7 @@ article:not(:last-child) .read-full {
 }
 
 /* Dark mode */
-@media screen and (prefers-color-scheme: dark) {
+@media only screen and (prefers-color-scheme: dark) {
     html {
         background-color: #223;
         color: #eee;
@@ -384,13 +395,6 @@ article:not(:last-child) .read-full {
 
 /* Print-friendly overrides */
 @media print {
-    html {
-        background-color: initial;
-        font-size: 100%;
-        width: initial;
-        max-width: initial;
-    }
-
     nav, #skip-nav, a.section-header-link, .permalink {
         display: none;
     }
@@ -401,12 +405,6 @@ article:not(:last-child) .read-full {
     }
 
     pre.codeblock {
-        page-break-inside: avoid;
         white-space: pre-wrap;
-        overflow: initial;
-    }
-
-    figure {
-        page-break-inside: avoid;
     }
 }
