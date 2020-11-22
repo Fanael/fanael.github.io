@@ -7,16 +7,26 @@
 }
 
 html {
-    background-color: #ddc;
-    color: #111;
-    font-family: serif;
-    font-size: calc(1em + 0.3vmin);
-    font-size: min(1em + clamp(0vmin, 3000vmin - 1500em, 0.3vmin), 2em);
-    margin: 0 auto;
-    width: 100ch;
-    max-width: 93.75%;
-    line-height: 1.25;
     color-scheme: light dark;
+    font-family: serif;
+    line-height: 1.25;
+}
+
+@media screen {
+    html {
+        background-color: #ddc;
+        color: #111;
+        margin: 0 auto;
+        max-width: 93.75%;
+        width: 100ch;
+    }
+}
+
+@media only screen and (min-height: 50em) and (min-width: 50em) {
+    html {
+        font-size: calc(1em + 0.3vmin);
+        font-size: min(1em + 0.3vmin, 2em);
+    }
 }
 
 a:link {
@@ -39,31 +49,31 @@ ul, ol {
 /* Banner-header */
 #skip-nav {
     display: block;
+    font-size: 81.25%;
     padding-top: 1.25rem;
     text-align: center;
-    font-size: 0.8125rem;
 }
 
 #mainheader {
+    font-size: 202.7%;
+    font-variant: small-caps;
     padding: 1.25rem 0 1rem;
     text-align: center;
-    font-variant: small-caps;
-    font-size: 2.027rem;
 }
 
 /* Navigation menu */
 #navmenu {
-    list-style: none;
-    text-align: center;
-    padding: 0 0 0.75em 0;
     line-height: 2;
+    list-style: none;
+    padding: 0 0 0.75em 0;
+    text-align: center;
 }
 
 #navmenu li {
     display: inline-block;
+    font-size: 112.5%;
     padding: 0 0.75ch;
     text-align: center;
-    font-size: 1.125rem;
 }
 
 @supports (display: flex) and (min-width: max-content) {
@@ -74,15 +84,15 @@ ul, ol {
     }
 
     #navmenu li {
-        min-width: max-content;
         flex-basis: calc((40ch - 100%) * 1000);
+        min-width: max-content;
     }
 }
 
 /* Articles */
 main {
-    line-height: 1.625;
     border-top: thin dotted #777;
+    line-height: 1.625;
 }
 
 article header {
@@ -90,50 +100,54 @@ article header {
 }
 
 article header p {
-    padding-top: 0;
-    font-size: 81.25%;
-    text-indent: 0;
-    text-align: center;
     color: #333;
+    font-size: 81.25%;
+    padding-top: 0;
+    text-align: center;
+    text-indent: 0;
 }
 
 h1, h2, h3, h4, h5, h6 {
     padding: 0.5rem 0;
+}
+
+h1, h2, h3 {
     font-weight: normal;
 }
 
-a.section-header-link {
-    padding: 0 1ch;
-    text-decoration: none;
+h4, h5, h6 {
+    font-weight: bold;
 }
 
 h1 {
-    font-size: 1.802rem;
+    font-size: 180.2%;
     font-variant: small-caps;
     padding-bottom: 0;
 }
 
 h2 {
-    font-size: 1.602rem;
+    font-size: 160.2%;
 }
 
 h3 {
-    font-size: 1.424rem;
+    font-size: 142.4%;
 }
 
 h4 {
-    font-size: 1.266rem;
-    font-weight: bold;
+    font-size: 126.6%;
 }
 
 h5 {
-    font-size: 1.125rem;
-    font-weight: bold;
+    font-size: 112.5%;
 }
 
 h6 {
-    font-size: 1rem;
-    font-weight: bold;
+    font-size: 100%;
+}
+
+a.section-header-link {
+    padding: 0 1ch;
+    text-decoration: none;
 }
 
 p {
@@ -148,6 +162,7 @@ aside, .note {
 
 aside {
     font-size: 87.5%;
+
     border: thin solid #777;
     border-width: thin thick;
 }
@@ -169,50 +184,29 @@ pre code, pre samp, pre kbd {
 }
 
 figure, pre.codeblock {
-    text-indent: 0;
     margin: 0.625em 0;
-}
-
-figure {
-    text-align: center;
-    border-top: medium solid #aaa;
-    border-bottom: medium solid #aaa;
-    padding: 0.5em 0;
-}
-
-@supports (width: max(1%, 1vw)) {
-    figure .holder {
-        position: relative;
-        width: max(100%, 90vw);
-        left: 50%;
-        right: 50%;
-        margin-left: min(-45vw, -50%);
-        margin-right: min(-45vw, -50%);
-    }
-}
-
-figcaption {
-    border-top: thin solid #aaa;
-}
-
-figure img {
-    max-width: 100%;
-    width: auto;
-    height: auto;
+    page-break-inside: avoid;
+    text-indent: 0;
 }
 
 pre.codeblock {
+    padding: 0.5em 1ch;
+
     border: thin solid #aaa;
     border-radius: 1.5ch;
-    overflow: auto;
-    padding: 0.5em 1ch;
+}
+
+@media screen {
+    pre.codeblock {
+        overflow: auto;
+    }
 }
 
 pre.codeblock::before {
+    border-bottom: thin solid #aaa;
+    content: attr(data-code-language);
     display: block;
     font-size: 93.75%;
-    content: attr(data-code-language);
-    border-bottom: thin solid #aaa;
 }
 
 .c-k, .c-se {
@@ -241,12 +235,41 @@ pre.codeblock::before {
     color: #541;
 }
 
+figure {
+    padding: 0.5em 0;
+    text-align: center;
+
+    border: medium #aaa;
+    border-style: solid none;
+}
+
+@supports (width: max(1%, 1vw)) {
+    figure .holder {
+        left: 50%;
+        margin-left: min(-45vw, -50%);
+        margin-right: min(-45vw, -50%);
+        position: relative;
+        right: 50%;
+        width: max(100%, 90vw);
+    }
+}
+
+figcaption {
+    border-top: thin solid #aaa;
+}
+
+figure img {
+    height: auto;
+    max-width: 100%;
+    width: auto;
+}
+
 /* Table of contents */
 .toc {
-    border: thin dashed #777;
     border-radius: 1.5ch;
-    padding: 1ch;
+    border: thin dashed #777;
     line-height: 2;
+    padding: 1ch;
 }
 
 .toc ol {
@@ -268,13 +291,13 @@ pre.codeblock::before {
 
 /* In-order post navigation */
 #prevnext {
-    list-style: none;
-    text-align: center;
     border-top: thin dotted #777;
-    padding: 0.5rem 0;
+    font-size: 112.5%;
     font-style: italic;
-    font-size: 1.125rem;
     line-height: 1.5;
+    list-style: none;
+    padding: 0.5rem 0;
+    text-align: center;
 }
 
 #prevnext li {
@@ -298,16 +321,13 @@ pre.codeblock::before {
 
 /* Footer */
 #footerstuff {
-    list-style: none;
-    text-align: center;
-    padding: 0.5em 0 1em;
-    line-height: 1.625;
     border-top: thin dotted #777;
-}
-
-#footerstuff li {
-    font-size: 0.75rem;
     color: #555;
+    font-size: 75%;
+    line-height: 1.625;
+    list-style: none;
+    padding: 0.5rem 0 1rem;
+    text-align: center;
 }
 
 /* Archives */
@@ -317,9 +337,9 @@ pre.codeblock::before {
 
 .read-full {
     display: block;
-    margin: 0.5em 0;
-    font-weight: bold;
     font-style: italic;
+    font-weight: bold;
+    margin: 0.5em 0;
 }
 
 article:not(:last-child) .read-full {
@@ -327,7 +347,7 @@ article:not(:last-child) .read-full {
 }
 
 /* Dark mode */
-@media screen and (prefers-color-scheme: dark) {
+@media only screen and (prefers-color-scheme: dark) {
     html {
         background-color: #223;
         color: #eee;
@@ -384,13 +404,6 @@ article:not(:last-child) .read-full {
 
 /* Print-friendly overrides */
 @media print {
-    html {
-        background-color: initial;
-        font-size: 100%;
-        width: initial;
-        max-width: initial;
-    }
-
     nav, #skip-nav, a.section-header-link, .permalink {
         display: none;
     }
@@ -401,12 +414,6 @@ article:not(:last-child) .read-full {
     }
 
     pre.codeblock {
-        page-break-inside: avoid;
         white-space: pre-wrap;
-        overflow: initial;
-    }
-
-    figure {
-        page-break-inside: avoid;
     }
 }
