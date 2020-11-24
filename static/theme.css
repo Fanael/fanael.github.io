@@ -243,6 +243,17 @@ figure {
     border-style: solid none;
 }
 
+figure .holder > * {
+    margin: 0 auto 0.5em;
+    vertical-align: bottom;
+}
+
+@media screen {
+    figure .holder {
+        overflow: auto;
+    }
+}
+
 @supports (width: max(1%, 1vw)) {
     figure .holder {
         left: 50%;
@@ -254,14 +265,42 @@ figure {
     }
 }
 
-figcaption {
-    border-top: thin solid #aaa;
-}
-
 figure img {
     height: auto;
     max-width: 100%;
     width: auto;
+}
+
+/* Tables */
+table {
+    border-collapse: collapse;
+}
+
+td, th {
+    border: thin solid currentcolor;
+    padding: 0.2em 0.5ch;
+}
+
+tbody th {
+    text-align: left;
+}
+
+tfoot {
+    font-style: italic;
+}
+
+@media screen {
+    td, th {
+        white-space: nowrap;
+    }
+
+    thead, tfoot {
+        background-color: #eed;
+    }
+
+    tbody > tr:nth-child(2n) {
+        background-color: #ccb;
+    }
 }
 
 /* Table of contents */
@@ -369,7 +408,7 @@ article:not(:last-child) .read-full {
         color: #ccc;
     }
 
-    figure, pre.codeblock, figcaption, pre.codeblock::before {
+    figure, pre.codeblock, pre.codeblock::before {
         border-color: #555;
     }
 
@@ -395,6 +434,14 @@ article:not(:last-child) .read-full {
 
     .c-gd {
         color: #aae;
+    }
+
+    thead, tfoot {
+        background-color: #112;
+    }
+
+    tbody > tr:nth-child(2n) {
+        background-color: #334;
     }
 
     #footerstuff li {
