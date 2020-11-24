@@ -243,6 +243,11 @@ figure {
     border-style: solid none;
 }
 
+figure .holder > * {
+    margin: 0 auto 0.5em;
+    vertical-align: bottom;
+}
+
 @media screen {
     figure .holder {
         overflow: auto;
@@ -260,10 +265,6 @@ figure {
     }
 }
 
-figcaption {
-    border-top: thin solid #aaa;
-}
-
 figure img {
     height: auto;
     max-width: 100%;
@@ -273,7 +274,6 @@ figure img {
 /* Tables */
 table {
     border-collapse: collapse;
-    margin: 0 auto 0.5em;
 }
 
 td, th {
@@ -298,7 +298,7 @@ tfoot {
         background-color: #eed;
     }
 
-    tbody tr:nth-child(2n) {
+    tbody > tr:nth-child(2n) {
         background-color: #ccb;
     }
 }
@@ -408,7 +408,7 @@ article:not(:last-child) .read-full {
         color: #ccc;
     }
 
-    figure, pre.codeblock, figcaption, pre.codeblock::before {
+    figure, pre.codeblock, pre.codeblock::before {
         border-color: #555;
     }
 
@@ -440,7 +440,7 @@ article:not(:last-child) .read-full {
         background-color: #112;
     }
 
-    tbody tr:nth-child(2n) {
+    tbody > tr:nth-child(2n) {
         background-color: #334;
     }
 
