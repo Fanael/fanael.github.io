@@ -422,13 +422,16 @@ list of excerpts of each article."
   (iter (for article in articles)
         (trivia:let-match1 (archived-article article* id url) article
           (collect
-              `((article :id ,id)
-                (header
-                 (h2 ((a :href ,url)
-                      ,(article:article-title article*)))
-                 ,(generate-publication-date (article:article-date article*)))
-                ,@(article:section-body (article:article-root-section article*))
-                ((a :class "read-full" :href ,url) "Read the full article…"))))))
+              (let ((title (article:article-title article*)))
+                `((article :id ,id)
+                  (header
+                   (h2 ((a :href ,url) ,title))
+                   ,(generate-publication-date (article:article-date article*)))
+                  ,@(article:section-body (article:article-root-section article*))
+                  ((a :class "read-full"
+                      :href ,url
+                      :aria-label ,(format nil "Read the full article: ~A" title))
+                   "Read the full article…")))))))
 
 (defmethod generate-quarterly-archive-htsl
     ((engine default-engine) articles year quarter canonical-url)
