@@ -236,15 +236,19 @@ pre.codeblock::before {
 }
 
 figure {
-    padding: 0.5em 0;
+    padding-top: 0.5em;
     text-align: center;
 
     border: medium #aaa;
     border-style: solid none;
 }
 
+figcaption p {
+    text-align: left;
+}
+
 figure .holder > * {
-    margin: 0 auto 0.5em;
+    margin: 0.5em auto;
     vertical-align: bottom;
 }
 

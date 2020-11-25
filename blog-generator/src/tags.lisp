@@ -129,9 +129,9 @@
 
 (define-tag-macro image-figure (attributes children)
   `(figure
+    (figcaption ,@children)
     ((div :class "holder")
-     ((img ,@attributes)))
-    (figcaption ,@children)))
+     ((img ,@attributes)))))
 
 (define-tag table
     :allowed-contexts :figure
