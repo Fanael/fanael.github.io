@@ -2,7 +2,7 @@
 ;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "About…"
-  :description "I'm Fanael Linithien, a programmer with strong low-level interests. On this blog I will cover any programming/CE/SE topics that strike my fancy."
+  :description "I'm Fanael Linithien, a programmer with strong low-level interests. On this blog I will cover any programming/CS/SE topics that strike my fancy."
   :date (1970 01 01) ; ignored anyway
   :inhibit-table-of-contents t
   :children (about-author about-blog))
