@@ -37,6 +37,9 @@
      " present; if there is, it's been injected by a third party. I'd appreciate "
      ((a :href "https://github.com/Fanael/fanael.github.io/issues") "receiving an issue report")
      " if that's the case so I can move to a different hosting.")
+  (p "This blog is a member of the "
+     ((a :href "https://250kb.club/") "250 KB club")
+     ", because I abhor systems which allow forcing people to download 10 MB background images of hipsters drinking coffee.")
   (p "Due to technical and personal reasons, there is no comment facility. "
      ((a :href "https://github.com/Fanael/fanael.github.io/issues") "GitHub issues")
      " can serve as replacement.")
