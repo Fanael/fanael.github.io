@@ -12,7 +12,7 @@
    damn-it-stockfish
    it-finally-works)
   :date (2020 09 24)
-  :topics ("windows-9x")
+  :topics ("retro" "windows-9x")
   (p "A few weeks ago I had this weird idea: would it be possible to make an up-to-date version of "
      ((a :href "https://stockfishchess.org/") "Stockfish")
      " run on Windows 98? There's an immediate problem with that: Stockfish is written in C++17, which is the still-current, at the time of writing, revision of the C++ language; surely there are no C++17 capable compilers that can still target something as old as Windows 98?")
