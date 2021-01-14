@@ -1,5 +1,5 @@
 ;;; HTML templating
-;; Copyright © 2019-2020  Fanael Linithien
+;; Copyright © 2019-2021  Fanael Linithien
 ;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
 (defpackage #:blog-generator.template
   (:use #:cl #:iterate #:blog-generator.utils)
@@ -349,7 +349,7 @@ article topics, the publication date and the permalink."
     '(footer
       ((ul :id "footerstuff")
        (li "Powered by HTML & CSS")
-       (li "Copyright © 2019-2020 Fanael Linithien")
+       (li "Copyright © 2019-2021 Fanael Linithien")
        (li "Licensed under a "
         ((a :rel "license" :href "https://creativecommons.org/licenses/by-sa/4.0/")
          "Creative Commons Attribution-ShareAlike 4.0 International License"))))
@@ -475,19 +475,19 @@ list of excerpts of each article."
       (header (h1 "Blog archives"))
       (section
        (h2 "By date")
-       ((unordered-list :class "archive-list")
+       (unordered-list
         ,@(iter (for archive in quarters)
                 (trivia:let-match1 (quarterly-archive year quarter url) archive
                   (collect `((a :href ,url) "The " ,(generate-pretty-quarter year quarter)))))))
       (section
        (h2 "By topic")
-       ((unordered-list :class "archive-list")
+       (unordered-list
         ,@(iter (for archive in topics)
                 (trivia:let-match1 (topic-archive topic url) archive
                   (collect `((a :href ,url) ,topic))))))
       (section
        (h2 "By article title")
-       ((unordered-list :class "archive-list")
+       (unordered-list
         ,@(iter (for article in (reverse articles))
                 (trivia:let-match1 (archived-article article _ url) article
                   (collect

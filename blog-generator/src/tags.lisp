@@ -1,5 +1,5 @@
 ;;; HTML tag definitions
-;; Copyright © 2019  Fanael Linithien
+;; Copyright © 2019-2021  Fanael Linithien
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 (defpackage #:blog-generator.tags
   (:use #:cl #:iterate #:blog-generator.htsl))
@@ -156,5 +156,6 @@
           ,@(iter (for tag-name in tag-names)
                   (collect `(define-tag ,tag-name
                                 :allowed-contexts :table-cell
-                                :child-context :flow))))))
+                                :child-context :flow
+                                :omit-closing-tag t))))))
   (define-table-cell th td))
