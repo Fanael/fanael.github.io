@@ -1,4 +1,4 @@
-/* Copyright © 2019-2020  Fanael Linithien */
+/* Copyright © 2019-2021  Fanael Linithien */
 /* SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 */
 /* Basics */
 * {
@@ -44,6 +44,10 @@ a:active {
 
 ul, ol {
     padding-left: 3ch;
+}
+
+main li {
+    margin: 0.5em 0;
 }
 
 /* Banner-header */
@@ -155,9 +159,14 @@ p {
     text-indent: 3ch;
 }
 
+li > p {
+    text-indent: 0;
+}
+
 aside, .note {
     border-radius: 1.5ch;
-    padding: 0.5625em 1ch;
+    margin: 0.5em 0;
+    padding: 0.25em 1ch;
 }
 
 aside {
@@ -294,6 +303,10 @@ tfoot {
 }
 
 @media screen {
+    tr {
+        transition: background-color 0.2s;
+    }
+
     td, th {
         white-space: nowrap;
     }
@@ -305,13 +318,16 @@ tfoot {
     tbody > tr:nth-child(2n) {
         background-color: #ccb;
     }
+
+    table tr:hover {
+        background-color: #dcd;
+    }
 }
 
 /* Table of contents */
 .toc {
     border-radius: 1.5ch;
     border: thin dashed #777;
-    line-height: 2;
     padding: 1ch;
 }
 
@@ -374,10 +390,6 @@ tfoot {
 }
 
 /* Archives */
-.archive-list {
-    line-height: 2;
-}
-
 .read-full {
     display: block;
     font-style: italic;
@@ -446,6 +458,10 @@ article:not(:last-child) .read-full {
 
     tbody > tr:nth-child(2n) {
         background-color: #334;
+    }
+
+    table tr:hover {
+        background-color: #322;
     }
 
     #footerstuff li {
