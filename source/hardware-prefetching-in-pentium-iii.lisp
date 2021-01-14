@@ -35,10 +35,10 @@
      (em "extremely")
      " cache-hostile and already being available in the C++ standard library. In fact, if comparisons and swaps are cheap, heap sort's cache hostility can and does make up for its theoretical complexity advantage, making it not much faster than 3-smooth Shell sort. On my Core i5-4590 (Haswell) the difference between the two algorithms is indeed less than a factor of two:")
   ((pre :class "codeblock" :data-code-language "Shell (interactive)")
-   "$ g++ -O3 p3-prefetch-shell-sort.cc && time ./a.out # heap sort
+   (samp "$ g++ -O3 p3-prefetch-shell-sort.cc && time ./a.out # heap sort
 ./a.out  2,77s user 0,00s system 99% cpu 2,771 total
 $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sort
-./a.out  4,52s user 0,00s system 99% cpu 4,517 total")
+./a.out  4,52s user 0,00s system 99% cpu 4,517 total"))
   (p "The implementation of Shell sort has been lifted from Wikipedia and C++-ified with no other significant changes:")
   ((highlighted-code :language :c++)
    "void shell_sort(std::uint32_t* array, std::size_t length)
@@ -99,7 +99,8 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
 (defsection results-coppermine
   :header "Coppermine"
   (p "Heap sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat") "Performance counter stats for './x-noshellsort':
+  ((pre :class "codeblock" :data-code-language "perf-stat")
+   (samp "Performance counter stats for './x-noshellsort':
 
       33276.769267      task-clock (msec)         #    0.999 CPUs utilized
                204      context-switches          #    0.006 K/sec
@@ -113,9 +114,10 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
         1188575659      branches:HG               #   35.718 M/sec                   [20.01%]
          196353276      branch-misses:HG          #   16.52% of all branches         [20.00%]
 
-      33.307405391 seconds time elapsed")
+      33.307405391 seconds time elapsed"))
   (p "Shell sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat") "Performance counter stats for './x-shellsort':
+  ((pre :class "codeblock" :data-code-language "perf-stat")
+   (samp "Performance counter stats for './x-shellsort':
 
      133899.702618      task-clock (msec)         #    0.999 CPUs utilized
                647      context-switches          #    0.005 K/sec
@@ -129,7 +131,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
         8501189300      branches:HG               #   63.489 M/sec                   [20.00%]
          269043077      branch-misses:HG          #    3.16% of all branches         [20.00%]
 
-     133.982751047 seconds time elapsed")
+     133.982751047 seconds time elapsed"))
   (p "The first observation: it's "
      (em "slow")
      ". But more importantly, it tells us "
@@ -139,7 +141,8 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
 (defsection results-tualatin
   :header "Tualatin"
   (p "Heap sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat") "Performance counter stats for './a.out':
+  ((pre :class "codeblock" :data-code-language "perf-stat")
+   (samp "Performance counter stats for './a.out':
 
          31,190.69 msec task-clock:u              #    0.993 CPUs utilized
                  0      context-switches:u        #    0.000 K/sec
@@ -157,9 +160,10 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
       31.404312810 seconds time elapsed
 
       30.886442000 seconds user
-       0.287093000 seconds sys")
+       0.287093000 seconds sys"))
   (p "Shell sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat") "Performance counter stats for './a.out':
+  ((pre :class "codeblock" :data-code-language "perf-stat")
+   (samp "Performance counter stats for './a.out':
 
          72,946.84 msec task-clock:u              #    0.991 CPUs utilized
                  0      context-switches:u        #    0.000 K/sec
@@ -177,7 +181,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
       73.608832025 seconds time elapsed
 
       72.634633000 seconds user
-       0.267156000 seconds sys")
+       0.267156000 seconds sys"))
   (p "Heap sort is still being heap sort, but "
      (strong "Shell sort is almost two times as fast")
      ", and the only relevant hardware difference was the introduction of hardware prefetching in Tualatin. It's also obvious from these numbers that Tualatin's hardware prefetching "
@@ -193,7 +197,8 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
   :header "Dothan"
   (p "This is not a Pentium III. It's a Pentium M, it's not even the original P6 anymore, it contains many improvements compared to its predecessor, most of which survive to this day in modern P6 descendants. It also has significantly bigger cache and faster processor-chipset, and thus processor-memory, interface. But let's still see how it handles this test, because this is the CPU for which the performance events used are documented, and out of sheer curiosity.")
   (p "Heap sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat") "Performance counter stats for './a.out':
+  ((pre :class "codeblock" :data-code-language "perf-stat")
+   (samp "Performance counter stats for './a.out':
 
          16,842.52 msec task-clock:u              #    0.996 CPUs utilized
                  0      context-switches:u        #    0.000 K/sec
@@ -211,9 +216,10 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
       16.903282957 seconds time elapsed
 
       16.698724000 seconds user
-       0.139888000 seconds sys")
+       0.139888000 seconds sys"))
   (p "Shell sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat") "Performance counter stats for './a.out':
+  ((pre :class "codeblock" :data-code-language "perf-stat")
+   (samp "Performance counter stats for './a.out':
 
          33,594.70 msec task-clock:u              #    0.996 CPUs utilized
                  0      context-switches:u        #    0.000 K/sec
@@ -231,7 +237,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
       33.716368417 seconds time elapsed
 
       33.424539000 seconds user
-       0.155648000 seconds sys")
+       0.155648000 seconds sys"))
   (p "Both algorithms benefit from the increased cache, but Shell sort more so. This is also the first time we've seen more than 1 instruction per cycle in this post. Not that it's somehow an great result: my Haswell box mentioned earlier executes 2.4 instructions per cycle in that same test, for whoever is wondering, but that's a processor released 10 years later than this Pentium M.")
   (p "The total number of upward prefetches, when expressed in "
      (em "bytes")
