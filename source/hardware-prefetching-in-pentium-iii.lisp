@@ -199,7 +199,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
       (tr (th "Stalled cycles, frontend") (td "18,575,088,740") (td) (td "70.60% frontend cycles idle") (td "28.58%"))
       (tr (th "Instructions") (td "7,093,179,520") (td) (td "0.27 instructions per cycle" (br) "2.62 stalled cycles per instruction") (td "28.56%"))
       (tr (th "Branches") (td "1,217,221,905") (td) (td "72.271 M/sec") (td "28.56%"))
-      (tr (th "Mispredicted branches") (td "195,036,348") (td) (td "17.01% of all branches") (td "28.55%"))
+      (tr (th "Mispredicted branches") (td "207,078,239") (td) (td "17.01% of all branches") (td "28.55%"))
       (tr (th "Upward prefetches") (td "21,031,331") (td) (td "1.249 M/sec") (td "28.57%"))
       (tr (th "Downward prefetches") (td "92,661,140") (td) (td "5.502 M/sec") (td "28.60%"))
       (tr (th "Elapsed time") (td "16.903") (td "seconds") (td) (td))))))
