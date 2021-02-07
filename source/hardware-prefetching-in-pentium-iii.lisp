@@ -1,4 +1,4 @@
-;; Copyright © 2019  Fanael Linithien
+;; Copyright © 2019-2021  Fanael Linithien
 ;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "Hardware prefetching in Pentium III"
@@ -98,40 +98,38 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
 
 (defsection results-coppermine
   :header "Coppermine"
-  (p "Heap sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat")
-   (samp "Performance counter stats for './x-noshellsort':
-
-      33276.769267      task-clock (msec)         #    0.999 CPUs utilized
-               204      context-switches          #    0.006 K/sec
-                 0      cpu-migrations            #    0.000 K/sec
-             14715      page-faults               #    0.442 K/sec
-       32854157356      cycles                    #    0.987 GHz                     [20.00%]
-       25399721497      stalled-cycles-frontend   #   77.31% frontend cycles idle    [20.01%]
-   <not supported>      stalled-cycles-backend:HG
-        7109652282      instructions:HG           #    0.22  insns per cycle
-                                                  #    3.57  stalled cycles per insn [20.01%]
-        1188575659      branches:HG               #   35.718 M/sec                   [20.01%]
-         196353276      branch-misses:HG          #   16.52% of all branches         [20.00%]
-
-      33.307405391 seconds time elapsed"))
-  (p "Shell sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat")
-   (samp "Performance counter stats for './x-shellsort':
-
-     133899.702618      task-clock (msec)         #    0.999 CPUs utilized
-               647      context-switches          #    0.005 K/sec
-                 0      cpu-migrations            #    0.000 K/sec
-             14717      page-faults               #    0.110 K/sec
-      132163280671      cycles                    #    0.987 GHz                     [20.00%]
-       96185812551      stalled-cycles-frontend   #   72.78% frontend cycles idle    [20.00%]
-   <not supported>      stalled-cycles-backend:HG
-       53356713225      instructions:HG           #    0.40  insns per cycle
-                                                  #    1.80  stalled cycles per insn [20.00%]
-        8501189300      branches:HG               #   63.489 M/sec                   [20.00%]
-         269043077      branch-misses:HG          #    3.16% of all branches         [20.00%]
-
-     133.982751047 seconds time elapsed"))
+  (figure
+   (figcaption "Performance event counts for " (em "heap") " sort on Coppermine")
+   ((div :class "holder")
+    ((table :class "perf-stat")
+     (thead
+      (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))
+     (tbody
+      (tr (th "Task clock") (td "33,276.77") (td "msec") (td "0.999 CPUs utilized") (td))
+      (tr (th "Context switches") (td "204") (td) (td "0.006 K/sec") (td))
+      (tr (th "Page faults") (td "14,715") (td) (td "0.442 K/sec") (td))
+      (tr (th "Cycles") (td "32,854,157,356") (td) (td "0.987 GHz") (td "20.00%"))
+      (tr (th "Stalled cycles, frontend") (td "25,399,721,497") (td) (td "77.31% frontend cycles idle") (td "20.01%"))
+      (tr (th "Instructions") (td "7,109,652,282") (td) (td "0.22 instructions per cycle" (br) "3.57 stalled cycles per instruction") (td "20.01%"))
+      (tr (th "Branches") (td "1,188,575,659") (td) (td "35.718 M/sec") (td "20.01%"))
+      (tr (th "Mispredicted branches") (td "196,353,276") (td) (td "16.52% of all branches") (td "20.00%"))
+      (tr (th "Elapsed time") (td "33.307") (td "seconds") (td) (td))))))
+  (figure
+   (figcaption "Performance event counts for " (em "shell" ) " sort on Coppermine")
+   ((div :class "holder")
+    ((table :class "perf-stat")
+     (thead
+      (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))
+     (tbody
+      (tr (th "Task clock") (td "133,899.70") (td "msec") (td "0.999 CPUs utilized") (td))
+      (tr (th "Context switches") (td "647") (td) (td "0.005 K/sec") (td))
+      (tr (th "Page faults") (td "14,717") (td) (td "0.110 K/sec") (td))
+      (tr (th "Cycles") (td "132,163,280,671") (td) (td "0.987 GHz") (td "20.00%"))
+      (tr (th "Stalled cycles, frontend") (td "96,185,812,551") (td) (td "72.78% frontend cycles idle") (td "20.00%"))
+      (tr (th "Instructions") (td "53,356,713,225") (td) (td "0.40 instructions per cycle" (br) "1.80 stalled cycles per instruction") (td "20.00%"))
+      (tr (th "Branches") (td "8,501,189,300") (td) (td "63.489 M/sec") (td "20.00%"))
+      (tr (th "Mispredicted branches") (td "269,043,077") (td) (td "3.16% of all branches") (td "20.00%"))
+      (tr (th "Elapsed time") (td "133.983") (td "seconds") (td) (td))))))
   (p "The first observation: it's "
      (em "slow")
      ". But more importantly, it tells us "
@@ -140,48 +138,40 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
 
 (defsection results-tualatin
   :header "Tualatin"
-  (p "Heap sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat")
-   (samp "Performance counter stats for './a.out':
-
-         31,190.69 msec task-clock:u              #    0.993 CPUs utilized
-                 0      context-switches:u        #    0.000 K/sec
-                 0      cpu-migrations:u          #    0.000 K/sec
-             1,429      page-faults:u             #    0.046 K/sec
-    33,344,788,971      cycles:u                  #    1.069 GHz                      (28.53%)
-     7,084,795,042      instructions:u            #    0.21  insn per cycle
-                                                  #    3.60  stalled cycles per insn  (28.60%)
-    25,490,259,991      stalled-cycles-frontend:u #   76.44% frontend cycles idle     (28.60%)
-     1,221,344,046      branches:u                #   39.157 M/sec                    (28.59%)
-       195,036,348      branch-misses:u           #   15.97% of all branches          (28.59%)
-        71,322,504      upward-prefetches:u       #    2.287 M/sec                    (28.57%)
-                 0      downward-prefetches:u     #    0.000 K/sec                    (28.51%)
-
-      31.404312810 seconds time elapsed
-
-      30.886442000 seconds user
-       0.287093000 seconds sys"))
-  (p "Shell sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat")
-   (samp "Performance counter stats for './a.out':
-
-         72,946.84 msec task-clock:u              #    0.991 CPUs utilized
-                 0      context-switches:u        #    0.000 K/sec
-                 0      cpu-migrations:u          #    0.000 K/sec
-             1,434      page-faults:u             #    0.020 K/sec
-    78,228,149,161      cycles:u                  #    1.072 GHz                      (28.58%)
-    53,121,702,516      instructions:u            #    0.68  insn per cycle
-                                                  #    0.82  stalled cycles per insn  (28.57%)
-    43,812,136,162      stalled-cycles-frontend:u #   56.01% frontend cycles idle     (28.58%)
-     8,465,544,250      branches:u                #  116.051 M/sec                    (28.58%)
-       264,197,085      branch-misses:u           #    3.12% of all branches          (28.56%)
-       704,750,223      upward-prefetches:u       #    9.661 M/sec                    (28.55%)
-                 0      downward-prefetches:u     #    0.000 K/sec                    (28.58%)
-
-      73.608832025 seconds time elapsed
-
-      72.634633000 seconds user
-       0.267156000 seconds sys"))
+  (figure
+   (figcaption "Performance event counts for " (em "heap") " sort on Tualatin")
+   ((div :class "holder")
+    ((table :class "perf-stat")
+     (thead
+      (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))
+     (tbody
+      (tr (th "Task clock") (td "31,190.69") (td "msec") (td "0.993 CPUs utilized") (td))
+      (tr (th "Page faults") (td "1,429") (td) (td "0.046 K/sec") (td))
+      (tr (th "Cycles") (td "33,344,788,971") (td) (td "1.069 GHz") (td "28.53%"))
+      (tr (th "Stalled cycles, frontend") (td "25,490,259,991") (td) (td "76.44% frontend cycles idle") (td "28.60%"))
+      (tr (th "Instructions") (td "7,084,795,042") (td) (td "0.21 instructions per cycle" (br) "3.60 stalled cycles per instruction") (td "28.60%"))
+      (tr (th "Branches") (td "1,221,344,046") (td) (td "39.157 M/sec") (td "28.59%"))
+      (tr (th "Mispredicted branches") (td "195,036,348") (td) (td "15.97% of all branches") (td "28.59%"))
+      (tr (th "Upward prefetches") (td "71,322,504") (td) (td "2.287 M/sec") (td "28.57%"))
+      (tr (th "Downward prefetches") (td "0") (td) (td "0.000 K/sec") (td "28.51%"))
+      (tr (th "Elapsed time") (td "31.404") (td "seconds") (td) (td))))))
+  (figure
+   (figcaption "Performance event counts for " (em "shell") " sort on Tualatin")
+   ((div :class "holder")
+    ((table :class "perf-stat")
+     (thead
+      (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))
+     (tbody
+      (tr (th "Task clock") (td "72,946.84") (td "msec") (td "0.991 CPUs utilized") (td))
+      (tr (th "Page faults") (td "1,434") (td) (td "0.020 K/sec") (td))
+      (tr (th "Cycles") (td "78,228,149,161") (td) (td "1.072 GHz") (td "28.58%"))
+      (tr (th "Stalled cycles, frontend") (td "43,812,136,162") (td) (td "56.01% frontend cycles idle") (td "28.58%"))
+      (tr (th "Instructions") (td "53,121,702,516") (td) (td "0.68 instructions per cycle" (br) "0.82 stalled cycles per instruction") (td "28.57%"))
+      (tr (th "Branches") (td "8,465,544,250") (td) (td "116.051 M/sec") (td "28.58%"))
+      (tr (th "Mispredicted branches") (td "264,197,085") (td) (td "3.12% of all branches") (td "28.56%"))
+      (tr (th "Upward prefetches") (td "704,750,223") (td) (td "9.661 M/sec") (td "28.55%"))
+      (tr (th "Downward prefetches") (td "0") (td) (td "0.000 K/sec") (td "28.58%"))
+      (tr (th "Elapsed time") (td "73.609") (td "seconds") (td) (td))))))
   (p "Heap sort is still being heap sort, but "
      (strong "Shell sort is almost two times as fast")
      ", and the only relevant hardware difference was the introduction of hardware prefetching in Tualatin. It's also obvious from these numbers that Tualatin's hardware prefetching "
@@ -196,48 +186,40 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
 (defsection results-dothan
   :header "Dothan"
   (p "This is not a Pentium III. It's a Pentium M, it's not even the original P6 anymore, it contains many improvements compared to its predecessor, most of which survive to this day in modern P6 descendants. It also has significantly bigger cache and faster processor-chipset, and thus processor-memory, interface. But let's still see how it handles this test, because this is the CPU for which the performance events used are documented, and out of sheer curiosity.")
-  (p "Heap sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat")
-   (samp "Performance counter stats for './a.out':
-
-         16,842.52 msec task-clock:u              #    0.996 CPUs utilized
-                 0      context-switches:u        #    0.000 K/sec
-                 0      cpu-migrations:u          #    0.000 K/sec
-             1,433      page-faults:u             #    0.085 K/sec
-    26,310,833,013      cycles:u                  #    1.562 GHz                      (28.57%)
-     7,093,179,520      instructions:u            #    0.27  insn per cycle
-                                                  #    2.62  stalled cycles per insn  (28.56%)
-    18,575,088,740      stalled-cycles-frontend:u #   70.60% frontend cycles idle     (28.58%)
-     1,217,221,905      branches:u                #   72.271 M/sec                    (28.56%)
-       207,078,239      branch-misses:u           #   17.01% of all branches          (28.55%)
-        21,031,331      upward-prefetches:u       #    1.249 M/sec                    (28.57%)
-        92,661,140      downward-prefetches:u     #    5.502 M/sec                    (28.60%)
-
-      16.903282957 seconds time elapsed
-
-      16.698724000 seconds user
-       0.139888000 seconds sys"))
-  (p "Shell sort:")
-  ((pre :class "codeblock" :data-code-language "perf-stat")
-   (samp "Performance counter stats for './a.out':
-
-         33,594.70 msec task-clock:u              #    0.996 CPUs utilized
-                 0      context-switches:u        #    0.000 K/sec
-                 0      cpu-migrations:u          #    0.000 K/sec
-             1,435      page-faults:u             #    0.043 K/sec
-    52,612,387,270      cycles:u                  #    1.566 GHz                      (28.59%)
-    53,098,993,093      instructions:u            #    1.01  insn per cycle
-                                                  #    0.43  stalled cycles per insn  (28.55%)
-    23,082,925,885      stalled-cycles-frontend:u #   43.87% frontend cycles idle     (28.52%)
-     8,469,337,848      branches:u                #  252.103 M/sec                    (28.57%)
-       290,400,768      branch-misses:u           #    3.43% of all branches          (28.61%)
-       355,720,357      upward-prefetches:u       #   10.589 M/sec                    (28.59%)
-            12,126      downward-prefetches:u     #    0.361 K/sec                    (28.57%)
-
-      33.716368417 seconds time elapsed
-
-      33.424539000 seconds user
-       0.155648000 seconds sys"))
+  (figure
+   (figcaption "Performance event counts for " (em "heap") " sort on Dothan Pentium M")
+   ((div :class "holder")
+    ((table :class "perf-stat")
+     (thead
+      (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))
+     (tbody
+      (tr (th "Task clock") (td "16,842.52") (td "msec") (td "0.996 CPUs utilized") (td))
+      (tr (th "Page faults") (td "1,433") (td) (td "0.085 K/sec") (td))
+      (tr (th "Cycles") (td "26,310,833,013") (td) (td "1.562 GHz") (td "28.57%"))
+      (tr (th "Stalled cycles, frontend") (td "18,575,088,740") (td) (td "70.60% frontend cycles idle") (td "28.58%"))
+      (tr (th "Instructions") (td "7,093,179,520") (td) (td "0.27 instructions per cycle" (br) "2.62 stalled cycles per instruction") (td "28.56%"))
+      (tr (th "Branches") (td "1,217,221,905") (td) (td "72.271 M/sec") (td "28.56%"))
+      (tr (th "Mispredicted branches") (td "195,036,348") (td) (td "17.01% of all branches") (td "28.55%"))
+      (tr (th "Upward prefetches") (td "21,031,331") (td) (td "1.249 M/sec") (td "28.57%"))
+      (tr (th "Downward prefetches") (td "92,661,140") (td) (td "5.502 M/sec") (td "28.60%"))
+      (tr (th "Elapsed time") (td "16.903") (td "seconds") (td) (td))))))
+  (figure
+   (figcaption "Performance event counts for " (em "shell") " sort on Dothan Pentium M")
+   ((div :class "holder")
+    ((table :class "perf-stat")
+     (thead
+      (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))
+     (tbody
+      (tr (th "Task clock") (td "33,594.70") (td "msec") (td "0.996 CPUs utilized") (td))
+      (tr (th "Page faults") (td "1,435") (td) (td "0.043 K/sec") (td))
+      (tr (th "Cycles") (td "52,612,387,270") (td) (td "1.566 GHz") (td "28.59%"))
+      (tr (th "Stalled cycles, frontend") (td "23,082,925,885") (td) (td "43.87% frontend cycles idle") (td "28.55%"))
+      (tr (th "Instructions") (td "53,098,993,093") (td) (td "1.01 instructions per cycle" (br) "0.43 stalled cycles per instruction") (td "28.55%"))
+      (tr (th "Branches") (td "8,469,337,848") (td) (td "252.103 M/sec") (td "28.57%"))
+      (tr (th "Mispredicted branches") (td "290,400,768") (td) (td "3.43% of all branches") (td "28.61%"))
+      (tr (th "Upward prefetches") (td "355,720,357") (td) (td "10.589 M/sec") (td "28.59%"))
+      (tr (th "Downward prefetches") (td "12,126") (td) (td "0.361 K/sec") (td "28.57%"))
+      (tr (th "Elapsed time") (td "33.716") (td "seconds") (td) (td))))))
   (p "Both algorithms benefit from the increased cache, but Shell sort more so. This is also the first time we've seen more than 1 instruction per cycle in this post. Not that it's somehow an great result: my Haswell box mentioned earlier executes 2.4 instructions per cycle in that same test, for whoever is wondering, but that's a processor released 10 years later than this Pentium M.")
   (p "The total number of upward prefetches, when expressed in "
      (em "bytes")

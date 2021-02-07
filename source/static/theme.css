@@ -302,6 +302,15 @@ tfoot {
     font-style: italic;
 }
 
+table.perf-stat td:nth-child(2) {
+    font-family: monospace, monospace;
+    text-align: right;
+}
+
+table.perf-stat td:nth-child(4) {
+    text-align: left;
+}
+
 @media screen {
     tr {
         transition: background-color 0.2s;

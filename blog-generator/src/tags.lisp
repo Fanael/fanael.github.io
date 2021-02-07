@@ -58,9 +58,10 @@
     :allowed-contexts :flow
     :child-context :phrasing)
 
-(define-tag hr
-    :allowed-contexts :flow
-    :child-context nil)
+(define-tag br
+    :allowed-contexts '(:flow :phrasing)
+    :child-context nil
+    :omit-closing-tag t)
 
 (define-tag pre
     :allowed-contexts :flow
