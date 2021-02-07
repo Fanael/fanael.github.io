@@ -115,7 +115,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
       (tr (th "Mispredicted branches") (td "196,353,276") (td) (td "16.52% of all branches") (td "20.00%"))
       (tr (th "Elapsed time") (td "33.307") (td "seconds") (td) (td))))))
   (figure
-   (figcaption "Performance event counts for " (em "shell" ) " sort on Coppermine")
+   (figcaption "Performance event counts for " (em "shell") " sort on Coppermine")
    ((div :class "holder")
     ((table :class "perf-stat")
      (thead
