@@ -413,8 +413,8 @@ article:not(:last-child) .read-full {
 /* Dark mode */
 @media only screen and (prefers-color-scheme: dark) {
     html {
-        background-color: #223;
-        color: #eee;
+        background-color: #112;
+        color: #ddd;
     }
 
     a:link {
@@ -430,7 +430,7 @@ article:not(:last-child) .read-full {
     }
 
     article header p {
-        color: #ccc;
+        color: #bbb;
     }
 
     figure, pre.codeblock, pre.codeblock::before {
@@ -461,16 +461,20 @@ article:not(:last-child) .read-full {
         color: #aae;
     }
 
+    td, th {
+        border-color: #999;
+    }
+
     thead, tfoot {
-        background-color: #112;
+        background-color: #001;
     }
 
     tbody > tr:nth-child(2n) {
-        background-color: #334;
+        background-color: #223;
     }
 
     table tr:hover {
-        background-color: #322;
+        background-color: #211;
     }
 
     #footerstuff li {
