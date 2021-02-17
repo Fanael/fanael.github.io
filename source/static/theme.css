@@ -303,7 +303,7 @@ tfoot {
 }
 
 table.perf-stat td:nth-child(2) {
-    font-family: monospace, monospace;
+    font-variant-numeric: tabular-nums;
     text-align: right;
 }
 
