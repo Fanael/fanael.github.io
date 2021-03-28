@@ -1,6 +1,6 @@
 /out
 /greenspun/.gradle
-/greenspun/.idea
+/greenspun/.idea/*
+!/greenspun/.idea/codeStyles
 /greenspun/build
 /greenspun/auki/build
-!/greenspun/.idea/codeStyles/Project.xml
