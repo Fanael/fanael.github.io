@@ -1,0 +1,85 @@
+// Copyright © 2021  Fanael Linithien
+// SPDX-License-Identifier: GPL-3.0-or-later
+import com.github.spotbugs.snom.Confidence
+import com.github.spotbugs.snom.Effort
+
+plugins {
+    id "application"
+    id "com.github.spotbugs" version "4.7.0"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly group: "org.jetbrains", name: "annotations", version: "20.1.0"
+    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.2.2"
+    compileOnly project(":auki")
+    annotationProcessor project(":auki")
+    testCompileOnly group: "org.jetbrains", name: "annotations", version: "20.1.0"
+    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.2.2"
+    testCompileOnly project(":auki")
+    testAnnotationProcessor project(":auki")
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.7.1"
+    testImplementation group: "org.assertj", name: "assertj-core", version: "3.19.0"
+    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.7.1"
+}
+
+spotbugs {
+    toolVersion.set "4.2.2"
+    showProgress.set true
+    includeFilter.set file("spotbugs-include.xml")
+    excludeFilter.set file("spotbugs-exclude.xml")
+    effort.set Effort.MAX
+    reportLevel.set Confidence.LOW
+}
+
+application {
+    mainModule.set "greenspun"
+    mainClass.set "greenspun.cli.Main"
+}
+
+sourceSets.main {
+    java.srcDirs = ["src"]
+    resources.srcDirs = ["resources"]
+}
+
+sourceSets.test {
+    java.srcDirs = ["test"]
+    resources.srcDirs = ["test-resources"]
+}
+
+java.toolchain {
+    languageVersion = JavaLanguageVersion.of(16)
+}
+
+jar.manifest.attributes "Main-Class": application.mainClass.get()
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += [
+            "--enable-preview",
+            "-Xlint",
+            "-Xlint:-preview,-processing,-requires-automatic,-serial",
+    ]
+}
+
+tasks.withType(Test) {
+    jvmArgs += "--enable-preview"
+}
+
+tasks.withType(JavaExec) {
+    jvmArgs += "--enable-preview"
+}
+
+javadoc.options.addBooleanOption("-enable-preview", true)
+javadoc.options.addStringOption("-release", java.toolchain.languageVersion.get().toString())
+
+test {
+    useJUnitPlatform()
+}
+
+spotbugsMain.reports.configure {
+    xml.enabled = false
+    html.enabled = true
+}

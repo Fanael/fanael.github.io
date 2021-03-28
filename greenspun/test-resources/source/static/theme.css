@@ -1,0 +1,8 @@
+/* Copyright © 2021  Fanael Linithien */
+/* SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 */
+html {
+    line-height: 1.6;
+    margin: 0 auto;
+    max-width: 90%;
+    width: 80ch;
+}

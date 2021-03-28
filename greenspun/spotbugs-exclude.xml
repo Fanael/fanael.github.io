@@ -1,0 +1,6 @@
+<FindBugsFilter>
+    <!-- Reports many errors in javac-generated code for try-with-resource blocks -->
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+    </Match>
+</FindBugsFilter>

@@ -1,0 +1,14 @@
+// Copyright © 2021  Fanael Linithien
+// SPDX-License-Identifier: GPL-3.0-or-later
+plugins {
+    id "java-library"
+}
+
+sourceSets.main {
+    java.srcDirs = ["src"]
+    resources.srcDirs = ["resources"]
+}
+
+java.toolchain {
+    languageVersion = JavaLanguageVersion.of(16)
+}
