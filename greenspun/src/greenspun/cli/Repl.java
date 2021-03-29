@@ -4,6 +4,7 @@ package greenspun.cli;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import greenspun.article.PygmentsCache;
@@ -44,7 +45,7 @@ final class Repl {
         ConditionContext.withRestart("return-to-repl", restart -> {
             final var startTime = System.nanoTime();
             try {
-                generator.generate();
+                generator.generate(Instant.now());
             } catch (final InterruptedException e) {
                 throw new UncheckedInterruptedException(e);
             }

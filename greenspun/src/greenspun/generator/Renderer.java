@@ -217,7 +217,7 @@ public final class Renderer {
             .setAttribute("href", canonicalUrl));
         head.appendChildren(Constants.headSuffix);
         head.appendChild(Node.buildElement(Tag.TITLE)
-            .appendChild(new Node.Text(title + " - Fanael's random ruminations")));
+            .appendChild(new Node.Text(title + " - " + RenderConstants.siteTitle)));
         return head.toElement();
     }
 
@@ -408,11 +408,19 @@ public final class Renderer {
 
         private static final List<Node.Element> headSuffix = List.of(
             Node.buildElement(Tag.LINK)
+                .setAttribute("rel", "alternate")
+                .setAttribute("href", '/' + RenderConstants.feedFileName)
+                .setAttribute("title", RenderConstants.siteTitle)
+                .setAttribute("type", "application/rss+xml")
+                .toElement(),
+            Node.buildElement(Tag.LINK)
                 .setAttribute("rel", "stylesheet")
-                .setAttribute("href", "/static/theme.css").toElement(),
+                .setAttribute("href", "/static/theme.css")
+                .toElement(),
             Node.buildElement(Tag.LINK)
                 .setAttribute("rel", "license")
-                .setAttribute("href", "https://creativecommons.org/licenses/by-sa/4.0/").toElement()
+                .setAttribute("href", "https://creativecommons.org/licenses/by-sa/4.0/")
+                .toElement()
         );
 
         private static final List<Node.Element> header = List.of(
@@ -423,7 +431,7 @@ public final class Renderer {
                 .toElement(),
             Node.buildElement(Tag.HEADER)
                 .setAttribute("id", "mainheader")
-                .appendChild(new Node.Text("Fanael's random ruminations"))
+                .appendChild(new Node.Text(RenderConstants.siteTitle))
                 .toElement(),
             Node.buildElement(Tag.NAV)
                 .setAttribute("aria-label", "Primary")
@@ -455,7 +463,7 @@ public final class Renderer {
                 .appendChild(Node.buildElement(Tag.LI)
                     .appendChild(new Node.Text("Powered by HTML & CSS")))
                 .appendChild(Node.buildElement(Tag.LI)
-                    .appendChild(new Node.Text("Copyright © 2019-2021 Fanael Linithien")))
+                    .appendChild(new Node.Text(RenderConstants.copyrightLine)))
                 .appendChild(Node.buildElement(Tag.LI)
                     .appendChild(new Node.Text("Licensed under a "))
                     .appendChild(Node.buildElement(Tag.A)

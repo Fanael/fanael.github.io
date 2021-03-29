@@ -87,7 +87,9 @@ public enum Tag {
         .setOmitClosingTag()
         .setAllowedAttributes(Map.of(
             "href", Verifier.attributeIsString,
-            "rel", new StringSetVerifier(Set.of("canonical", "license", "stylesheet"))
+            "rel", new StringSetVerifier(Set.of("alternate", "canonical", "license", "stylesheet")),
+            "title", Verifier.attributeIsString,
+            "type", Verifier.attributeIsString
         ))
         .setRequiredAttributes(Set.of("href", "rel"))
     ),

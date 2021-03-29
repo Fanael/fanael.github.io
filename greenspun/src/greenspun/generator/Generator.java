@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,6 +62,8 @@ public final class Generator {
     /**
      * Performs a full build of the entire site.
      * <p>
+     * The given build time will be used wherever a build timestamp is needed in the output.
+     * <p>
      * A full build consists of:
      * <ul>
      * <li>Cleaning up the destination directory,
@@ -76,7 +79,7 @@ public final class Generator {
      * Since this method basically does everything, it can signal just about any
      * {@link greenspun.util.condition.Condition}.
      */
-    public void generate() throws Unwind, InterruptedException {
+    public void generate(final @NotNull Instant buildTime) throws Unwind, InterruptedException {
         final var preparator = new DirectoryPreparator(sourceDirectory, destinationDirectory);
         final var articleSourcePaths = preparator.getArticleSourcePaths();
         final var pageSourcePaths = preparator.getPageSourcePaths();
@@ -85,6 +88,7 @@ public final class Generator {
         final var articles = generateArticles(articleSourcePaths);
         if (!articles.isEmpty()) {
             copyFrontPage(articles.get(0));
+            generateFeed(articles.subList(0, Math.min(articles.size(), feedArticleCount)), buildTime);
         }
         generateArchives(articles);
     }
@@ -244,9 +248,7 @@ public final class Generator {
     private void generateArchives(final @NotNull List<LoadedArticle> articles) throws Unwind, InterruptedException {
         try (final var outerTrace = new Trace("Generating blog archives")) {
             outerTrace.use();
-            final var archivedArticles = articles.stream()
-                .map(article -> new ArchivedArticle(article.article, article.identifier(), article.destinationUrl()))
-                .toList();
+            final var archivedArticles = articles.stream().map(LoadedArticle::toArchivedArticle).toList();
             final var archivedQuarters = generateQuarterlyArchives(archivedArticles).stream()
                 .map(quarter -> new ArchivedQuarter(quarter, makeDomainRelativeUrl(makeQuarterArchivePath(quarter))))
                 .toList();
@@ -323,6 +325,23 @@ public final class Generator {
         }
     }
 
+    private void generateFeed(
+        final @NotNull List<LoadedArticle> articles,
+        final @NotNull Instant buildTime
+    ) throws Unwind {
+        try (final var trace = new Trace("Generating RSS feed")) {
+            trace.use();
+            final var feedRenderer = new FeedRenderer();
+            feedRenderer.createDom(articles.stream().map(LoadedArticle::toArchivedArticle).toList(), buildTime);
+            final var destinationPath = destinationDirectory.resolve(RenderConstants.feedFileName);
+            try (final var writer = Files.newBufferedWriter(destinationPath)) {
+                feedRenderer.serialize(writer);
+            } catch (final IOException e) {
+                throw ConditionContext.error(new IOExceptionCondition(e));
+            }
+        }
+    }
+
     private void copyFrontPage(final @NotNull LoadedArticle article) throws Unwind {
         try (final var trace = new Trace(() -> "Copying " + article.sourceRelativePath + " to index.html")) {
             trace.use();
@@ -385,6 +404,7 @@ public final class Generator {
 
     static final String pagesSubdirectoryName = "pages";
     static final String archivesSubdirectoryName = "archives";
+    private static final int feedArticleCount = 10;
 
     private final @NotNull Path sourceDirectory;
     private final @NotNull Path destinationDirectory;
@@ -409,6 +429,10 @@ public final class Generator {
             final var string = fileName.toString();
             final var dotIndex = string.lastIndexOf('.');
             return (dotIndex == -1) ? string : string.substring(0, dotIndex);
+        }
+
+        private @NotNull ArchivedArticle toArchivedArticle() {
+            return new ArchivedArticle(article, identifier(), destinationUrl());
         }
     }
 

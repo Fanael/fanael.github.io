@@ -8,4 +8,5 @@ module greenspun {
     requires static org.jetbrains.annotations;
     requires static com.github.spotbugs.annotations;
     requires static greenspun.auki;
+    requires java.xml;
 }
