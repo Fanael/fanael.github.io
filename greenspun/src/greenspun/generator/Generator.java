@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.article.Article;
 import greenspun.article.HtslConverter;
@@ -247,7 +246,7 @@ public final class Generator {
             outerTrace.use();
             final var archivedArticles = articles.stream()
                 .map(article -> new ArchivedArticle(article.article, article.identifier(), article.destinationUrl()))
-                .collect(Collectors.toCollection(ArrayList::new));
+                .toList();
             final var archivedQuarters = generateQuarterlyArchives(archivedArticles).stream()
                 .map(quarter -> new ArchivedQuarter(quarter, makeDomainRelativeUrl(makeQuarterArchivePath(quarter))))
                 .toList();
