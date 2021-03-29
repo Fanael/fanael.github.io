@@ -9,14 +9,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A condition context keeps track of currently registered handlers, restart points and trace messages.
+ * A condition context keeps track of currently registered handlers and restart points.
  * <p>
  * Each thread has its own local condition context, independent from other threads' contexts. Instances are not
  * accessible directly, static methods operating on the current thread's context are provided instead.
  *
  * @see Handler
  * @see Restart
- * @see Trace
  */
 public final class ConditionContext {
     private ConditionContext() {
@@ -111,13 +110,6 @@ public final class ConditionContext {
     }
 
     /**
-     * Returns an iterable containing all active trace messages, ordered from the newest one to the oldest.
-     */
-    public static @NotNull Iterable<@NotNull String> traces() {
-        return localContext().new TraceIterable();
-    }
-
-    /**
      * Returns an iterable containing all active restart points, ordered from the newest one to the oldest.
      */
     public static @NotNull Iterable<@NotNull Restart> restarts() {
@@ -191,7 +183,6 @@ public final class ConditionContext {
 
     @Nullable Handler firstHandler = null;
     @Nullable Restart firstRestart = null;
-    @Nullable Trace firstTrace = null;
     private @Nullable Handler currentHandler = null;
 
     private static final ThreadLocal<@NotNull ConditionContext> localContext =
@@ -221,41 +212,11 @@ public final class ConditionContext {
         private static final PreviousState instance = new PreviousState();
     }
 
-    private final class TraceIterable implements Iterable<@NotNull String> {
-        @Override
-        public @NotNull Iterator<@NotNull String> iterator() {
-            return new TraceIterator(firstTrace);
-        }
-    }
-
     private final class RestartIterable implements Iterable<@NotNull Restart> {
         @Override
         public @NotNull Iterator<@NotNull Restart> iterator() {
             return new RestartIterator(firstRestart);
         }
-    }
-
-    private static final class TraceIterator implements Iterator<@NotNull String> {
-        private TraceIterator(final @Nullable Trace firstTrace) {
-            current = firstTrace;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return current != null;
-        }
-
-        @Override
-        public @NotNull String next() {
-            final var result = current;
-            if (result == null) {
-                throw new NoSuchElementException("No more traces left");
-            }
-            current = result.next;
-            return result.message();
-        }
-
-        private @Nullable Trace current;
     }
 
     private static final class RestartIterator implements Iterator<@NotNull Restart> {

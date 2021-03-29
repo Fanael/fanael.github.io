@@ -4,6 +4,7 @@ package greenspun.cli;
 
 import java.io.IOException;
 import greenspun.util.IterableUtils;
+import greenspun.util.Trace;
 import greenspun.util.UncheckedInterruptedException;
 import greenspun.util.condition.Condition;
 import greenspun.util.condition.ConditionContext;
@@ -53,7 +54,7 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
         err.println("\nDetailed message:");
         err.println(condition.detailedMessage().stripTrailing());
         err.println("\nOperation trace:");
-        for (final var traceMessage : ConditionContext.traces()) {
+        for (final var traceMessage : Trace.activeTraces()) {
             err.println(" - " + traceMessage);
         }
         err.println();
