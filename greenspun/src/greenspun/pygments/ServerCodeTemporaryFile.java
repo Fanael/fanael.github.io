@@ -56,7 +56,10 @@ public final class ServerCodeTemporaryFile implements AutoCloseable {
      */
     @Override
     public void close() {
-        ConditionContext.withSuppressedExceptions(() -> Files.delete(path));
+        try (final var trace = new Trace("Removing extracted Pygments server temporary file")) {
+            trace.use();
+            ConditionContext.withSuppressedExceptions(() -> Files.delete(path));
+        }
     }
 
     private static @NotNull InputStream openInputStream() throws IOException {
