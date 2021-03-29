@@ -105,5 +105,5 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
         }
     }
 
-    private final static FallbackHandler instance = new FallbackHandler();
+    private static final FallbackHandler instance = new FallbackHandler();
 }

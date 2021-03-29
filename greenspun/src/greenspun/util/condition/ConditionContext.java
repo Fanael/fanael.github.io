@@ -201,7 +201,7 @@ public final class ConditionContext {
      * An opaque type representing saved inheritable state of a condition context.
      */
     @SuppressWarnings("ClassCanBeRecord")
-    public final static class InheritedState {
+    public static final class InheritedState {
         private InheritedState(final @Nullable Handler firstHandler, final @Nullable Restart firstRestart) {
             this.firstHandler = firstHandler;
             this.firstRestart = firstRestart;
@@ -214,7 +214,7 @@ public final class ConditionContext {
     /**
      * An opaque type representing saved previous state of a condition context.
      */
-    public final static class PreviousState {
+    public static final class PreviousState {
         private PreviousState() {
         }
 
