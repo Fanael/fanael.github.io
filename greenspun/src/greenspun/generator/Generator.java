@@ -85,7 +85,7 @@ public final class Generator {
         generatePages(pageSourcePaths);
         final var articles = generateArticles(articleSourcePaths);
         if (!articles.isEmpty()) {
-            copyFrontPage(articles.get(articles.size() - 1));
+            copyFrontPage(articles.get(0));
         }
         generateArchives(articles);
     }
@@ -118,13 +118,14 @@ public final class Generator {
         articles.sort(
             Comparator.comparing((final @NotNull LoadedArticle article) -> article.article.date())
                 .thenComparing(LoadedArticle::sourceRelativePath)
+                .reversed()
         );
         final var articleCount = articles.size();
         final var orderedArticles = new ArrayList<@NotNull OrderedArticle>(articleCount);
         for (int i = 0; i < articleCount; i += 1) {
             final var article = articles.get(i);
-            final var predecessorUrl = (i > 0) ? articles.get(i - 1).destinationUrl() : null;
-            final var successorUrl = (i + 1 < articleCount) ? articles.get(i + 1).destinationUrl() : null;
+            final var predecessorUrl = (i + 1 < articleCount) ? articles.get(i + 1).destinationUrl() : null;
+            final var successorUrl = (i > 0) ? articles.get(i - 1).destinationUrl() : null;
             final var innerArticle = article.article;
             final var sourceRelativePath = article.sourceRelativePath;
             orderedArticles.add(new OrderedArticle(innerArticle, sourceRelativePath, predecessorUrl, successorUrl));
@@ -253,7 +254,6 @@ public final class Generator {
             final var archivedTopics = generateTopicArchives(archivedArticles).stream()
                 .map(topic -> new ArchivedTopic(topic, makeDomainRelativeUrl(makeTopicArchivePath(topic))))
                 .toList();
-            Collections.reverse(archivedArticles);
             try (final var innerTrace = new Trace("Generating the archives index")) {
                 innerTrace.use();
                 final var destinationRelativePath = Path.of(archivesSubdirectoryName).resolve("index.html");
@@ -277,9 +277,6 @@ public final class Generator {
                 for (final var topic : article.article().topics()) {
                     articlesByTopic.computeIfAbsent(topic, (key) -> new ArrayList<>()).add(article);
                 }
-            }
-            for (final var value : articlesByTopic.values()) {
-                Collections.reverse(value);
             }
             mapUsingExecutor(articlesByTopic.entrySet(), entry -> {
                 final var topicName = entry.getKey();
@@ -308,9 +305,6 @@ public final class Generator {
             for (final var article : articles) {
                 final var quarter = Quarter.fromDate(article.article().date());
                 articlesByQuarter.computeIfAbsent(quarter, (key) -> new ArrayList<>()).add(article);
-            }
-            for (final var value : articlesByQuarter.values()) {
-                Collections.reverse(value);
             }
             mapUsingExecutor(articlesByQuarter.entrySet(), entry -> {
                 final var quarter = entry.getKey();
