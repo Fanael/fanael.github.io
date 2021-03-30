@@ -113,7 +113,7 @@ public final class Generator {
         }
     }
 
-    private @NotNull ArrayList<LoadedArticle> generateArticles(
+    private @NotNull List<LoadedArticle> generateArticles(
         final @NotNull List<Path> articleSourcePaths
     ) throws Unwind, InterruptedException {
         final var articles = mapUsingExecutor(articleSourcePaths, this::loadArticle);
@@ -379,9 +379,9 @@ public final class Generator {
         return new Renderer(HeaderRenderMode.SKIP, topic -> null);
     }
 
-    private <T, R> @NotNull ArrayList<R> mapUsingExecutor(
+    private <T, R> @NotNull List<R> mapUsingExecutor(
         final @NotNull Collection<? extends T> collection,
-        final @NotNull UnwindingFunction<T, R> function
+        final @NotNull UnwindingFunction<? super T, ? extends R> function
     ) throws Unwind, InterruptedException {
         final var futures = new ArrayList<@NotNull Future<R>>(collection.size());
         final var inheritedState = ConditionContext.saveInheritableState();
