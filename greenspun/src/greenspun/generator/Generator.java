@@ -267,7 +267,7 @@ public final class Generator {
             final var articlesByTopic = new HashMap<String, ArrayList<ArchivedArticle>>();
             for (final var article : articles) {
                 for (final var topic : article.article().topics()) {
-                    articlesByTopic.computeIfAbsent(topic, (key) -> new ArrayList<>()).add(article);
+                    articlesByTopic.computeIfAbsent(topic, key -> new ArrayList<>()).add(article);
                 }
             }
             mapUsingExecutor(articlesByTopic.entrySet(), entry -> {
@@ -295,7 +295,7 @@ public final class Generator {
             final var articlesByQuarter = new HashMap<Quarter, ArrayList<ArchivedArticle>>();
             for (final var article : articles) {
                 final var quarter = Quarter.fromDate(article.article().date());
-                articlesByQuarter.computeIfAbsent(quarter, (key) -> new ArrayList<>()).add(article);
+                articlesByQuarter.computeIfAbsent(quarter, key -> new ArrayList<>()).add(article);
             }
             mapUsingExecutor(articlesByQuarter.entrySet(), entry -> {
                 final var quarter = entry.getKey();

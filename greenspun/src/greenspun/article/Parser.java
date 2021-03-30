@@ -204,7 +204,7 @@ public final class Parser {
     }
 
     private @NotNull Section linkSection(final @NotNull PartialSection section) {
-        final var linkedChildren = section.childIds.stream().map((childId) -> {
+        final var linkedChildren = section.childIds.stream().map(childId -> {
             final var child = sectionsById.get(childId);
             assert child != null : "Reference to unknown section not found by graph verification?";
             return linkSection(child);
