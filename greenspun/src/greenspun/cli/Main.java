@@ -72,11 +72,8 @@ final class Main {
 
     private static @NotNull ThreadPoolExecutor createThreadPool() {
         final var threadId = new AtomicInteger(0);
-        // At the moment the process is so I/O bound that adding more threads that the limit doesn't improve anything,
-        // even when running in tmpfs, let alone actual non-volatile storage.
-        final var threadCount = Math.min(Runtime.getRuntime().availableProcessors(), maxThreadCount);
         return new ThreadPoolExecutor(
-            threadCount,
+            Runtime.getRuntime().availableProcessors(),
             Integer.MAX_VALUE,
             0,
             TimeUnit.NANOSECONDS,
@@ -90,8 +87,6 @@ final class Main {
         threadPool.shutdownNow();
         threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
     }
-
-    private static final int maxThreadCount = 16;
 
     private enum ExitCode {
         SUCCESS(0),
