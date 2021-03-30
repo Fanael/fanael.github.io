@@ -10,7 +10,6 @@ import org.jetbrains.annotations.Nullable;
 @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
 record ArticleToRender(
     @NotNull Article article,
-    @NotNull String canonicalUrl,
     @Nullable String predecessorUrl,
     @Nullable String successorUrl
 ) {

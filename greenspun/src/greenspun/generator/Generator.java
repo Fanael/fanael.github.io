@@ -147,12 +147,8 @@ public final class Generator {
             final var result = ConditionContext.withRestart("reload-article-and-retry", restart -> {
                 try (final var trace = new Trace(() -> "Generating article " + article.article.title())) {
                     trace.use();
-                    final var articleToRender = new ArticleToRender(
-                        article.article,
-                        makeDomainRelativeUrl(destinationRelativePath),
-                        article.predecessorUrl,
-                        article.successorUrl
-                    );
+                    final var articleToRender =
+                        new ArticleToRender(article.article, article.predecessorUrl, article.successorUrl);
                     serializeDomTree(destinationRelativePath, renderer.renderArticle(articleToRender));
                     return stripSections(article);
                 }
@@ -257,9 +253,7 @@ public final class Generator {
                 final var destinationRelativePath = Path.of(archivesSubdirectoryName).resolve("index.html");
                 final var parentPath = destinationRelativePath.getParent();
                 assert parentPath != null;
-                final var destinationUrl = makeDomainRelativeUrl(parentPath) + '/';
-                final var domTree =
-                    Renderer.renderArchiveIndex(archivedQuarters, archivedTopics, articles, destinationUrl);
+                final var domTree = Renderer.renderArchiveIndex(archivedQuarters, archivedTopics, articles);
                 serializeDomTree(destinationRelativePath, domTree);
             }
         }
@@ -282,9 +276,7 @@ public final class Generator {
                 try (final var innerTrace = new Trace(() -> "Generating archives of topic " + topicName)) {
                     innerTrace.use();
                     final var destinationRelativePath = makeTopicArchivePath(topicName);
-                    final var destinationUrl = makeDomainRelativeUrl(destinationRelativePath);
-                    final var domTree =
-                        makeArticleRenderer().renderTopicArchive(topicName, topicArticles, destinationUrl);
+                    final var domTree = makeArticleRenderer().renderTopicArchive(topicName, topicArticles);
                     serializeDomTree(destinationRelativePath, domTree);
                     return null;
                 }
@@ -311,9 +303,7 @@ public final class Generator {
                 try (final var innerTrace = new Trace(() -> "Generating quarterly archives for the " + quarter)) {
                     innerTrace.use();
                     final var destinationRelativePath = makeQuarterArchivePath(quarter);
-                    final var destinationUrl = makeDomainRelativeUrl(destinationRelativePath);
-                    final var domTree =
-                        makeArticleRenderer().renderQuarterlyArchive(quarter, quarterArticles, destinationUrl);
+                    final var domTree = makeArticleRenderer().renderQuarterlyArchive(quarter, quarterArticles);
                     serializeDomTree(destinationRelativePath, domTree);
                     return null;
                 }
