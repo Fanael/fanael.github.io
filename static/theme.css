@@ -486,7 +486,7 @@ article:not(:last-child) .read-full {
 
 /* Print-friendly overrides */
 @media print {
-    nav, #skip-nav, a.section-header-link, .permalink {
+    nav, #skip-nav, a.section-header-link {
         display: none;
     }
 
