@@ -48,7 +48,40 @@ public final class Renderer {
             .toElement();
     }
 
-    static @NotNull Node renderTopicArchive(
+    static @NotNull Node renderArchiveIndex(
+        final @NotNull List<@NotNull ArchivedQuarter> quarters,
+        final @NotNull List<@NotNull ArchivedTopic> topics,
+        final @NotNull List<@NotNull ArchivedArticle> articles,
+        final @NotNull String canonicalUrl
+    ) {
+        return Node.buildElement(Tag.HTML)
+            .setAttribute(Constants.htmlLang)
+            .appendChild(renderHead("Blog archive index", canonicalUrl, null))
+            .appendChild(Node.buildElement(Tag.BODY)
+                .appendChildren(Constants.header)
+                .appendChild(Node.buildElement(Tag.MAIN)
+                    .setAttribute(Constants.idMain)
+                    .appendChildren(renderArchiveIndexBody(quarters, topics, articles)))
+                .appendChild(renderBottomNav(null, null))
+                .appendChild(Constants.footer))
+            .toElement();
+    }
+
+    @NotNull Node renderFrontPage(final @NotNull List<@NotNull ArchivedArticle> articles) {
+        return Node.buildElement(Tag.HTML)
+            .setAttribute(Constants.htmlLang)
+            .appendChild(renderHead(null, "/", null))
+            .appendChild(Node.buildElement(Tag.BODY)
+                .appendChildren(Constants.header)
+                .appendChild(Node.buildElement(Tag.MAIN)
+                    .setAttribute(Constants.idMain)
+                    .appendChildren(renderFrontPageBody(articles)))
+                .appendChild(renderBottomNav(null, null))
+                .appendChild(Constants.footer))
+            .toElement();
+    }
+
+    @NotNull Node renderTopicArchive(
         final @NotNull String topicName,
         final @NotNull List<@NotNull ArchivedArticle> articles,
         final @NotNull String canonicalUrl
@@ -61,7 +94,7 @@ public final class Renderer {
         );
     }
 
-    static @NotNull Node renderQuarterlyArchive(
+    @NotNull Node renderQuarterlyArchive(
         final @NotNull Quarter quarter,
         final @NotNull List<@NotNull ArchivedArticle> articles,
         final @NotNull String canonicalUrl
@@ -74,11 +107,37 @@ public final class Renderer {
         );
     }
 
-    static @NotNull Node renderArchiveIndex(
-        final @NotNull List<@NotNull ArchivedQuarter> quarters,
-        final @NotNull List<@NotNull ArchivedTopic> topics,
-        final @NotNull List<@NotNull ArchivedArticle> articles,
-        final @NotNull String canonicalUrl
+    @NotNull Node renderArticle(final @NotNull ArticleToRender article) {
+        return Node.buildElement(Tag.HTML)
+            .setAttribute(Constants.htmlLang)
+            .appendChild(renderHead(article.article().title(), article.canonicalUrl(), article.article().description()))
+            .appendChild(Node.buildElement(Tag.BODY)
+                .appendChildren(Constants.header)
+                .appendChild(Node.buildElement(Tag.MAIN)
+                    .setAttribute(Constants.idMain)
+                    .appendChild(renderArticleBody(article)))
+                .appendChild(renderBottomNav(article.predecessorUrl(), article.successorUrl()))
+                .appendChild(Constants.footer))
+            .toElement();
+    }
+
+    private @NotNull List<Node> renderFrontPageBody(final @NotNull List<ArchivedArticle> articles) {
+        final var nodes = new ArrayList<Node>();
+        nodes.add(Node.buildElement(Tag.HEADER)
+            .appendChild(Node.buildElement(Tag.H1).appendChild(new Node.Text("Latest articles")))
+            .toElement());
+        if (articles.isEmpty()) {
+            nodes.add(Node.buildElement(Tag.P).appendChild(new Node.Text("There are no articles yet.")).toElement());
+        } else {
+            nodes.addAll(renderExcerpts(articles));
+        }
+        return nodes;
+    }
+
+    private static @NotNull List<Node> renderArchiveIndexBody(
+        final @NotNull List<ArchivedQuarter> quarters,
+        final @NotNull List<ArchivedTopic> topics,
+        final @NotNull List<ArchivedArticle> articles
     ) {
         final var quarterListElements = quarters.stream()
             .map(quarter -> Node.buildElement(Tag.LI)
@@ -102,44 +161,26 @@ public final class Renderer {
                         new Node.Text(renderIsoDate(article.article().date()) + " — " + article.article().title())))
                 .toElement())
             .toList();
-        return Node.buildElement(Tag.HTML)
-            .setAttribute(Constants.htmlLang)
-            .appendChild(renderHead("Blog archive index", canonicalUrl, null))
-            .appendChild(Node.buildElement(Tag.BODY)
-                .appendChildren(Constants.header)
-                .appendChild(Node.buildElement(Tag.MAIN)
-                    .setAttribute(Constants.idMain)
-                    .appendChild(Node.buildElement(Tag.HEADER)
-                        .appendChild(Node.buildElement(Tag.H1).appendChild(new Node.Text("Blog archives"))))
-                    .appendChild(Node.buildElement(Tag.SECTION)
-                        .appendChild(Node.buildElement(Tag.H2).appendChild(new Node.Text("By date")))
-                        .appendChild(Node.buildElement(Tag.UL).appendChildren(quarterListElements)))
-                    .appendChild(Node.buildElement(Tag.SECTION)
-                        .appendChild(Node.buildElement(Tag.H2).appendChild(new Node.Text("By topic")))
-                        .appendChild(Node.buildElement(Tag.UL).appendChildren(topicListElements)))
-                    .appendChild(Node.buildElement(Tag.SECTION)
-                        .appendChild(Node.buildElement(Tag.H2).appendChild(new Node.Text("By article title")))
-                        .appendChild(Node.buildElement(Tag.UL).appendChildren(articleListElements))))
-                .appendChild(renderBottomNav(null, null))
-                .appendChild(Constants.footer))
-            .toElement();
+        return List.of(
+            Node.buildElement(Tag.HEADER)
+                .appendChild(Node.buildElement(Tag.H1).appendChild(new Node.Text("Blog archives")))
+                .toElement(),
+            Node.buildElement(Tag.SECTION)
+                .appendChild(Node.buildElement(Tag.H2).appendChild(new Node.Text("By date")))
+                .appendChild(Node.buildElement(Tag.UL).appendChildren(quarterListElements))
+                .toElement(),
+            Node.buildElement(Tag.SECTION)
+                .appendChild(Node.buildElement(Tag.H2).appendChild(new Node.Text("By topic")))
+                .appendChild(Node.buildElement(Tag.UL).appendChildren(topicListElements))
+                .toElement(),
+            Node.buildElement(Tag.SECTION)
+                .appendChild(Node.buildElement(Tag.H2).appendChild(new Node.Text("By article title")))
+                .appendChild(Node.buildElement(Tag.UL).appendChildren(articleListElements))
+                .toElement()
+        );
     }
 
-    @NotNull Node renderArticle(final @NotNull ArticleToRender article) {
-        return Node.buildElement(Tag.HTML)
-            .setAttribute(Constants.htmlLang)
-            .appendChild(renderHead(article.article().title(), article.canonicalUrl(), article.article().description()))
-            .appendChild(Node.buildElement(Tag.BODY)
-                .appendChildren(Constants.header)
-                .appendChild(Node.buildElement(Tag.MAIN)
-                    .setAttribute(Constants.idMain)
-                    .appendChild(renderArticleBody(article)))
-                .appendChild(renderBottomNav(article.predecessorUrl(), article.successorUrl()))
-                .appendChild(Constants.footer))
-            .toElement();
-    }
-
-    private static @NotNull Node renderArchive(
+    private @NotNull Node renderArchive(
         final @NotNull String title,
         final @NotNull String header,
         final @NotNull List<ArchivedArticle> articles,
@@ -177,31 +218,34 @@ public final class Renderer {
             .toElement();
     }
 
-    private static @NotNull List<Node> renderExcerpts(final @NotNull List<ArchivedArticle> articles) {
-        final var nodes = new ArrayList<Node>();
-        for (final var article : articles) {
+    private @NotNull List<Node.Element> renderExcerpts(final @NotNull List<ArchivedArticle> articles) {
+        return articles.stream().map(article -> {
             final var title = article.article().title();
-            nodes.add(Node.buildElement(Tag.ARTICLE)
+            final var header = Node.buildElement(Tag.HEADER)
+                .appendChild(Node.buildElement(Tag.H2)
+                    .appendChild(Node.buildElement(Tag.A)
+                        .setAttribute("href", article.url())
+                        .appendChild(new Node.Text(title))))
+                .appendChild(renderPublicationDate(article.article().date()));
+            final var topics = renderArticleTopics(article.article().topics());
+            if (topics != null) {
+                header.appendChild(topics);
+            }
+            return Node.buildElement(Tag.ARTICLE)
                 .setAttribute("id", article.identifier())
-                .appendChild(Node.buildElement(Tag.HEADER)
-                    .appendChild(Node.buildElement(Tag.H2)
-                        .appendChild(Node.buildElement(Tag.A)
-                            .setAttribute("href", article.url())
-                            .appendChild(new Node.Text(title))))
-                    .appendChild(renderPublicationDate(article.article().date())))
+                .appendChild(header)
                 .appendChildren(article.article().rootSection().body())
                 .appendChild(Node.buildElement(Tag.A)
                     .setAttribute("class", "read-full")
                     .setAttribute("href", article.url())
                     .setAttribute("aria-label", "Read the full article: " + title)
                     .appendChild(new Node.Text("Read the full article…")))
-                .toElement());
-        }
-        return nodes;
+                .toElement();
+        }).toList();
     }
 
     private static @NotNull Node renderHead(
-        final @NotNull String title,
+        final @Nullable String title,
         final @NotNull String canonicalUrl,
         final @Nullable String description
     ) {
@@ -216,8 +260,10 @@ public final class Renderer {
             .setAttribute("rel", "canonical")
             .setAttribute("href", canonicalUrl));
         head.appendChildren(Constants.headSuffix);
+        final var effectiveTitle =
+            (title != null) ? (title + " - " + RenderConstants.siteTitle) : RenderConstants.siteTitle;
         head.appendChild(Node.buildElement(Tag.TITLE)
-            .appendChild(new Node.Text(title + " - " + RenderConstants.siteTitle)));
+            .appendChild(new Node.Text(effectiveTitle)));
         return head.toElement();
     }
 
@@ -249,10 +295,9 @@ public final class Renderer {
                     .setAttribute("href", article.canonicalUrl())
                     .appendChild(new Node.Text("Article permalink"))));
             headerBuilder.appendChild(renderPublicationDate(innerArticle.date()));
-            if (!innerArticle.topics().isEmpty()) {
-                headerBuilder.appendChild(Node.buildElement(Tag.P)
-                    .appendChild(new Node.Text("Topics: "))
-                    .appendChildren(renderArticleTopics(innerArticle.topics())));
+            final var topicsNode = renderArticleTopics(innerArticle.topics());
+            if (topicsNode != null) {
+                headerBuilder.appendChild(topicsNode);
             }
         }
         return headerBuilder.toElement();
@@ -280,7 +325,10 @@ public final class Renderer {
         return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
     }
 
-    private @NotNull List<Node> renderArticleTopics(final @NotNull List<String> topics) {
+    private @Nullable Node renderArticleTopics(final @NotNull List<String> topics) {
+        if (topics.isEmpty()) {
+            return null;
+        }
         final var nodes = new ArrayList<@NotNull Node>(2 * topics.size());
         for (final String topicName : topics) {
             final var link = convertTopicToArchiveUrl.apply(topicName);
@@ -294,10 +342,11 @@ public final class Renderer {
             }
             nodes.add(new Node.Text(", "));
         }
-        if (!nodes.isEmpty()) {
-            nodes.remove(nodes.size() - 1);
-        }
-        return nodes;
+        nodes.remove(nodes.size() - 1);
+        return Node.buildElement(Tag.P)
+            .appendChild(new Node.Text("Topics: "))
+            .appendChildren(nodes)
+            .toElement();
     }
 
     private static @NotNull Node renderTableOfContents(final @NotNull List<Section> childrenOfRoot) {

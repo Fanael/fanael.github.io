@@ -86,10 +86,8 @@ public final class Generator {
         preparator.prepareDestinationDirectory();
         generatePages(pageSourcePaths);
         final var articles = generateArticles(articleSourcePaths);
-        if (!articles.isEmpty()) {
-            copyFrontPage(articles.get(0));
-            generateFeed(articles.subList(0, Math.min(articles.size(), feedArticleCount)), buildTime);
-        }
+        generateFrontPage(articles.subList(0, Math.min(articles.size(), frontPageArticleCount)));
+        generateFeed(articles.subList(0, Math.min(articles.size(), feedArticleCount)), buildTime);
         generateArchives(articles);
     }
 
@@ -113,7 +111,7 @@ public final class Generator {
         }
     }
 
-    private @NotNull List<LoadedArticle> generateArticles(
+    private @NotNull List<ArchivedArticle> generateArticles(
         final @NotNull List<Path> articleSourcePaths
     ) throws Unwind, InterruptedException {
         final var articles = mapUsingExecutor(articleSourcePaths, this::loadArticle);
@@ -137,7 +135,7 @@ public final class Generator {
         return mapUsingExecutor(orderedArticles, article -> generateArticle(article, renderer));
     }
 
-    private @NotNull LoadedArticle generateArticle(
+    private @NotNull ArchivedArticle generateArticle(
         final @NotNull OrderedArticle orderedArticle,
         final @NotNull Renderer renderer
     ) throws Unwind {
@@ -229,7 +227,7 @@ public final class Generator {
         }
     }
 
-    private static @NotNull LoadedArticle stripSections(final @NotNull OrderedArticle orderedArticle) {
+    private static @NotNull ArchivedArticle stripSections(final @NotNull OrderedArticle orderedArticle) {
         final var innerArticle = orderedArticle.article;
         final var rootSection = innerArticle.rootSection();
         return new LoadedArticle(
@@ -242,17 +240,16 @@ public final class Generator {
                 new Section(rootSection.identifier(), rootSection.header(), Collections.emptyList(), rootSection.body())
             ),
             orderedArticle.sourceRelativePath
-        );
+        ).toArchivedArticle();
     }
 
-    private void generateArchives(final @NotNull List<LoadedArticle> articles) throws Unwind, InterruptedException {
+    private void generateArchives(final @NotNull List<ArchivedArticle> articles) throws Unwind, InterruptedException {
         try (final var outerTrace = new Trace("Generating blog archives")) {
             outerTrace.use();
-            final var archivedArticles = articles.stream().map(LoadedArticle::toArchivedArticle).toList();
-            final var archivedQuarters = generateQuarterlyArchives(archivedArticles).stream()
+            final var archivedQuarters = generateQuarterlyArchives(articles).stream()
                 .map(quarter -> new ArchivedQuarter(quarter, makeDomainRelativeUrl(makeQuarterArchivePath(quarter))))
                 .toList();
-            final var archivedTopics = generateTopicArchives(archivedArticles).stream()
+            final var archivedTopics = generateTopicArchives(articles).stream()
                 .map(topic -> new ArchivedTopic(topic, makeDomainRelativeUrl(makeTopicArchivePath(topic))))
                 .toList();
             try (final var innerTrace = new Trace("Generating the archives index")) {
@@ -262,7 +259,7 @@ public final class Generator {
                 assert parentPath != null;
                 final var destinationUrl = makeDomainRelativeUrl(parentPath) + '/';
                 final var domTree =
-                    Renderer.renderArchiveIndex(archivedQuarters, archivedTopics, archivedArticles, destinationUrl);
+                    Renderer.renderArchiveIndex(archivedQuarters, archivedTopics, articles, destinationUrl);
                 serializeDomTree(destinationRelativePath, domTree);
             }
         }
@@ -286,7 +283,8 @@ public final class Generator {
                     innerTrace.use();
                     final var destinationRelativePath = makeTopicArchivePath(topicName);
                     final var destinationUrl = makeDomainRelativeUrl(destinationRelativePath);
-                    final var domTree = Renderer.renderTopicArchive(topicName, topicArticles, destinationUrl);
+                    final var domTree =
+                        makeArticleRenderer().renderTopicArchive(topicName, topicArticles, destinationUrl);
                     serializeDomTree(destinationRelativePath, domTree);
                     return null;
                 }
@@ -314,7 +312,8 @@ public final class Generator {
                     innerTrace.use();
                     final var destinationRelativePath = makeQuarterArchivePath(quarter);
                     final var destinationUrl = makeDomainRelativeUrl(destinationRelativePath);
-                    final var domTree = Renderer.renderQuarterlyArchive(quarter, quarterArticles, destinationUrl);
+                    final var domTree =
+                        makeArticleRenderer().renderQuarterlyArchive(quarter, quarterArticles, destinationUrl);
                     serializeDomTree(destinationRelativePath, domTree);
                     return null;
                 }
@@ -325,31 +324,25 @@ public final class Generator {
         }
     }
 
+    private void generateFrontPage(final @NotNull List<ArchivedArticle> articles) throws Unwind {
+        try (final var trace = new Trace("Generating the front page")) {
+            trace.use();
+            final var domTree = makeArticleRenderer().renderFrontPage(articles);
+            serializeDomTree(Path.of("index.html"), domTree);
+        }
+    }
+
     private void generateFeed(
-        final @NotNull List<LoadedArticle> articles,
+        final @NotNull List<ArchivedArticle> articles,
         final @NotNull Instant buildTime
     ) throws Unwind {
         try (final var trace = new Trace("Generating RSS feed")) {
             trace.use();
             final var feedRenderer = new FeedRenderer();
-            feedRenderer.createDom(articles.stream().map(LoadedArticle::toArchivedArticle).toList(), buildTime);
+            feedRenderer.createDom(articles, buildTime);
             final var destinationPath = destinationDirectory.resolve(RenderConstants.feedFileName);
             try (final var writer = Files.newBufferedWriter(destinationPath)) {
                 feedRenderer.serialize(writer);
-            } catch (final IOException e) {
-                throw ConditionContext.error(new IOExceptionCondition(e));
-            }
-        }
-    }
-
-    private void copyFrontPage(final @NotNull LoadedArticle article) throws Unwind {
-        try (final var trace = new Trace(() -> "Copying " + article.sourceRelativePath + " to index.html")) {
-            trace.use();
-            try {
-                Files.copy(
-                    destinationDirectory.resolve(PathUtils.changeExtension(article.sourceRelativePath, "html")),
-                    destinationDirectory.resolve("index.html")
-                );
             } catch (final IOException e) {
                 throw ConditionContext.error(new IOExceptionCondition(e));
             }
@@ -404,6 +397,7 @@ public final class Generator {
 
     static final String pagesSubdirectoryName = "pages";
     static final String archivesSubdirectoryName = "archives";
+    private static final int frontPageArticleCount = 5;
     private static final int feedArticleCount = 10;
 
     private final @NotNull Path sourceDirectory;
