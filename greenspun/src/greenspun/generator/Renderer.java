@@ -55,7 +55,7 @@ public final class Renderer {
     ) {
         return Node.buildElement(Tag.HTML)
             .setAttribute(Constants.htmlLang)
-            .appendChild(renderHead("Blog archive index", null))
+            .appendChild(renderHead("Blog archive index", "Main page of blog archives"))
             .appendChild(Node.buildElement(Tag.BODY)
                 .appendChildren(Constants.header)
                 .appendChild(Node.buildElement(Tag.MAIN)
@@ -69,7 +69,7 @@ public final class Renderer {
     @NotNull Node renderFrontPage(final @NotNull List<@NotNull ArchivedArticle> articles) {
         return Node.buildElement(Tag.HTML)
             .setAttribute(Constants.htmlLang)
-            .appendChild(renderHead(null, null))
+            .appendChild(renderHead(null, "Latest posts on " + RenderConstants.siteTitle))
             .appendChild(Node.buildElement(Tag.BODY)
                 .appendChildren(Constants.header)
                 .appendChild(Node.buildElement(Tag.MAIN)
@@ -182,7 +182,7 @@ public final class Renderer {
     ) {
         return Node.buildElement(Tag.HTML)
             .setAttribute(Constants.htmlLang)
-            .appendChild(renderHead(title, null))
+            .appendChild(renderHead(title, title))
             .appendChild(Node.buildElement(Tag.BODY)
                 .appendChildren(Constants.header)
                 .appendChild(Node.buildElement(Tag.MAIN)
@@ -240,15 +240,13 @@ public final class Renderer {
 
     private static @NotNull Node renderHead(
         final @Nullable String title,
-        final @Nullable String description
+        final @NotNull String description
     ) {
         final var head = Node.buildElement(Tag.HEAD);
         head.appendChildren(Constants.headPrefix);
-        if (description != null) {
-            head.appendChild(Node.buildElement(Tag.META_NAMED)
-                .setAttribute("name", "description")
-                .setAttribute("content", description));
-        }
+        head.appendChild(Node.buildElement(Tag.META_NAMED)
+            .setAttribute("name", "description")
+            .setAttribute("content", description));
         head.appendChildren(Constants.headSuffix);
         final var effectiveTitle =
             (title != null) ? (title + " - " + RenderConstants.siteTitle) : RenderConstants.siteTitle;
