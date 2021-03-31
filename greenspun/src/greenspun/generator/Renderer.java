@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.article.Section;
 import greenspun.dom.Attribute;
 import greenspun.dom.Node;
@@ -24,6 +25,10 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("ClassCanBeRecord")
 public final class Renderer {
+    @SuppressFBWarnings(
+        value = "NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE",
+        justification = "SpotBugs gets confused by generic type parameter nullability here"
+    )
     Renderer(
         final @NotNull HeaderRenderMode headerRenderMode,
         final @NotNull Function<@NotNull String, @Nullable String> convertTopicToArchiveUrl

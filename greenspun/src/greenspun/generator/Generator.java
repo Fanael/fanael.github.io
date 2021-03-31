@@ -244,12 +244,8 @@ public final class Generator {
     private void generateArchives(final @NotNull List<ArchivedArticle> articles) throws Unwind, InterruptedException {
         try (final var outerTrace = new Trace("Generating blog archives")) {
             outerTrace.use();
-            final var archivedQuarters = generateQuarterlyArchives(articles).stream()
-                .map(quarter -> new ArchivedQuarter(quarter, makeDomainRelativeUrl(makeQuarterArchivePath(quarter))))
-                .toList();
-            final var archivedTopics = generateTopicArchives(articles).stream()
-                .map(topic -> new ArchivedTopic(topic, makeDomainRelativeUrl(makeTopicArchivePath(topic))))
-                .toList();
+            final var archivedQuarters = generateQuarterlyArchives(articles);
+            final var archivedTopics = generateTopicArchives(articles);
             try (final var innerTrace = new Trace("Generating the archives index")) {
                 innerTrace.use();
                 final var destinationRelativePath = Path.of(archivesSubdirectoryName).resolve("index.html");
@@ -261,7 +257,7 @@ public final class Generator {
         }
     }
 
-    private @NotNull List<String> generateTopicArchives(
+    private @NotNull ArrayList<ArchivedTopic> generateTopicArchives(
         final @NotNull List<ArchivedArticle> articles
     ) throws Unwind, InterruptedException {
         try (final var outerTrace = new Trace("Generating per-topic blog archives")) {
@@ -272,24 +268,24 @@ public final class Generator {
                     articlesByTopic.computeIfAbsent(topic, key -> new ArrayList<>()).add(article);
                 }
             }
-            mapUsingExecutor(articlesByTopic.entrySet(), entry -> {
+            final var topics = mapUsingExecutor(articlesByTopic.entrySet(), entry -> {
                 final var topicName = entry.getKey();
                 final var topicArticles = entry.getValue();
                 try (final var innerTrace = new Trace(() -> "Generating archives of topic " + topicName)) {
                     innerTrace.use();
-                    final var destinationRelativePath = makeTopicArchivePath(topicName);
+                    final var destinationRelativePath =
+                        Path.of(archivesSubdirectoryName).resolve("topic-" + topicName + ".html");
                     final var domTree = makeArticleRenderer().renderTopicArchive(topicName, topicArticles);
                     serializeDomTree(destinationRelativePath, domTree);
-                    return null;
+                    return new ArchivedTopic(topicName, makeDomainRelativeUrl(destinationRelativePath));
                 }
             });
-            final var topicNames = new ArrayList<>(articlesByTopic.keySet());
-            topicNames.sort(Comparator.naturalOrder());
-            return topicNames;
+            topics.sort(Comparator.comparing(ArchivedTopic::topic));
+            return topics;
         }
     }
 
-    private @NotNull List<Quarter> generateQuarterlyArchives(
+    private @NotNull ArrayList<ArchivedQuarter> generateQuarterlyArchives(
         final @NotNull List<ArchivedArticle> articles
     ) throws Unwind, InterruptedException {
         try (final var outerTrace = new Trace("Generating per-quarter blog archives")) {
@@ -299,19 +295,19 @@ public final class Generator {
                 final var quarter = Quarter.fromDate(article.article().date());
                 articlesByQuarter.computeIfAbsent(quarter, key -> new ArrayList<>()).add(article);
             }
-            mapUsingExecutor(articlesByQuarter.entrySet(), entry -> {
+            final var quarters = mapUsingExecutor(articlesByQuarter.entrySet(), entry -> {
                 final var quarter = entry.getKey();
                 final var quarterArticles = entry.getValue();
                 try (final var innerTrace = new Trace(() -> "Generating quarterly archives for the " + quarter)) {
                     innerTrace.use();
-                    final var destinationRelativePath = makeQuarterArchivePath(quarter);
+                    final var destinationRelativePath =
+                        Path.of(archivesSubdirectoryName).resolve(quarter.year() + "-q" + quarter.quarter() + ".html");
                     final var domTree = makeArticleRenderer().renderQuarterlyArchive(quarter, quarterArticles);
                     serializeDomTree(destinationRelativePath, domTree);
-                    return null;
+                    return new ArchivedQuarter(quarter, makeDomainRelativeUrl(destinationRelativePath));
                 }
             });
-            final var quarters = new ArrayList<>(articlesByQuarter.keySet());
-            quarters.sort(Comparator.reverseOrder());
+            quarters.sort(Comparator.comparing(ArchivedQuarter::quarter).reversed());
             return quarters;
         }
     }
@@ -341,16 +337,6 @@ public final class Generator {
         }
     }
 
-    private static @NotNull Path makeTopicArchivePath(final @NotNull String topicName) {
-        final var fileName = "topic-" + topicName + ".html";
-        return Path.of(archivesSubdirectoryName).resolve(fileName);
-    }
-
-    private static @NotNull Path makeQuarterArchivePath(final @NotNull Quarter quarter) {
-        final var fileName = quarter.year() + "-q" + quarter.quarter() + ".html";
-        return Path.of(archivesSubdirectoryName).resolve(fileName);
-    }
-
     private static @NotNull String makeDomainRelativeUrl(final @NotNull Path path) {
         assert !path.isAbsolute();
         return '/' + path.toString().replace(File.separatorChar, '/');
@@ -364,7 +350,7 @@ public final class Generator {
         return new Renderer(HeaderRenderMode.SKIP, topic -> null);
     }
 
-    private <T, R> @NotNull List<R> mapUsingExecutor(
+    private <T, R> @NotNull ArrayList<R> mapUsingExecutor(
         final @NotNull Collection<? extends T> collection,
         final @NotNull UnwindingFunction<? super T, ? extends R> function
     ) throws Unwind, InterruptedException {
