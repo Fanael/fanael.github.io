@@ -70,6 +70,8 @@ public final class Generator {
      * <li>Copying static files,
      * <li>Linking articles in chronological order,
      * <li>Generating HTML files of all articles and non-article pages,
+     * <li>Generating the front page,
+     * <li>Generating the RSS feed,
      * <li>Generating archive pages.
      * </ul>
      * <p>
