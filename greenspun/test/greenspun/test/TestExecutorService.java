@@ -27,7 +27,7 @@ final class TestExecutorService extends AbstractExecutorService {
 
     @Override
     public boolean isTerminated() {
-        return stillActive;
+        return !stillActive;
     }
 
     @Override
