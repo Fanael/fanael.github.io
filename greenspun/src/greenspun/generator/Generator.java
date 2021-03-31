@@ -248,9 +248,7 @@ public final class Generator {
             final var archivedTopics = generateTopicArchives(articles);
             try (final var innerTrace = new Trace("Generating the archives index")) {
                 innerTrace.use();
-                final var destinationRelativePath = Path.of(archivesSubdirectoryName).resolve("index.html");
-                final var parentPath = destinationRelativePath.getParent();
-                assert parentPath != null;
+                final var destinationRelativePath = archivesSubdirectoryPath.resolve("index.html");
                 final var domTree = Renderer.renderArchiveIndex(archivedQuarters, archivedTopics, articles);
                 serializeDomTree(destinationRelativePath, domTree);
             }
@@ -274,7 +272,7 @@ public final class Generator {
                 try (final var innerTrace = new Trace(() -> "Generating archives of topic " + topicName)) {
                     innerTrace.use();
                     final var destinationRelativePath =
-                        Path.of(archivesSubdirectoryName).resolve("topic-" + topicName + ".html");
+                        archivesSubdirectoryPath.resolve("topic-" + topicName + ".html");
                     final var domTree = makeArticleRenderer().renderTopicArchive(topicName, topicArticles);
                     serializeDomTree(destinationRelativePath, domTree);
                     return new ArchivedTopic(topicName, makeDomainRelativeUrl(destinationRelativePath));
@@ -301,7 +299,7 @@ public final class Generator {
                 try (final var innerTrace = new Trace(() -> "Generating quarterly archives for the " + quarter)) {
                     innerTrace.use();
                     final var destinationRelativePath =
-                        Path.of(archivesSubdirectoryName).resolve(quarter.year() + "-q" + quarter.quarter() + ".html");
+                        archivesSubdirectoryPath.resolve(quarter.year() + "-q" + quarter.quarter() + ".html");
                     final var domTree = makeArticleRenderer().renderQuarterlyArchive(quarter, quarterArticles);
                     serializeDomTree(destinationRelativePath, domTree);
                     return new ArchivedQuarter(quarter, makeDomainRelativeUrl(destinationRelativePath));
@@ -375,6 +373,7 @@ public final class Generator {
 
     static final String pagesSubdirectoryName = "pages";
     static final String archivesSubdirectoryName = "archives";
+    private static final Path archivesSubdirectoryPath = Path.of(archivesSubdirectoryName);
     private static final int frontPageArticleCount = 5;
     private static final int feedArticleCount = 10;
 
