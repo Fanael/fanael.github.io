@@ -11,27 +11,28 @@ import org.jetbrains.annotations.NotNull;
 final class TestExecutorService extends AbstractExecutorService {
     @Override
     public void shutdown() {
-        stillActive = false;
+        terminated = true;
     }
 
     @Override
     public @NotNull List<Runnable> shutdownNow() {
-        stillActive = false;
+        terminated = true;
         return Collections.emptyList();
     }
 
     @Override
     public boolean isShutdown() {
-        return !stillActive;
+        return terminated;
     }
 
     @Override
     public boolean isTerminated() {
-        return !stillActive;
+        return terminated;
     }
 
     @Override
     public boolean awaitTermination(final long timeout, final @NotNull TimeUnit unit) {
+        assert terminated;
         return true;
     }
 
@@ -40,5 +41,5 @@ final class TestExecutorService extends AbstractExecutorService {
         command.run();
     }
 
-    private boolean stillActive = true;
+    private boolean terminated = false;
 }
