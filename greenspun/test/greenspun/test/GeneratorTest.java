@@ -22,7 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 final class GeneratorTest {
     @Test
     void matchesReference(
-        final @NotNull @TempDir Path destinationDirectory
+        @TempDir final @NotNull Path destinationDirectory
     ) throws Unwind, InterruptedException, IOException {
         runGenerator(destinationDirectory);
         final var referenceFiles = getFileList(referenceDirectoryPath);

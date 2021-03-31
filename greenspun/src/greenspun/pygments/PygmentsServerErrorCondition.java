@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
 public final class PygmentsServerErrorCondition extends Condition {
     PygmentsServerErrorCondition(final @NotNull String message) {
         super(message);
-        this.detailedMessage = null;
+        detailedMessage = null;
     }
 
     @SuppressWarnings("SameParameterValue")

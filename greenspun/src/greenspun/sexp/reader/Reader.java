@@ -35,7 +35,7 @@ public final class Reader {
      * buffered itself.
      */
     public Reader(final @NotNull InputStream stream, final @NotNull SymbolTable symbolTable) {
-        this.buffer = new ReadBuffer(stream);
+        buffer = new ReadBuffer(stream);
         this.symbolTable = symbolTable;
     }
 
@@ -308,8 +308,8 @@ public final class Reader {
 
         private final @NotNull InputStream stream;
         private final byte[] buffer = new byte[bufferCapacity];
-        private int position;
-        private int bufferSize;
+        private int position = 0;
+        private int bufferSize = 0;
     }
 
     private enum HitEof {

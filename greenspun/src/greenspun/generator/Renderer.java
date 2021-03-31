@@ -534,7 +534,7 @@ public final class Renderer {
 
         private static final Attribute.String idMain = new Attribute.String("id", "main");
 
-        private static final String[] monthNames = new String[]{
+        private static final String[] monthNames = {
             "January", "February", "March", "April", "May", "June",
             "July", "August", "September", "October", "November", "December"
         };

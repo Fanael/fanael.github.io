@@ -12,6 +12,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.jetbrains.annotations.NotNull;
 
 final class Streams implements AutoCloseable {
+    // The corresponding unlock is in close(), so this is fine.
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     private Streams() throws InterruptedException {
         Holder.lock.lockInterruptibly();
     }
@@ -25,12 +27,12 @@ final class Streams implements AutoCloseable {
         Holder.lock.unlock();
     }
 
-    @SuppressWarnings({"MethodMayBeStatic", "SameReturnValue"})
+    @SuppressWarnings({"MethodMayBeStatic", "SameReturnValue", "UseOfSystemOutOrSystemErr"})
     @NotNull PrintStream out() {
         return System.out;
     }
 
-    @SuppressWarnings({"MethodMayBeStatic", "SameReturnValue"})
+    @SuppressWarnings({"MethodMayBeStatic", "SameReturnValue", "UseOfSystemOutOrSystemErr"})
     @NotNull PrintStream err() {
         return System.err;
     }

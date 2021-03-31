@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A typed representation of a DOM element's attribute.
  */
-public sealed abstract class Attribute {
+public abstract sealed class Attribute {
     private Attribute(final @NotNull java.lang.String name) {
         this.name = name;
     }

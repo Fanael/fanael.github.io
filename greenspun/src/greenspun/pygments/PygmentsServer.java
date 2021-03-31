@@ -186,8 +186,8 @@ public final class PygmentsServer implements AutoCloseable {
     private static final class Connection {
         private Connection(final @NotNull Process process) {
             this.process = process;
-            this.writer = new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8);
-            this.reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+            writer = new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8);
+            reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
         }
 
         private @NotNull String highlightCode(

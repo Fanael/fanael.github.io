@@ -137,9 +137,6 @@ public final class Serializer {
     }
 
     private static final class TextEscaper implements Escaper {
-        private TextEscaper() {
-        }
-
         @Override
         public @Nullable String escape(final char character) {
             return switch (character) {
@@ -154,9 +151,6 @@ public final class Serializer {
     }
 
     private static final class AttributeEscaper implements Escaper {
-        private AttributeEscaper() {
-        }
-
         @Override
         public @Nullable String escape(final char character) {
             return (character == '"') ? "&quot;" : TextEscaper.instance.escape(character);

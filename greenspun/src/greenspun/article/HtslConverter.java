@@ -50,7 +50,7 @@ public final class HtslConverter {
      * <li>{@link HtslConversionErrorCondition} is signaled if an S-expression could not be converted into a DOM tree
      * node.
      * <li>Any condition type that {@link PygmentsServer} can signal, if an error occurs in syntax highlighting during
-     * the macro-expansion of <code>highlighted-code</code> tag macro.
+     * the macro-expansion of {@code highlighted-code} tag macro.
      * <li>Any condition type that {@link Reader} can signal, if an error occurs trying to parse the Pygments server
      * response as S-expressions.
      * </ul>

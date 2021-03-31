@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.jetbrains.annotations.NotNull;
 
+@SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
 @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
 record Quarter(int year, byte quarter) implements Comparable<Quarter> {
     Quarter {
@@ -27,5 +28,5 @@ record Quarter(int year, byte quarter) implements Comparable<Quarter> {
         return names[quarter - 1] + " quarter of " + year;
     }
 
-    private static final String[] names = new String[]{"first", "second", "third", "fourth"};
+    private static final String[] names = {"first", "second", "third", "fourth"};
 }

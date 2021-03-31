@@ -172,13 +172,13 @@ public enum Tag {
     );
 
     Tag(final @NotNull Builder builder) {
-        this.htmlName = name().toLowerCase(Locale.ROOT).replace('_', '-');
-        this.allowedContexts = Collections.unmodifiableSet(builder.allowedContexts);
-        this.childContext = builder.childContext;
-        this.omitClosingTag = builder.omitClosingTag;
-        this.elementSerializer = builder.elementSerializer;
-        this.allowedAttributes = builder.allowedAttributes;
-        this.requiredAttributes = builder.requiredAttributes;
+        htmlName = name().toLowerCase(Locale.ROOT).replace('_', '-');
+        allowedContexts = Collections.unmodifiableSet(builder.allowedContexts);
+        childContext = builder.childContext;
+        omitClosingTag = builder.omitClosingTag;
+        elementSerializer = builder.elementSerializer;
+        allowedAttributes = builder.allowedAttributes;
+        requiredAttributes = builder.requiredAttributes;
     }
 
     /**
@@ -277,7 +277,7 @@ public enum Tag {
         }
 
         private Builder setOmitClosingTag() {
-            this.omitClosingTag = true;
+            omitClosingTag = true;
             return this;
         }
 

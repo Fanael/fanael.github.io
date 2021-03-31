@@ -10,7 +10,7 @@ import greenspun.util.condition.Condition;
 import org.jetbrains.annotations.NotNull;
 
 abstract class ExceptionCondition<E extends Exception> extends Condition {
-    protected ExceptionCondition(final @NotNull E exception) {
+    ExceptionCondition(final @NotNull E exception) {
         super(String.valueOf(exception.getMessage()));
         this.exception = exception;
     }

@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Currently only text and element nodes are supported. This is unlikely to change.
  */
-public sealed abstract class Node {
+public abstract sealed class Node {
     /**
      * Returns a new element builder that will create an element of the given tag.
      */

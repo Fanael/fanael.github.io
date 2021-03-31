@@ -39,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The entry point to the generation process proper.
  */
+@SuppressWarnings("ClassCanBeRecord")
 public final class Generator {
     /**
      * Initializes a new generator that will use the given source directory to produce files in the given destination
@@ -381,7 +382,8 @@ public final class Generator {
     private final @NotNull Path destinationDirectory;
     private final @NotNull ExecutorService executorService;
     private final @NotNull SharedState sharedState;
-    private final @NotNull ThreadLocal<SymbolTable> threadLocalSymbolTable = ThreadLocal.withInitial(SymbolTable::new);
+    private static final @NotNull ThreadLocal<SymbolTable> threadLocalSymbolTable =
+        ThreadLocal.withInitial(SymbolTable::new);
 
     @FunctionalInterface
     private interface UnwindingFunction<T, R> {
