@@ -4,6 +4,7 @@ package greenspun.generator;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -128,11 +129,11 @@ public final class Generator {
         final var orderedArticles = new ArrayList<@NotNull OrderedArticle>(articleCount);
         for (int i = 0; i < articleCount; i += 1) {
             final var article = articles.get(i);
-            final var predecessorUrl = (i + 1 < articleCount) ? articles.get(i + 1).destinationUrl() : null;
-            final var successorUrl = (i > 0) ? articles.get(i - 1).destinationUrl() : null;
+            final var predecessorUri = (i + 1 < articleCount) ? articles.get(i + 1).destinationUri() : null;
+            final var successorUri = (i > 0) ? articles.get(i - 1).destinationUri() : null;
             final var innerArticle = article.article;
             final var sourceRelativePath = article.sourceRelativePath;
-            orderedArticles.add(new OrderedArticle(innerArticle, sourceRelativePath, predecessorUrl, successorUrl));
+            orderedArticles.add(new OrderedArticle(innerArticle, sourceRelativePath, predecessorUri, successorUri));
         }
         final var renderer = makeArticleRenderer();
         return mapUsingExecutor(orderedArticles, article -> generateArticle(article, renderer));
@@ -151,7 +152,7 @@ public final class Generator {
                 try (final var trace = new Trace(() -> "Generating article " + article.article.title())) {
                     trace.use();
                     final var articleToRender =
-                        new ArticleToRender(article.article, article.predecessorUrl, article.successorUrl);
+                        new ArticleToRender(article.article, article.predecessorUri, article.successorUri);
                     serializeDomTree(destinationRelativePath, renderer.renderArticle(articleToRender));
                     return stripSections(article);
                 }
@@ -175,8 +176,8 @@ public final class Generator {
                     return new OrderedArticle(
                         article.article,
                         sourceRelativePath,
-                        originalArticle.predecessorUrl,
-                        originalArticle.successorUrl
+                        originalArticle.predecessorUri,
+                        originalArticle.successorUri
                     );
                 }
                 ConditionContext.withRestart("reload-article-and-retry", restart -> {
@@ -276,7 +277,7 @@ public final class Generator {
                         archivesSubdirectoryPath.resolve("topic-" + topicName + ".html");
                     final var domTree = makeArticleRenderer().renderTopicArchive(topicName, topicArticles);
                     serializeDomTree(destinationRelativePath, domTree);
-                    return new ArchivedTopic(topicName, makeDomainRelativeUrl(destinationRelativePath));
+                    return new ArchivedTopic(topicName, makeDomainRelativeUri(destinationRelativePath));
                 }
             });
             topics.sort(Comparator.comparing(ArchivedTopic::topic));
@@ -303,7 +304,7 @@ public final class Generator {
                         archivesSubdirectoryPath.resolve(quarter.year() + "-q" + quarter.quarter() + ".html");
                     final var domTree = makeArticleRenderer().renderQuarterlyArchive(quarter, quarterArticles);
                     serializeDomTree(destinationRelativePath, domTree);
-                    return new ArchivedQuarter(quarter, makeDomainRelativeUrl(destinationRelativePath));
+                    return new ArchivedQuarter(quarter, makeDomainRelativeUri(destinationRelativePath));
                 }
             });
             quarters.sort(Comparator.comparing(ArchivedQuarter::quarter).reversed());
@@ -336,9 +337,9 @@ public final class Generator {
         }
     }
 
-    private static @NotNull String makeDomainRelativeUrl(final @NotNull Path path) {
+    private static @NotNull URI makeDomainRelativeUri(final @NotNull Path path) {
         assert !path.isAbsolute();
-        return '/' + path.toString().replace(File.separatorChar, '/');
+        return rootUri.resolve(path.toString().replace(File.separatorChar, '/'));
     }
 
     private static @NotNull Renderer makeArticleRenderer() {
@@ -375,15 +376,16 @@ public final class Generator {
     static final String pagesSubdirectoryName = "pages";
     static final String archivesSubdirectoryName = "archives";
     private static final Path archivesSubdirectoryPath = Path.of(archivesSubdirectoryName);
+    private static final URI rootUri = URI.create("/");
     private static final int frontPageArticleCount = 5;
     private static final int feedArticleCount = 10;
+    private static final @NotNull ThreadLocal<SymbolTable> threadLocalSymbolTable =
+        ThreadLocal.withInitial(SymbolTable::new);
 
     private final @NotNull Path sourceDirectory;
     private final @NotNull Path destinationDirectory;
     private final @NotNull ExecutorService executorService;
     private final @NotNull SharedState sharedState;
-    private static final @NotNull ThreadLocal<SymbolTable> threadLocalSymbolTable =
-        ThreadLocal.withInitial(SymbolTable::new);
 
     @FunctionalInterface
     private interface UnwindingFunction<T, R> {
@@ -392,8 +394,8 @@ public final class Generator {
 
     @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private static record LoadedArticle(@NotNull Article article, @NotNull Path sourceRelativePath) {
-        private @NotNull String destinationUrl() {
-            return makeDomainRelativeUrl(PathUtils.changeExtension(sourceRelativePath, "html"));
+        private @NotNull URI destinationUri() {
+            return makeDomainRelativeUri(PathUtils.changeExtension(sourceRelativePath, "html"));
         }
 
         private @NotNull String identifier() {
@@ -405,7 +407,7 @@ public final class Generator {
         }
 
         private @NotNull ArchivedArticle toArchivedArticle() {
-            return new ArchivedArticle(article, identifier(), destinationUrl());
+            return new ArchivedArticle(article, identifier(), destinationUri());
         }
     }
 
@@ -413,8 +415,8 @@ public final class Generator {
     private static record OrderedArticle(
         @NotNull Article article,
         @NotNull Path sourceRelativePath,
-        @Nullable String predecessorUrl,
-        @Nullable String successorUrl
+        @Nullable URI predecessorUri,
+        @Nullable URI successorUri
     ) {
     }
 

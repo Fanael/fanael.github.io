@@ -3,6 +3,7 @@
 package greenspun.generator;
 
 import java.io.Writer;
+import java.net.URI;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -42,13 +43,13 @@ final class FeedRenderer {
             .setAttribute("xmlns:sy", syNamespace)
             .appendChild(buildElement("channel")
                 .appendChild(buildElement("atom:link")
-                    .setAttribute("href", siteUrl + '/' + RenderConstants.feedFileName)
+                    .setAttribute("href", siteUri.resolve(RenderConstants.feedFileName).toString())
                     .setAttribute("rel", "self")
                     .setAttribute("type", "application/rss+xml"))
                 .appendChild(createElementWithText("sy:updatePeriod", "hourly"))
                 .appendChild(createElementWithText("sy:updateFrequency", "3"))
                 .appendChild(createElementWithText("description", "Latest posts from " + RenderConstants.siteTitle))
-                .appendChild(createElementWithText("link", siteUrl))
+                .appendChild(createElementWithText("link", siteUri.toString()))
                 .appendChild(createElementWithText("title", RenderConstants.siteTitle))
                 .appendChild(createElementWithText("language", "en"))
                 .appendChild(
@@ -72,15 +73,15 @@ final class FeedRenderer {
 
     private @NotNull List<Element> createItems(final @NotNull List<ArchivedArticle> articles) {
         return articles.stream().map(article -> {
-            final var fullUrl = siteUrl + article.url();
+            final var fullUrl = siteUri.resolve(article.uri());
             final var innerArticle = article.article();
             final var publicationDate = innerArticle.date().atStartOfDay(ZoneOffset.UTC);
             return buildElement("item")
                 .appendChild(createElementWithText("title", innerArticle.title()))
-                .appendChild(createElementWithText("link", fullUrl))
+                .appendChild(createElementWithText("link", fullUrl.toString()))
                 .appendChild(buildElement("guid")
                     .setAttribute("isPermaLink", "false")
-                    .appendChild(createText(fullUrl)))
+                    .appendChild(createText(fullUrl.toString())))
                 .appendChild(
                     createElementWithText("pubDate", publicationDate.format(DateTimeFormatter.RFC_1123_DATE_TIME)))
                 .appendChild(createElementWithText("description", innerArticle.description()))
@@ -100,7 +101,7 @@ final class FeedRenderer {
         return buildElement(tagName).appendChild(createText(content)).toElement();
     }
 
-    private static final String siteUrl = "https://fanael.github.io";
+    private static final URI siteUri = URI.create("https://fanael.github.io/");
     private static final String atomNamespace = "http://www.w3.org/2005/Atom";
     private static final String syNamespace = "http://purl.org/rss/1.0/modules/syndication/";
 

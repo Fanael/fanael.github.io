@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
 package greenspun.generator;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.article.Section;
 import greenspun.dom.Attribute;
 import greenspun.dom.Node;
@@ -25,16 +25,12 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("ClassCanBeRecord")
 public final class Renderer {
-    @SuppressFBWarnings(
-        value = "NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE",
-        justification = "SpotBugs gets confused by generic type parameter nullability here"
-    )
     Renderer(
         final @NotNull HeaderRenderMode headerRenderMode,
-        final @NotNull Function<@NotNull String, @Nullable String> convertTopicToArchiveUrl
+        final @NotNull Function<@NotNull String, @Nullable String> convertTopicToArchiveUri
     ) {
         this.headerRenderMode = headerRenderMode;
-        this.convertTopicToArchiveUrl = convertTopicToArchiveUrl;
+        this.convertTopicToArchiveUri = convertTopicToArchiveUri;
     }
 
     /**
@@ -116,7 +112,7 @@ public final class Renderer {
                 .appendChild(Node.buildElement(Tag.MAIN)
                     .setAttribute(Constants.idMain)
                     .appendChild(renderArticleBody(article)))
-                .appendChild(renderBottomNav(article.predecessorUrl(), article.successorUrl()))
+                .appendChild(renderBottomNav(article.predecessorUri(), article.successorUri()))
                 .appendChild(Constants.footer))
             .toElement();
     }
@@ -142,21 +138,21 @@ public final class Renderer {
         final var quarterListElements = quarters.stream()
             .map(quarter -> Node.buildElement(Tag.LI)
                 .appendChild(Node.buildElement(Tag.A)
-                    .setAttribute("href", quarter.archiveUrl())
+                    .setAttribute("href", quarter.uri().toString())
                     .appendChild(new Node.Text("The " + quarter.quarter())))
                 .toElement())
             .toList();
         final var topicListElements = topics.stream()
             .map(topic -> Node.buildElement(Tag.LI)
                 .appendChild(Node.buildElement(Tag.A)
-                    .setAttribute("href", topic.archiveUrl())
+                    .setAttribute("href", topic.uri().toString())
                     .appendChild(new Node.Text(topic.topic())))
                 .toElement())
             .toList();
         final var articleListElements = articles.stream()
             .map(article -> Node.buildElement(Tag.LI)
                 .appendChild(Node.buildElement(Tag.A)
-                    .setAttribute("href", article.url())
+                    .setAttribute("href", article.uri().toString())
                     .appendChild(
                         new Node.Text(renderIsoDate(article.article().date()) + " — " + article.article().title())))
                 .toElement())
@@ -223,7 +219,7 @@ public final class Renderer {
             final var header = Node.buildElement(Tag.HEADER)
                 .appendChild(Node.buildElement(Tag.H2)
                     .appendChild(Node.buildElement(Tag.A)
-                        .setAttribute("href", article.url())
+                        .setAttribute("href", article.uri().toString())
                         .appendChild(new Node.Text(title))))
                 .appendChild(renderPublicationDate(article.article().date()));
             final var topics = renderArticleTopics(article.article().topics());
@@ -236,7 +232,7 @@ public final class Renderer {
                 .appendChildren(article.article().rootSection().body())
                 .appendChild(Node.buildElement(Tag.A)
                     .setAttribute("class", "read-full")
-                    .setAttribute("href", article.url())
+                    .setAttribute("href", article.uri().toString())
                     .setAttribute("aria-label", "Read the full article: " + title)
                     .appendChild(new Node.Text("Read the full article…")))
                 .toElement();
@@ -319,12 +315,12 @@ public final class Renderer {
         }
         final var nodes = new ArrayList<@NotNull Node>(2 * topics.size());
         for (final String topicName : topics) {
-            final var link = convertTopicToArchiveUrl.apply(topicName);
-            if (link == null) {
+            final var topicUri = convertTopicToArchiveUri.apply(topicName);
+            if (topicUri == null) {
                 nodes.add(new Node.Text(topicName));
             } else {
                 nodes.add(Node.buildElement(Tag.A)
-                    .setAttribute("href", link)
+                    .setAttribute("href", topicUri)
                     .appendChild(new Node.Text(topicName))
                     .toElement());
             }
@@ -390,24 +386,21 @@ public final class Renderer {
             .toElement();
     }
 
-    private static @NotNull Node renderBottomNav(
-        final @Nullable String predecessorUrl,
-        final @Nullable String successorUrl
-    ) {
+    private static @NotNull Node renderBottomNav(final @Nullable URI predecessorUri, final @Nullable URI successorUri) {
         final var predecessorBuilder = Node.buildElement(Tag.LI);
         predecessorBuilder.setAttribute("class", "prev");
-        if (predecessorUrl != null) {
+        if (predecessorUri != null) {
             predecessorBuilder.appendChild(Node.buildElement(Tag.A)
                 .setAttribute("rel", "prev")
-                .setAttribute("href", predecessorUrl)
+                .setAttribute("href", predecessorUri.toString())
                 .appendChild(new Node.Text("← Older")));
         }
         final var successorBuilder = Node.buildElement(Tag.LI);
         successorBuilder.setAttribute("class", "next");
-        if (successorUrl != null) {
+        if (successorUri != null) {
             successorBuilder.appendChild(Node.buildElement(Tag.A)
                 .setAttribute("rel", "next")
-                .setAttribute("href", successorUrl)
+                .setAttribute("href", successorUri.toString())
                 .appendChild(new Node.Text("Newer →")));
         }
         return Node.buildElement(Tag.NAV)
@@ -422,7 +415,7 @@ public final class Renderer {
     }
 
     private final @NotNull HeaderRenderMode headerRenderMode;
-    private final @NotNull Function<@NotNull String, @Nullable String> convertTopicToArchiveUrl;
+    private final @NotNull Function<@NotNull String, @Nullable String> convertTopicToArchiveUri;
 
     // Put constants in a separate class, so that they're created on first access rather than when the template is
     // loaded.
