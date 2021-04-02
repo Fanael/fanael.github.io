@@ -343,11 +343,11 @@ public final class Generator {
     }
 
     private static @NotNull Renderer makeArticleRenderer() {
-        return new Renderer(HeaderRenderMode.RENDER, topic -> "/archives/topic-" + topic + ".html");
+        return new Renderer(HeaderRenderImpl.instance);
     }
 
     private static @NotNull Renderer makeNonArticleRenderer() {
-        return new Renderer(HeaderRenderMode.SKIP, topic -> null);
+        return new Renderer(HeaderRenderMode.Skip.instance());
     }
 
     private <T, R> @NotNull ArrayList<R> mapUsingExecutor(
@@ -390,6 +390,20 @@ public final class Generator {
     @FunctionalInterface
     private interface UnwindingFunction<T, R> {
         R apply(T object) throws Unwind;
+    }
+
+    private static final class HeaderRenderImpl implements HeaderRenderMode {
+        @Override
+        public boolean shouldRender() {
+            return true;
+        }
+
+        @Override
+        public @NotNull String getTopicArchiveUri(final @NotNull String topicName) {
+            return "/archives/topic-" + topicName + ".html";
+        }
+
+        private static final HeaderRenderImpl instance = new HeaderRenderImpl();
     }
 
     @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")

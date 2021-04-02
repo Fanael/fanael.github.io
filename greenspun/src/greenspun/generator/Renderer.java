@@ -7,7 +7,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import greenspun.article.Section;
 import greenspun.dom.Attribute;
 import greenspun.dom.Node;
@@ -25,12 +24,8 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("ClassCanBeRecord")
 public final class Renderer {
-    Renderer(
-        final @NotNull HeaderRenderMode headerRenderMode,
-        final @NotNull Function<@NotNull String, @Nullable String> convertTopicToArchiveUri
-    ) {
+    Renderer(final @NotNull HeaderRenderMode headerRenderMode) {
         this.headerRenderMode = headerRenderMode;
-        this.convertTopicToArchiveUri = convertTopicToArchiveUri;
     }
 
     /**
@@ -315,15 +310,10 @@ public final class Renderer {
         }
         final var nodes = new ArrayList<@NotNull Node>(2 * topics.size());
         for (final String topicName : topics) {
-            final var topicUri = convertTopicToArchiveUri.apply(topicName);
-            if (topicUri == null) {
-                nodes.add(new Node.Text(topicName));
-            } else {
-                nodes.add(Node.buildElement(Tag.A)
-                    .setAttribute("href", topicUri)
-                    .appendChild(new Node.Text(topicName))
-                    .toElement());
-            }
+            nodes.add(Node.buildElement(Tag.A)
+                .setAttribute("href", headerRenderMode.getTopicArchiveUri(topicName))
+                .appendChild(new Node.Text(topicName))
+                .toElement());
             nodes.add(new Node.Text(", "));
         }
         nodes.remove(nodes.size() - 1);
@@ -415,7 +405,6 @@ public final class Renderer {
     }
 
     private final @NotNull HeaderRenderMode headerRenderMode;
-    private final @NotNull Function<@NotNull String, @Nullable String> convertTopicToArchiveUri;
 
     // Put constants in a separate class, so that they're created on first access rather than when the template is
     // loaded.
