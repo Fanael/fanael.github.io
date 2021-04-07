@@ -40,7 +40,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The entry point to the generation process proper.
  */
-@SuppressWarnings("ClassCanBeRecord")
 public final class Generator {
     /**
      * Initializes a new generator that will use the given source directory to produce files in the given destination

@@ -102,7 +102,6 @@ public final class PygmentsCache {
 
     // Keep only a cryptographic hash of the (code, languageName) pair to avoid holding a reference to the entire code
     // string. Collisions are extremely unlikely: the probability of two digests colliding is about 2^-128.
-    @SuppressWarnings("ClassCanBeRecord") // It cannot, the constructor and bytes field need to be private.
     static final class Digest {
         private Digest(final byte[] bytes) {
             assert bytes.length == 32;

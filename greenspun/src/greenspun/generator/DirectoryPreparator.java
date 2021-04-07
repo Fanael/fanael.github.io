@@ -19,7 +19,6 @@ import greenspun.util.condition.exception.IOExceptionCondition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-@SuppressWarnings("ClassCanBeRecord")
 final class DirectoryPreparator {
     DirectoryPreparator(final @NotNull Path sourceDirectory, final @NotNull Path destinationDirectory) {
         this.sourceDirectory = sourceDirectory;

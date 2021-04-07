@@ -15,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Temporary file containing the Pygments server source code, as an {@link AutoCloseable} resource.
  */
-@SuppressWarnings("ClassCanBeRecord")
 public final class ServerCodeTemporaryFile implements AutoCloseable {
     private ServerCodeTemporaryFile(final @NotNull Path path) {
         this.path = path;

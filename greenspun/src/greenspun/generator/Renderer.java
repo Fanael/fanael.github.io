@@ -22,7 +22,6 @@ import org.jetbrains.annotations.Nullable;
  * This class is thread-safe: as it doesn't hold any mutable state whatsoever, multiple threads can access one instance
  * at the same time with no external synchronization.
  */
-@SuppressWarnings("ClassCanBeRecord")
 public final class Renderer {
     Renderer(final @NotNull HeaderRenderMode headerRenderMode) {
         this.headerRenderMode = headerRenderMode;

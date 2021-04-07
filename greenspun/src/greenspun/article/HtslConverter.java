@@ -30,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
  * <dfn>HTSL</dfn>, <dfn>Hypertext S-expression Language</dfn> is the HTML-as-sexps representation used in article
  * source files.
  */
-@SuppressWarnings("ClassCanBeRecord")
 public final class HtslConverter {
     public HtslConverter(
         final @NotNull SymbolTable symbolTable,

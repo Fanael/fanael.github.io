@@ -53,7 +53,6 @@ public sealed interface Sexp {
     /**
      * A regular Lisp symbol, not directly used by Java code.
      */
-    @SuppressWarnings("ClassCanBeRecord") // It cannot be a record, it relies on equals() being identity comparison.
     final class RegularSymbol implements Sexp.Symbol {
         /**
          * Initializes a new, <em>uninterned</em> symbol.

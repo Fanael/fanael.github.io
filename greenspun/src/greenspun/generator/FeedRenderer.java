@@ -107,7 +107,6 @@ final class FeedRenderer {
 
     private final @NotNull Document document;
 
-    @SuppressWarnings("ClassCanBeRecord")
     private static final class ElementBuilder {
         private ElementBuilder(final @NotNull Element element) {
             this.element = element;

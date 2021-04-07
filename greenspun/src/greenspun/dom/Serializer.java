@@ -11,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The DOM-to-HTML serializer.
  */
-@SuppressWarnings("ClassCanBeRecord")
 public final class Serializer {
     private Serializer(final @NotNull Appendable appendable) {
         this.appendable = appendable;
