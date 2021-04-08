@@ -78,7 +78,9 @@
   :header "P6: Tualatin"
   (p "The first machine I tested was my trusty old ThinkPad, with a Tualatin Pentium III. It was the third and final release of Pentium III and P6 proper, so surely if P6 recognized zeroing XOR as dependency-breaking at any point, it would do it here. After all, it was released "
      (em "after")
-     " the first NetBurst processors, where same-register exclusive-or was breaking dependency chains? When we run the test code under "
+     " the first NetBurst processors, where same-register exclusive-or "
+     (em "was")
+     " breaking dependency chains. When we run the test code under "
      ((cite :class "program-name") "perf")
      ", we get the following cycle counts:")
   (ul
