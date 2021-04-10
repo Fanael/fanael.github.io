@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.util.UnreachableCodeReachedError;
 import greenspun.util.collections.ImmutableList;
@@ -55,7 +54,7 @@ public final class Verifier {
 
     private void verifyTextNode(final @NotNull Context context) {
         if (!rawTextContexts.contains(context)) {
-            recordNestingError(null, context, rawTextContexts);
+            recordNestingError(null, context, rawTextContexts.toString());
         }
     }
 
@@ -132,9 +131,8 @@ public final class Verifier {
     }
 
     private void verifyTagContext(final @NotNull Tag tag, final @NotNull Context context) {
-        final var allowedContexts = tag.allowedContexts();
-        if (!allowedContexts.contains(context)) {
-            recordNestingError(tag, context, allowedContexts);
+        if (!tag.allowedIn(context)) {
+            recordNestingError(tag, context, tag.allowedContextsString());
         }
     }
 
@@ -149,7 +147,7 @@ public final class Verifier {
     private void recordNestingError(
         final @Nullable Tag tag,
         final @NotNull Context actualContext,
-        final @NotNull Set<Context> allowedContexts
+        final @NotNull String allowedContexts
     ) {
         final var tagName = (tag == null)
             ? "A text node"

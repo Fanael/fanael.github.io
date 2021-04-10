@@ -173,7 +173,7 @@ public enum Tag {
 
     Tag(final @NotNull Builder builder) {
         htmlName = name().toLowerCase(Locale.ROOT).replace('_', '-');
-        allowedContexts = Collections.unmodifiableSet(builder.allowedContexts);
+        allowedContexts = builder.allowedContexts;
         childContext = builder.childContext;
         omitClosingTag = builder.omitClosingTag;
         elementSerializer = builder.elementSerializer;
@@ -197,8 +197,12 @@ public enum Tag {
         return htmlName;
     }
 
-    @NotNull Set<@NotNull Context> allowedContexts() {
-        return allowedContexts;
+    boolean allowedIn(final @NotNull Context context) {
+        return allowedContexts.contains(context);
+    }
+
+    @NotNull String allowedContextsString() {
+        return allowedContexts.toString();
     }
 
     @NotNull ChildContext childContext() {
@@ -239,7 +243,7 @@ public enum Tag {
         Arrays.stream(values()).collect(Collectors.toUnmodifiableMap(Tag::htmlName, Function.identity()));
 
     private final @NotNull String htmlName;
-    private final @NotNull Set<@NotNull Context> allowedContexts;
+    private final @NotNull EnumSet<Context> allowedContexts;
     private final @NotNull ChildContext childContext;
     private final boolean omitClosingTag;
     private final @Nullable Serializer.ForElement elementSerializer;
