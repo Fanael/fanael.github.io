@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.article;
 
-import java.util.Collections;
-import java.util.List;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.dom.Node;
 import greenspun.sexp.Sexp;
+import greenspun.util.collections.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -21,14 +20,7 @@ import org.jetbrains.annotations.NotNull;
 public record Section(
     @NotNull Sexp.Symbol identifier,
     @NotNull String header,
-    @NotNull List<@NotNull Section> children,
-    @NotNull List<@NotNull Node> body
+    @NotNull ImmutableList<@NotNull Section> children,
+    @NotNull ImmutableList<@NotNull Node> body
 ) {
-    public @NotNull List<@NotNull Section> children() {
-        return Collections.unmodifiableList(children);
-    }
-
-    public @NotNull List<@NotNull Node> body() {
-        return Collections.unmodifiableList(body);
-    }
 }

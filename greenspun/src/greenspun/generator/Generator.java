@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,8 +28,10 @@ import greenspun.dom.Verifier;
 import greenspun.sexp.SymbolTable;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.PathUtils;
+import greenspun.util.ThrowingFunction;
 import greenspun.util.Trace;
 import greenspun.util.UncheckedInterruptedException;
+import greenspun.util.collections.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
@@ -114,7 +115,7 @@ public final class Generator {
         }
     }
 
-    private @NotNull List<ArchivedArticle> generateArticles(
+    private @NotNull ArrayList<ArchivedArticle> generateArticles(
         final @NotNull List<Path> articleSourcePaths
     ) throws Unwind, InterruptedException {
         final var articles = mapUsingExecutor(articleSourcePaths, this::loadArticle);
@@ -236,7 +237,7 @@ public final class Generator {
                 innerArticle.date(),
                 innerArticle.inhibitTableOfContents(),
                 innerArticle.topics(),
-                new Section(rootSection.identifier(), rootSection.header(), Collections.emptyList(), rootSection.body())
+                new Section(rootSection.identifier(), rootSection.header(), ImmutableList.empty(), rootSection.body())
             ),
             orderedArticle.sourceRelativePath
         ).toArchivedArticle();
@@ -351,7 +352,7 @@ public final class Generator {
 
     private <T, R> @NotNull ArrayList<R> mapUsingExecutor(
         final @NotNull Collection<? extends T> collection,
-        final @NotNull UnwindingFunction<? super T, ? extends R> function
+        final @NotNull ThrowingFunction<? super T, ? extends R, Unwind> function
     ) throws Unwind, InterruptedException {
         final var futures = new ArrayList<@NotNull Future<R>>(collection.size());
         final var inheritedState = ConditionContext.saveInheritableState();
@@ -385,11 +386,6 @@ public final class Generator {
     private final @NotNull Path destinationDirectory;
     private final @NotNull ExecutorService executorService;
     private final @NotNull SharedState sharedState;
-
-    @FunctionalInterface
-    private interface UnwindingFunction<T, R> {
-        R apply(T object) throws Unwind;
-    }
 
     private static final class HeaderRenderImpl implements HeaderRenderMode {
         @Override
@@ -434,7 +430,7 @@ public final class Generator {
     }
 
     private static final class AwaitAllImpl<T> {
-        private AwaitAllImpl(final @NotNull Collection<? extends Future<T>> futures) {
+        private AwaitAllImpl(final @NotNull Collection<? extends Future<? extends T>> futures) {
             iterator = futures.iterator();
             results = new ArrayList<>(futures.size());
         }
@@ -457,7 +453,7 @@ public final class Generator {
             }
         }
 
-        private void awaitOne(final @NotNull Future<T> future) throws Unwind, InterruptedException {
+        private void awaitOne(final @NotNull Future<? extends T> future) throws Unwind, InterruptedException {
             try {
                 results.add(future.get());
             } catch (final ExecutionException e) {
@@ -481,7 +477,7 @@ public final class Generator {
             }
         }
 
-        private final @NotNull Iterator<? extends Future<T>> iterator;
+        private final @NotNull Iterator<? extends Future<? extends T>> iterator;
         private final @NotNull ArrayList<T> results;
         private boolean foundInterrupt = false;
         private boolean needsCancellation = false;

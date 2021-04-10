@@ -3,9 +3,8 @@
 package greenspun.article;
 
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import greenspun.util.collections.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -24,10 +23,7 @@ public record Article(
     @NotNull String description,
     @NotNull LocalDate date,
     boolean inhibitTableOfContents,
-    @NotNull List<@NotNull String> topics,
+    @NotNull ImmutableList<@NotNull String> topics,
     @NotNull Section rootSection
 ) {
-    public @NotNull List<@NotNull String> topics() {
-        return Collections.unmodifiableList(topics);
-    }
 }

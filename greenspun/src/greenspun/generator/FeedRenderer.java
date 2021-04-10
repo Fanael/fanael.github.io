@@ -16,6 +16,7 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import greenspun.util.collections.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.ParserConfigurationExceptionCondition;
@@ -71,8 +72,8 @@ final class FeedRenderer {
         }
     }
 
-    private @NotNull List<Element> createItems(final @NotNull List<ArchivedArticle> articles) {
-        return articles.stream().map(article -> {
+    private @NotNull ImmutableList<Element> createItems(final @NotNull List<ArchivedArticle> articles) {
+        return ImmutableList.map(articles, article -> {
             final var fullUrl = siteUri.resolve(article.uri());
             final var innerArticle = article.article();
             final var publicationDate = innerArticle.date().atStartOfDay(ZoneOffset.UTC);
@@ -86,7 +87,7 @@ final class FeedRenderer {
                     createElementWithText("pubDate", publicationDate.format(DateTimeFormatter.RFC_1123_DATE_TIME)))
                 .appendChild(createElementWithText("description", innerArticle.description()))
                 .toElement();
-        }).toList();
+        });
     }
 
     private @NotNull ElementBuilder buildElement(final @NotNull String tagName) {

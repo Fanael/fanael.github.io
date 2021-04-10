@@ -8,11 +8,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import greenspun.util.collections.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Marker interface serving as the base type of S-expression objects.
+ * <p>
+ * S-expression objects are guaranteed to be immutable.
  */
 public sealed interface Sexp {
     /**
@@ -40,7 +43,7 @@ public sealed interface Sexp {
      * Dotted lists are unsupported.
      */
     @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
-    record List(@NotNull java.util.List<@NotNull Sexp> value) implements Sexp {
+    record List(@NotNull ImmutableList<@NotNull Sexp> value) implements Sexp {
     }
 
     /**

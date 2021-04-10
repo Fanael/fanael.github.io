@@ -5,11 +5,11 @@ package greenspun.dom;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.util.UnreachableCodeReachedError;
+import greenspun.util.collections.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +39,7 @@ public final class Verifier {
     private void verifyRoot(final @NotNull Node rootNode) throws Unwind {
         verify(rootNode, Context.ROOT);
         if (!verificationErrors.isEmpty()) {
-            throw ConditionContext.error(new VerificationErrorCondition(List.copyOf(verificationErrors)));
+            throw ConditionContext.error(new VerificationErrorCondition(ImmutableList.freeze(verificationErrors)));
         }
     }
 
@@ -163,8 +163,8 @@ public final class Verifier {
         verificationErrors.add(new VerificationError(message, getAncestorTags()));
     }
 
-    private @NotNull List<Tag> getAncestorTags() {
-        return ancestors.stream().map(Node.Element::tag).toList();
+    private @NotNull ImmutableList<Tag> getAncestorTags() {
+        return ImmutableList.map(ancestors, Node.Element::tag);
     }
 
     private static @Nullable Context getEffectiveChildContext(final @NotNull Tag tag, final @NotNull Context context) {

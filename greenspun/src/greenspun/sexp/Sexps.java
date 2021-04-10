@@ -3,9 +3,8 @@
 package greenspun.sexp;
 
 import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
 import greenspun.util.UnreachableCodeReachedError;
+import greenspun.util.collections.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,11 +34,11 @@ public final class Sexps {
      * <p>
      * Note that the known symbol {@code nil} represents an empty list.
      */
-    public static @Nullable List<Sexp> asList(final @NotNull Sexp sexp) {
+    public static @Nullable ImmutableList<Sexp> asList(final @NotNull Sexp sexp) {
         if (sexp instanceof Sexp.List list) {
             return list.value();
         } else if (sexp == Sexp.KnownSymbol.NIL) {
-            return Collections.emptyList();
+            return ImmutableList.empty();
         } else {
             return null;
         }
@@ -117,7 +116,7 @@ public final class Sexps {
             builder.append('"');
         }
 
-        private void append(final @NotNull List<Sexp> list, final int level) {
+        private void append(final @NotNull ImmutableList<Sexp> list, final int level) {
             final var iterator = list.iterator();
             if (!iterator.hasNext()) {
                 builder.append("()");

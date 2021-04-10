@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.List;
 import greenspun.util.Trace;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
@@ -25,14 +24,14 @@ final class DirectoryPreparator {
         this.destinationDirectory = destinationDirectory;
     }
 
-    @NotNull List<Path> getArticleSourcePaths() throws Unwind {
+    @NotNull ArrayList<Path> getArticleSourcePaths() throws Unwind {
         try (final var trace = new Trace("Collecting source paths of articles")) {
             trace.use();
             return getSourceDirectoryRelativePaths(sourceDirectory);
         }
     }
 
-    @NotNull List<Path> getPageSourcePaths() throws Unwind {
+    @NotNull ArrayList<Path> getPageSourcePaths() throws Unwind {
         try (final var trace = new Trace("Collecting source paths of non-article pages")) {
             trace.use();
             return getSourceDirectoryRelativePaths(sourceDirectory.resolve(Generator.pagesSubdirectoryName));
@@ -50,7 +49,7 @@ final class DirectoryPreparator {
         }
     }
 
-    private @NotNull List<Path> getSourceDirectoryRelativePaths(final @NotNull Path directoryPath) throws Unwind {
+    private @NotNull ArrayList<Path> getSourceDirectoryRelativePaths(final @NotNull Path directoryPath) throws Unwind {
         try (final var directory = Files.newDirectoryStream(directoryPath)) {
             final var paths = new ArrayList<@NotNull Path>();
             for (final var path : directory) {

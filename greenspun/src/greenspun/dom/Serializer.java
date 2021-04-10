@@ -3,8 +3,8 @@
 package greenspun.dom;
 
 import java.io.IOException;
-import java.util.List;
 import greenspun.util.UnreachableCodeReachedError;
+import greenspun.util.collections.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,8 +31,8 @@ public final class Serializer {
 
     void serializePseudoElement(
         final @NotNull String elementName,
-        final @NotNull List<@NotNull Attribute> attributes,
-        final @NotNull List<@NotNull Node> children,
+        final @NotNull ImmutableList<@NotNull Attribute> attributes,
+        final @NotNull ImmutableList<@NotNull Node> children,
         final boolean omitClosingTag
     ) throws IOException {
         appendable.append('<');
@@ -70,7 +70,7 @@ public final class Serializer {
         serializePseudoElement(tag.htmlName(), element.attributes(), element.children(), tag.omitClosingTag());
     }
 
-    private void serializeAttributes(final @NotNull List<@NotNull Attribute> attributes) throws IOException {
+    private void serializeAttributes(final @NotNull ImmutableList<@NotNull Attribute> attributes) throws IOException {
         for (final var attribute : attributes) {
             if (attribute instanceof Attribute.Boolean booleanAttr) {
                 if (booleanAttr.value()) {

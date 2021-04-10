@@ -5,8 +5,8 @@ package greenspun.dom;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import greenspun.util.collections.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,7 +29,7 @@ public abstract sealed class Node {
      * Returns a new element object of the given tag with no attributes or children.
      */
     public static @NotNull Element makeEmptyElement(final @NotNull Tag tag) {
-        return new Element(tag, Collections.emptyList(), Collections.emptyList());
+        return new Element(tag, ImmutableList.empty(), ImmutableList.empty());
     }
 
     /**
@@ -59,8 +59,8 @@ public abstract sealed class Node {
     public static final class Element extends Node {
         private Element(
             final @NotNull Tag tag,
-            final @NotNull List<@NotNull Attribute> attributes,
-            final @NotNull List<@NotNull Node> children
+            final @NotNull ImmutableList<@NotNull Attribute> attributes,
+            final @NotNull ImmutableList<@NotNull Node> children
         ) {
             this.tag = tag;
             this.attributes = attributes;
@@ -68,18 +68,16 @@ public abstract sealed class Node {
         }
 
         /**
-         * Retrieves the list of all attributes of this element. The returned list is <em>unmodifiable</em>.
+         * Retrieves the immutable list of all attributes of this element.
          */
-        public @NotNull List<@NotNull Attribute> attributes() {
-            // Note: the builder-returned list is already unmodifiable.
+        public @NotNull ImmutableList<@NotNull Attribute> attributes() {
             return attributes;
         }
 
         /**
-         * Retrieves the list of all children of this element. The returned list is <em>unmodifiable</em>.
+         * Retrieves the immutable list of all children of this element.
          */
-        public @NotNull List<@NotNull Node> children() {
-            // Note: the builder-returned list is already unmodifiable.
+        public @NotNull ImmutableList<@NotNull Node> children() {
             return children;
         }
 
@@ -93,8 +91,8 @@ public abstract sealed class Node {
         }
 
         private final @NotNull Tag tag;
-        private final List<@NotNull Attribute> attributes;
-        private final List<@NotNull Node> children;
+        private final ImmutableList<@NotNull Attribute> attributes;
+        private final ImmutableList<@NotNull Node> children;
     }
 
     /**
@@ -114,7 +112,7 @@ public abstract sealed class Node {
          * The state of the builder remains unchanged.
          */
         public @NotNull Element toElement() {
-            return new Element(tag, List.copyOf(attributes), List.copyOf(children));
+            return new Element(tag, ImmutableList.freeze(attributes), ImmutableList.freeze(children));
         }
 
         /**

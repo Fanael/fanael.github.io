@@ -11,6 +11,7 @@ import greenspun.article.Section;
 import greenspun.dom.Attribute;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
+import greenspun.util.collections.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -111,7 +112,7 @@ public final class Renderer {
             .toElement();
     }
 
-    private @NotNull List<Node> renderFrontPageBody(final @NotNull List<ArchivedArticle> articles) {
+    private @NotNull ArrayList<Node> renderFrontPageBody(final @NotNull List<ArchivedArticle> articles) {
         final var nodes = new ArrayList<Node>();
         nodes.add(Node.buildElement(Tag.HEADER)
             .appendChild(Node.buildElement(Tag.H1).appendChild(new Node.Text("Latest articles")))
@@ -124,34 +125,31 @@ public final class Renderer {
         return nodes;
     }
 
-    private static @NotNull List<Node> renderArchiveIndexBody(
+    private static @NotNull ImmutableList<Node> renderArchiveIndexBody(
         final @NotNull List<ArchivedQuarter> quarters,
         final @NotNull List<ArchivedTopic> topics,
         final @NotNull List<ArchivedArticle> articles
     ) {
-        final var quarterListElements = quarters.stream()
-            .map(quarter -> Node.buildElement(Tag.LI)
+        final var quarterListElements = ImmutableList.map(quarters,
+            quarter -> Node.buildElement(Tag.LI)
                 .appendChild(Node.buildElement(Tag.A)
                     .setAttribute("href", quarter.uri().toString())
                     .appendChild(new Node.Text("The " + quarter.quarter())))
-                .toElement())
-            .toList();
-        final var topicListElements = topics.stream()
-            .map(topic -> Node.buildElement(Tag.LI)
+                .toElement());
+        final var topicListElements = ImmutableList.map(topics,
+            topic -> Node.buildElement(Tag.LI)
                 .appendChild(Node.buildElement(Tag.A)
                     .setAttribute("href", topic.uri().toString())
                     .appendChild(new Node.Text(topic.topic())))
-                .toElement())
-            .toList();
-        final var articleListElements = articles.stream()
-            .map(article -> Node.buildElement(Tag.LI)
+                .toElement());
+        final var articleListElements = ImmutableList.map(articles,
+            article -> Node.buildElement(Tag.LI)
                 .appendChild(Node.buildElement(Tag.A)
                     .setAttribute("href", article.uri().toString())
                     .appendChild(
                         new Node.Text(renderIsoDate(article.article().date()) + " — " + article.article().title())))
-                .toElement())
-            .toList();
-        return List.of(
+                .toElement());
+        return ImmutableList.of(
             Node.buildElement(Tag.HEADER)
                 .appendChild(Node.buildElement(Tag.H1).appendChild(new Node.Text("Blog archives")))
                 .toElement(),
@@ -207,8 +205,8 @@ public final class Renderer {
             .toElement();
     }
 
-    private @NotNull List<Node.Element> renderExcerpts(final @NotNull List<ArchivedArticle> articles) {
-        return articles.stream().map(article -> {
+    private @NotNull ImmutableList<Node.Element> renderExcerpts(final @NotNull List<ArchivedArticle> articles) {
+        return ImmutableList.map(articles, article -> {
             final var title = article.article().title();
             final var header = Node.buildElement(Tag.HEADER)
                 .appendChild(Node.buildElement(Tag.H2)
@@ -230,7 +228,7 @@ public final class Renderer {
                     .setAttribute("aria-label", "Read the full article: " + title)
                     .appendChild(new Node.Text("Read the full article…")))
                 .toElement();
-        }).toList();
+        });
     }
 
     private static @NotNull Node renderHead(
@@ -303,7 +301,7 @@ public final class Renderer {
         return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
     }
 
-    private @Nullable Node renderArticleTopics(final @NotNull List<String> topics) {
+    private @Nullable Node renderArticleTopics(final @NotNull ImmutableList<String> topics) {
         if (topics.isEmpty()) {
             return null;
         }
@@ -322,7 +320,7 @@ public final class Renderer {
             .toElement();
     }
 
-    private static @NotNull Node renderTableOfContents(final @NotNull List<Section> childrenOfRoot) {
+    private static @NotNull Node renderTableOfContents(final @NotNull ImmutableList<Section> childrenOfRoot) {
         return Node.buildElement(Tag.NAV)
             .setAttribute("class", "toc")
             .setAttribute("aria-labelledby", "toc-label")
@@ -331,7 +329,7 @@ public final class Renderer {
             .toElement();
     }
 
-    private static @NotNull Node renderTableOfContentsList(final @NotNull List<Section> children) {
+    private static @NotNull Node renderTableOfContentsList(final @NotNull ImmutableList<Section> children) {
         final var listBuilder = Node.buildElement(Tag.OL);
         for (final var child : children) {
             final var itemBuilder = Node.buildElement(Tag.LI);
@@ -408,7 +406,7 @@ public final class Renderer {
     // Put constants in a separate class, so that they're created on first access rather than when the template is
     // loaded.
     private static final class Constants {
-        private static final List<Node.Element> headPrefix = List.of(
+        private static final ImmutableList<Node.Element> headPrefix = ImmutableList.of(
             Node.makeEmptyElement(Tag.META_CHARSET_UTF8),
             Node.buildElement(Tag.META_NAMED)
                 .setAttribute("name", "viewport")
@@ -424,7 +422,7 @@ public final class Renderer {
                 .toElement()
         );
 
-        private static final List<Node.Element> headSuffix = List.of(
+        private static final ImmutableList<Node.Element> headSuffix = ImmutableList.of(
             Node.buildElement(Tag.LINK)
                 .setAttribute("rel", "alternate")
                 .setAttribute("href", '/' + RenderConstants.feedFileName)
@@ -441,7 +439,7 @@ public final class Renderer {
                 .toElement()
         );
 
-        private static final List<Node.Element> header = List.of(
+        private static final ImmutableList<Node.Element> header = ImmutableList.of(
             Node.buildElement(Tag.A)
                 .setAttribute("id", "skip-nav")
                 .setAttribute("href", "#main")

@@ -5,8 +5,6 @@ package greenspun.article;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.dom.Node;
@@ -18,6 +16,7 @@ import greenspun.sexp.Sexps;
 import greenspun.sexp.SymbolTable;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.Trace;
+import greenspun.util.collections.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.Unwind;
@@ -54,12 +53,10 @@ public final class HtslConverter {
      * response as S-expressions.
      * </ul>
      */
-    public @NotNull List<@NotNull Node> convert(final @NotNull List<@NotNull Sexp> forms) throws Unwind {
-        final var nodes = new ArrayList<@NotNull Node>(forms.size());
-        for (final var form : forms) {
-            nodes.add(convertForm(form));
-        }
-        return List.copyOf(nodes);
+    public @NotNull ImmutableList<@NotNull Node> convert(
+        final @NotNull ImmutableList<@NotNull Sexp> forms
+    ) throws Unwind {
+        return ImmutableList.map(forms, this::convertForm);
     }
 
     private @NotNull Node convertForm(final @NotNull Sexp form) throws Unwind {
@@ -85,8 +82,8 @@ public final class HtslConverter {
 
     private @NotNull Node convertElement(
         final @NotNull Sexp.Symbol tagName,
-        final @NotNull List<Sexp> attributes,
-        final @NotNull List<Sexp> children
+        final @NotNull ImmutableList<Sexp> attributes,
+        final @NotNull ImmutableList<Sexp> children
     ) throws Unwind {
         final var tag = Tag.byHtmlName(tagName.symbolName());
         if (tag == null) {
@@ -102,7 +99,7 @@ public final class HtslConverter {
 
     private static void convertAttributes(
         final @NotNull Node.ElementBuilder builder,
-        final @NotNull List<Sexp> attributes
+        final @NotNull ImmutableList<Sexp> attributes
     ) throws Unwind {
         for (int i = 0, size = attributes.size(); i < size; i += 2) {
             final var keyForm = attributes.get(i);
@@ -129,7 +126,7 @@ public final class HtslConverter {
     private static @NotNull TagHead extractTagHead(final @NotNull Sexp form) throws Unwind {
         final var symbol = Sexps.asSymbol(form);
         if (symbol != null) {
-            return new TagHead(symbol, Collections.emptyList());
+            return new TagHead(symbol, ImmutableList.empty());
         }
         final var list = Sexps.asList(form);
         if (list == null || list.isEmpty()) {
@@ -144,8 +141,8 @@ public final class HtslConverter {
     }
 
     private @NotNull Node expandHighlightedCode(
-        final @NotNull List<Sexp> attributes,
-        final @NotNull List<Sexp> children
+        final @NotNull ImmutableList<Sexp> attributes,
+        final @NotNull ImmutableList<Sexp> children
     ) throws Unwind {
         if (children.size() != 1 || !(children.get(0) instanceof Sexp.String codeNode)) {
             throw signalError("highlighted-code accepts exactly one string child");
@@ -181,8 +178,8 @@ public final class HtslConverter {
     }
 
     private @NotNull Node expandImageFigure(
-        final @NotNull List<Sexp> attributes,
-        final @NotNull List<Sexp> children
+        final @NotNull ImmutableList<Sexp> attributes,
+        final @NotNull ImmutableList<Sexp> children
     ) throws Unwind {
         final var img = Node.buildElement(Tag.IMG);
         convertAttributes(img, attributes);
@@ -218,13 +215,13 @@ public final class HtslConverter {
     private interface TagMacroExpander {
         @NotNull Node expand(
             @NotNull HtslConverter converter,
-            @NotNull List<Sexp> attributes,
-            @NotNull List<Sexp> children
+            @NotNull ImmutableList<Sexp> attributes,
+            @NotNull ImmutableList<Sexp> children
         ) throws Unwind;
     }
 
     @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
-    private static record TagHead(@NotNull Sexp.Symbol tagName, @NotNull List<Sexp> attributes) {
+    private static record TagHead(@NotNull Sexp.Symbol tagName, @NotNull ImmutableList<Sexp> attributes) {
     }
 
     // The Pygments server has a habit of emitting *tons* of consecutive text nodes — each typically consisting of only

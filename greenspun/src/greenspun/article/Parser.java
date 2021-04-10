@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -17,7 +16,9 @@ import greenspun.dom.Node;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
 import greenspun.sexp.reader.Reader;
+import greenspun.util.ThrowingFunction;
 import greenspun.util.Trace;
+import greenspun.util.collections.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.Unwind;
@@ -204,11 +205,11 @@ public final class Parser {
     }
 
     private @NotNull Section linkSection(final @NotNull PartialSection section) {
-        final var linkedChildren = section.childIds.stream().map(childId -> {
+        final var linkedChildren = ImmutableList.map(section.childIds, childId -> {
             final var child = sectionsById.get(childId);
             assert child != null : "Reference to unknown section not found by graph verification?";
             return linkSection(child);
-        }).toList();
+        });
         return new Section(section.identifier, section.header, linkedChildren, section.body);
     }
 
@@ -231,7 +232,9 @@ public final class Parser {
         }
     }
 
-    private static @NotNull List<String> parseTopics(final @NotNull ExtractedProperties properties) throws Unwind {
+    private static @NotNull ImmutableList<String> parseTopics(
+        final @NotNull ExtractedProperties properties
+    ) throws Unwind {
         return parseList(properties, Sexp.KnownSymbol.KW_TOPICS, (final @NotNull Sexp sexp) -> {
             final var topicName = Sexps.asString(sexp);
             if (topicName == null) {
@@ -241,7 +244,7 @@ public final class Parser {
         });
     }
 
-    private static @NotNull List<Sexp.Symbol> parseChildIds(
+    private static @NotNull ImmutableList<Sexp.Symbol> parseChildIds(
         final @NotNull ExtractedProperties properties
     ) throws Unwind {
         return parseList(properties, Sexp.KnownSymbol.KW_CHILDREN, (final @NotNull Sexp sexp) -> {
@@ -253,21 +256,17 @@ public final class Parser {
         });
     }
 
-    private static @NotNull <T> List<T> parseList(
+    private static <T> @NotNull ImmutableList<T> parseList(
         final @NotNull ExtractedProperties properties,
         final @NotNull Sexp.KnownSymbol key,
-        final @NotNull SexpFunction<T> function
+        final @NotNull ThrowingFunction<Sexp, T, Unwind> function
     ) throws Unwind {
         final var value = properties.get(key);
         final var list = Sexps.asList(value);
         if (list == null) {
             throw signalError("Property " + key + " doesn't appear to be a list: " + Sexps.prettyPrint(value));
         }
-        final var result = new ArrayList<T>();
-        for (final var s : list) {
-            result.add(function.apply(s));
-        }
-        return List.copyOf(result);
+        return ImmutableList.map(list, function);
     }
 
     private static @NotNull String parseString(
@@ -317,7 +316,7 @@ public final class Parser {
     }
 
     private static @NotNull ExtractedProperties extractProperties(
-        final @NotNull List<Sexp> list,
+        final @NotNull ImmutableList<Sexp> list,
         final int startIndex,
         final @NotNull Set<? extends Sexp.Symbol> allowedKeys
     ) throws Unwind {
@@ -365,11 +364,6 @@ public final class Parser {
     private final @NotNull HtslConverter htslConverter;
     private final HashMap<Sexp.Symbol, PartialSection> sectionsById = new HashMap<>();
 
-    @FunctionalInterface
-    private interface SexpFunction<T> {
-        T apply(@NotNull Sexp sexp) throws Unwind;
-    }
-
     @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private static record ExtractedProperties(@NotNull Map<Sexp.Symbol, Sexp> properties, int remainderOffset) {
         private @NotNull Sexp get(final @NotNull Sexp.Symbol symbol) {
@@ -388,7 +382,7 @@ public final class Parser {
         @NotNull String description,
         @NotNull LocalDate date,
         boolean inhibitTableOfContents,
-        @NotNull List<String> topics,
+        @NotNull ImmutableList<String> topics,
         @NotNull PartialSection rootSection
     ) {
     }
@@ -397,8 +391,8 @@ public final class Parser {
     private static record PartialSection(
         @NotNull Sexp.Symbol identifier,
         @NotNull String header,
-        @NotNull List<Sexp.Symbol> childIds,
-        @NotNull List<Node> body
+        @NotNull ImmutableList<Sexp.Symbol> childIds,
+        @NotNull ImmutableList<Node> body
     ) {
     }
 }

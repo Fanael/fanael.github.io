@@ -5,7 +5,6 @@ package greenspun.dom;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -14,6 +13,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.util.UnreachableCodeReachedError;
+import greenspun.util.collections.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,7 +34,7 @@ public enum Tag {
         .setElementSerializer((final @NotNull Serializer serializer, final @NotNull Node.Element element) ->
             serializer.serializePseudoElement(
                 "meta",
-                List.of(new Attribute.String("charset", "UTF-8")),
+                ImmutableList.of(new Attribute.String("charset", "UTF-8")),
                 element.children(),
                 true
             ))
@@ -61,7 +61,7 @@ public enum Tag {
             assert content != null;
             serializer.serializePseudoElement(
                 "meta",
-                List.of(
+                ImmutableList.of(
                     new Attribute.String("http-equiv", name.value()),
                     content
                 ),
