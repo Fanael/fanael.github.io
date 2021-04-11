@@ -18,9 +18,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import greenspun.auki.annotations.Open;
 import greenspun.util.ThrowingFunction;
-import greenspun.util.UnreachableCodeReachedError;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,7 +47,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      */
     @SuppressWarnings("unchecked")
     public static <T> @NotNull ImmutableList<T> empty() {
-        return (ImmutableList<T>) Empty.instance;
+        return (ImmutableList<T>) EmptyHolder.instance;
     }
 
     /**
@@ -57,7 +55,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      */
     @SuppressWarnings("unchecked")
     public static <T> @NotNull ImmutableList<T> of(final T element) {
-        return new OfN<>((T[]) new Object[]{element});
+        return new Simple<>((T[]) new Object[]{element});
     }
 
     /**
@@ -65,7 +63,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      */
     @SuppressWarnings("unchecked")
     public static <T> @NotNull ImmutableList<T> of(final T e1, final T e2) {
-        return new OfN<>((T[]) new Object[]{e1, e2});
+        return new Simple<>((T[]) new Object[]{e1, e2});
     }
 
     /**
@@ -73,7 +71,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      */
     @SuppressWarnings("unchecked")
     public static <T> @NotNull ImmutableList<T> of(final T e1, final T e2, final T e3) {
-        return new OfN<>((T[]) new Object[]{e1, e2, e3});
+        return new Simple<>((T[]) new Object[]{e1, e2, e3});
     }
 
     /**
@@ -81,7 +79,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      */
     @SuppressWarnings("unchecked")
     public static <T> @NotNull ImmutableList<T> of(final T e1, final T e2, final T e3, final T e4) {
-        return new OfN<>((T[]) new Object[]{e1, e2, e3, e4});
+        return new Simple<>((T[]) new Object[]{e1, e2, e3, e4});
     }
 
     /**
@@ -97,7 +95,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
         // We only trust ArrayList itself that it doesn't leak the array returned from toArray anywhere, not its
         // potential subclasses; so if it's a subclass, make a defensive copy of the array.
         final var array = (list.getClass() == ArrayList.class) ? list.toArray() : list.toArray().clone();
-        return new OfN<>((T[]) array);
+        return new Simple<>((T[]) array);
     }
 
     /**
@@ -133,7 +131,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
             index += 1;
         }
         assert index == size : "Collection has a different number of elements when iterated than its claimed size";
-        return new OfN<>((R[]) array);
+        return new Simple<>((R[]) array);
     }
 
     /**
@@ -184,9 +182,8 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      * <p>
      * If the given collection is empty, {@code true} is returned.
      */
-    @Open
     @Override
-    public boolean containsAll(final @NotNull Collection<?> collection) {
+    public final boolean containsAll(final @NotNull Collection<?> collection) {
         for (final var item : collection) {
             if (!contains(item)) {
                 return false;
@@ -200,9 +197,8 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      * <p>
      * Equality follows the semantics of {@link Objects#equals(Object, Object)}.
      */
-    @Open
     @Override
-    public boolean contains(final @Nullable Object object) {
+    public final boolean contains(final @Nullable Object object) {
         return indexOf(object) != -1;
     }
 
@@ -335,182 +331,12 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
         }
     }
 
-    private static final class Empty<T> extends ImmutableList<T> {
-        @Override
-        public int hashCode() {
-            return 1;
-        }
-
-        @Override
-        public boolean equals(final @Nullable Object object) {
-            return (object instanceof List<?> list) && list.isEmpty();
-        }
-
-        @Override
-        public @NotNull String toString() {
-            return "[]";
-        }
-
-        @Override
-        public int size() {
-            return 0;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return true;
-        }
-
-        @Override
-        public boolean contains(final @Nullable Object object) {
-            return false;
-        }
-
-        @Override
-        public @NotNull Iterator<T> iterator() {
-            return new Iter<>();
-        }
-
-        @Override
-        public Object @NotNull [] toArray() {
-            return new Object[0];
-        }
-
-        @Override
-        public <U> U @NotNull [] toArray(final U @NotNull [] array) {
-            if (array.length > 0) {
-                array[0] = null;
-            }
-            return array;
-        }
-
-        @Override
-        public boolean containsAll(final @NotNull Collection<?> collection) {
-            Objects.requireNonNull(collection);
-            return collection.isEmpty();
-        }
-
-        @Override
-        public T get(final int index) {
-            Objects.checkIndex(index, 0);
-            throw new UnreachableCodeReachedError();
-        }
-
-        @Override
-        public int indexOf(final @Nullable Object object) {
-            return -1;
-        }
-
-        @Override
-        public int lastIndexOf(final @Nullable Object object) {
-            return -1;
-        }
-
-        @Override
-        public @NotNull ListIterator<T> listIterator() {
-            return new Iter<>();
-        }
-
-        @Override
-        public @NotNull ListIterator<T> listIterator(final int index) {
-            Objects.checkIndex(index, 1);
-            return new Iter<>();
-        }
-
-        @Override
-        public @NotNull ImmutableList<T> subList(final int from, final int to) {
-            Objects.checkFromToIndex(from, to, 0);
-            return this;
-        }
-
-        @Override
-        public @NotNull Spliterator<T> spliterator() {
-            return new Spliter<>();
-        }
-
-        @Override
-        public void forEach(final @NotNull Consumer<? super T> action) {
-            Objects.requireNonNull(action);
-        }
-
-        private static final Empty<?> instance = new Empty<>();
-
-        private static final class Iter<T> extends ImmutableList.Iter<T> {
-            @Override
-            public boolean hasNext() {
-                return false;
-            }
-
-            @Override
-            public boolean hasPrevious() {
-                return false;
-            }
-
-            @Override
-            @SuppressFBWarnings(value = "IT_NO_SUCH_ELEMENT", justification = "It actually can, SpotBugs is confused")
-            public T next() {
-                throw noMoreElements();
-            }
-
-            @Override
-            public T previous() {
-                throw noMoreElements();
-            }
-
-            @Override
-            public int nextIndex() {
-                return 0;
-            }
-
-            @Override
-            public int previousIndex() {
-                return -1;
-            }
-
-            @Override
-            public void forEachRemaining(final @NotNull Consumer<? super T> action) {
-                Objects.requireNonNull(action);
-            }
-        }
-
-        private static final class Spliter<T> implements Spliterator<T> {
-            @Override
-            public int characteristics() {
-                return ORDERED | SIZED | NONNULL | IMMUTABLE | SUBSIZED;
-            }
-
-            @Override
-            public long estimateSize() {
-                return 0;
-            }
-
-            @Override
-            public long getExactSizeIfKnown() {
-                return 0;
-            }
-
-            @Override
-            public @Nullable Spliterator<T> trySplit() {
-                return null;
-            }
-
-            @Override
-            public boolean tryAdvance(final @NotNull Consumer<? super T> action) {
-                Objects.requireNonNull(action);
-                return false;
-            }
-
-            @Override
-            public void forEachRemaining(final @NotNull Consumer<? super T> action) {
-                Objects.requireNonNull(action);
-            }
-        }
+    private static final class EmptyHolder {
+        private static final Simple<?> instance = new Simple<>(new Object[0]);
     }
 
-    private static final class OfN<T> extends ImmutableList<T> {
-        private OfN(final T @NotNull [] items) {
-            // We assume that the array is never empty, Empty should be used instead for empty immutable lists.
-            assert items.length != 0;
+    private static final class Simple<T> extends ImmutableList<T> {
+        private Simple(final T @NotNull [] items) {
             this.items = items;
         }
 
@@ -524,8 +350,8 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
             if (!(object instanceof List<?> list)) {
                 return false;
             }
-            if (list instanceof OfN<?> ofN) {
-                return Arrays.equals(items, ofN.items);
+            if (list instanceof Simple<?> simple) {
+                return Arrays.equals(items, simple.items);
             }
             if (list instanceof Sublist<?> sublist) {
                 return Arrays.equals(items, 0, items.length, sublist.items, sublist.fromIndex, sublist.toIndex());
@@ -550,7 +376,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
 
         @Override
         public boolean isEmpty() {
-            return false;
+            return items.length == 0;
         }
 
         @Override
@@ -662,7 +488,8 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
             }
 
             @Override
-            public void forEachRemaining(final Consumer<? super T> action) {
+            public void forEachRemaining(final @NotNull Consumer<? super T> action) {
+                Objects.requireNonNull(action);
                 for (int i = index, size = items.length; i < size; i += 1) {
                     index = i + 1;
                     action.accept(items[i]);
@@ -676,7 +503,8 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
 
     private static final class Sublist<T> extends ImmutableList<T> {
         private Sublist(final T @NotNull [] items, final int fromIndex, final int size) {
-            // We assume that the array is never empty, Empty should be used instead for immutable sub-lists.
+            // We assume that the array is never empty, the shared empty instance should be used instead for immutable
+            // sub-lists.
             assert size > 0;
             this.items = items;
             this.fromIndex = fromIndex;
@@ -696,8 +524,8 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
             if (list instanceof Sublist<?> sublist) {
                 return Arrays.equals(items, fromIndex, toIndex(), sublist.items, sublist.fromIndex, sublist.toIndex());
             }
-            if (list instanceof OfN<?> ofN) {
-                return Arrays.equals(items, fromIndex, toIndex(), ofN.items, 0, ofN.items.length);
+            if (list instanceof Simple<?> simple) {
+                return Arrays.equals(items, fromIndex, toIndex(), simple.items, 0, simple.items.length);
             }
             return RangeUtils.equalsFallback(items, fromIndex, toIndex(), list);
         }
@@ -840,7 +668,8 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
             }
 
             @Override
-            public void forEachRemaining(final Consumer<? super T> action) {
+            public void forEachRemaining(final @NotNull Consumer<? super T> action) {
+                Objects.requireNonNull(action);
                 for (int i = index; i < toIndex; i += 1) {
                     index = i + 1;
                     action.accept(items[i]);
@@ -886,6 +715,10 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
         }
 
         private static <T> @NotNull String toString(final T @NotNull [] items, final int from, final int to) {
+            if (from >= to) {
+                return "[]";
+            }
+
             final var builder = new StringBuilder();
             builder.append('[');
             for (int i = from; i < to; i += 1) {
@@ -903,6 +736,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
             final int to,
             final @NotNull Consumer<? super T> action
         ) {
+            Objects.requireNonNull(action);
             for (int i = from; i < to; i += 1) {
                 action.accept(items[i]);
             }
