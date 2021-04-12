@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import greenspun.util.SimpleClassValue;
 import greenspun.util.ThrowingFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -83,54 +84,39 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
     }
 
     /**
-     * Returns an immutable list containing all elements of the given {@link ArrayList}.
+     * Returns an immutable list containing all elements of the given {@link ArrayList} in the same order.
      * <p>
      * If the given {@link ArrayList} is empty, has the same effect as {@link #empty()}.
      */
     @SuppressWarnings("unchecked")
     public static <T> @NotNull ImmutableList<T> freeze(final @NotNull ArrayList<? extends T> list) {
-        if (list.isEmpty()) {
-            return empty();
-        }
-        // We only trust ArrayList itself that it doesn't leak the array returned from toArray anywhere, not its
-        // potential subclasses; so if it's a subclass, make a defensive copy of the array.
-        final var array = (list.getClass() == ArrayList.class) ? list.toArray() : list.toArray().clone();
-        return new Simple<>((T[]) array);
+        return list.isEmpty() ? empty() : new Simple<>((T[]) getSafeArrayFromCollection(list));
     }
 
     /**
      * Returns an immutable list containing the results of applying the given function to the elements of the given
      * collection.
      * <p>
+     * For each index {@code i} in the returned {@code list}, {@code list.get(i)} corresponds to the result of applying
+     * {@code function} to the {@code i}th element of the array returned by the {@code collection.toArray()} call.
+     * <p>
      * If the given collection is empty, has the same effect as {@link #empty()}.
      * <p>
      * Exceptions thrown by the function are passed through.
-     * <p>
-     * Semantically equivalent to, but perhaps more efficient than:
-     * <pre>{@code  final var list = new ArrayList<R>(collection.size());
-     * for (final var item: collection) {
-     *     list.add(function.apply(item));
-     * }
-     * return ImmutableList.freeze(list);}</pre>
      */
     @SuppressWarnings("unchecked")
     public static <T, R, E extends Throwable> @NotNull ImmutableList<R> map(
         final @NotNull Collection<? extends T> collection,
-        final @NotNull ThrowingFunction<? super T, ? extends R, ? extends E> function
+        final @NotNull ThrowingFunction<? super T, ? extends R, E> function
     ) throws E {
-        final var size = collection.size();
+        final var array = getSafeArrayFromCollection(collection);
+        final var size = array.length;
         if (size == 0) {
             return empty();
         }
-        // NB: don't use collection.toArray() here, as a buggy or malicious implementation can leak the returned array,
-        // making it unsafe to use directly as the backing array of OfN.
-        final var array = new Object[size];
-        int index = 0;
-        for (final var item : collection) {
-            array[index] = function.apply(item);
-            index += 1;
+        for (int index = 0; index < size; index += 1) {
+            array[index] = function.apply((T) array[index]);
         }
-        assert index == size : "Collection has a different number of elements when iterated than its claimed size";
         return new Simple<>((R[]) array);
     }
 
@@ -309,6 +295,24 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
     private static @NotNull UnsupportedOperationException unsupportedModification() {
         throw new UnsupportedOperationException("Cannot modify an immutable list");
     }
+
+    private static Object @NotNull [] getSafeArrayFromCollection(final @NotNull Collection<?> collection) {
+        final var array = collection.toArray();
+        // Malicious or buggy collection types could leak the result of toArray() somewhere, which could potentially
+        // break the immutability guarantee. If it's not one of the types we trust, make a defensive copy.
+        return isTrustedCollection.get(collection.getClass()) ? array : array.clone();
+    }
+
+    private static boolean isTrustedCollectionType(final @NotNull Class<?> clazz) {
+        // At the moment, trust only ArrayList itself (not its potential child classes), its sub-lists and immutable
+        // lists themselves.
+        return clazz == ArrayList.class
+            || clazz.getDeclaringClass() == ArrayList.class
+            || ImmutableList.class.isAssignableFrom(clazz);
+    }
+
+    private static final SimpleClassValue<Boolean> isTrustedCollection =
+        new SimpleClassValue<>(ImmutableList::isTrustedCollectionType);
 
     private abstract static sealed class Iter<T> implements ListIterator<T> {
         static @NotNull NoSuchElementException noMoreElements() {
