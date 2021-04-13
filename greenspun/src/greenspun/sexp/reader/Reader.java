@@ -4,7 +4,6 @@ package greenspun.sexp.reader;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -28,15 +27,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class Reader {
     /**
-     * Initializes a new S-expression reader that will read bytes from the given stream.
+     * Initializes a new S-expression reader that will read bytes from the given byte stream.
      * <p>
      * All symbols read will be interned into the given symbol table.
-     * <p>
-     * Note that the input stream is internally buffered to provide lookahead, so the passed stream doesn't need to be
-     * buffered itself.
      */
-    public Reader(final @NotNull InputStream stream, final @NotNull SymbolTable symbolTable) {
-        buffer = new ReadBuffer(stream);
+    public Reader(final @NotNull ByteStream stream, final @NotNull SymbolTable symbolTable) {
+        this.stream = stream;
         this.symbolTable = symbolTable;
     }
 
@@ -62,19 +58,18 @@ public final class Reader {
 
     private @NotNull HitEof skipSkippables() throws Unwind {
         while (true) {
-            final var maybeByte = buffer.peekByte();
-            if (maybeByte == endOfInput) {
+            if (stream.reachedEnd()) {
                 return HitEof.YES;
             }
-            final var b = (byte) maybeByte;
+            final var b = stream.peek();
             if (ByteClass.of(b) != ByteClass.SKIPPABLE) {
                 return HitEof.NO;
             }
-            buffer.discardPeek();
+            stream.discardPeek();
             switch (b) {
                 case '\n' -> lineNumber += 1;
                 case ';' -> {
-                    if (buffer.skipToLineFeed().hitEof()) {
+                    if (stream.skipToLineFeed().hitEof()) {
                         return HitEof.YES;
                     }
                 }
@@ -89,17 +84,16 @@ public final class Reader {
                 throw signalReadError("Recursion limit reached, try to limit nesting");
             }
 
-            final var maybeByte = buffer.peekByte();
-            if (maybeByte == endOfInput) {
+            if (stream.reachedEnd()) {
                 return null;
             }
-            final var b = (byte) maybeByte;
+            final var b = stream.peek();
             switch (ByteClass.of(b)) {
                 case RESERVED -> throw signalReservedCharacterError(b);
                 case SKIPPABLE -> throw new UnreachableCodeReachedError(
                     "readForm called without preceding skipSkippables");
             }
-            buffer.discardPeek();
+            stream.discardPeek();
 
             return switch (b) {
                 case ')' -> throw signalReadError("Expected a form, but found ')' instead");
@@ -118,12 +112,11 @@ public final class Reader {
             if (skipSkippables().hitEof()) {
                 throw signalUnterminatedListError();
             }
-            final var maybeByte = buffer.peekByte();
-            if (maybeByte == endOfInput) {
+            if (stream.reachedEnd()) {
                 throw signalUnterminatedListError();
             }
-            if (maybeByte == ')') {
-                buffer.discardPeek();
+            if (stream.peek() == ')') {
+                stream.discardPeek();
                 break;
             }
             final var form = readForm();
@@ -141,12 +134,11 @@ public final class Reader {
         var inEscapeSequence = false;
         outerLoop:
         while (true) {
-            final var maybeByte = buffer.peekByte();
-            if (maybeByte == endOfInput) {
+            if (stream.reachedEnd()) {
                 throw signalReadError("Expected closing '\"' but found end of input instead");
             }
-            buffer.discardPeek();
-            final var b = (byte) maybeByte;
+            final var b = stream.peek();
+            stream.discardPeek();
             if (b == '\n') {
                 lineNumber += 1;
             }
@@ -171,15 +163,14 @@ public final class Reader {
         final var symbolNameBytes = new ByteArrayOutputStream(initialSymbolCapacity);
         symbolNameBytes.write(firstByte);
         while (true) {
-            final var maybeByte = buffer.peekByte();
-            if (maybeByte == endOfInput) {
+            if (stream.reachedEnd()) {
                 break;
             }
-            final var b = (byte) maybeByte;
+            final var b = stream.peek();
             if (ByteClass.of(b) != ByteClass.REGULAR) {
                 break;
             }
-            buffer.discardPeek();
+            stream.discardPeek();
             symbolNameBytes.write(b);
         }
         final var symbolName = convertUtf8(symbolNameBytes.toByteArray());
@@ -242,91 +233,15 @@ public final class Reader {
     }
 
     private static final byte lastControlByte = 0x1F;
-    private static final int endOfInput = -1;
     private static final int initialListCapacity = 8;
     private static final int initialStringCapacity = 256;
     private static final int initialSymbolCapacity = 32;
     private static final int maxDepth = 150;
-    private final @NotNull ReadBuffer buffer;
+    private final @NotNull ByteStream stream;
     private final @NotNull SymbolTable symbolTable;
     private int lineNumber = 1;
     private int topLevelFormLine = 0;
     private int currentDepth = 0;
-
-    private static final class ReadBuffer {
-        private ReadBuffer(final @NotNull InputStream stream) {
-            this.stream = stream;
-        }
-
-        private int peekByte() throws Unwind {
-            return (position < bufferSize) ? Byte.toUnsignedInt(buffer[position]) : refill();
-        }
-
-        private void discardPeek() {
-            position += 1;
-        }
-
-        private @NotNull HitEof skipToLineFeed() throws Unwind {
-            while (true) {
-                if (position < bufferSize) {
-                    final var lineFeedPosition = findLineFeed();
-                    if (lineFeedPosition != -1) {
-                        position = lineFeedPosition;
-                        return HitEof.NO;
-                    }
-                }
-                if (refill() == endOfInput) {
-                    return HitEof.YES;
-                }
-            }
-        }
-
-        private int findLineFeed() {
-            for (int i = position; i < bufferSize; i += 1) {
-                if (buffer[i] == '\n') {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        private int refill() throws Unwind {
-            try {
-                final var numberOfBytesRead = stream.read(buffer);
-                if (numberOfBytesRead > 0) {
-                    position = 0;
-                    bufferSize = numberOfBytesRead;
-                    return Byte.toUnsignedInt(buffer[0]);
-                } else {
-                    return endOfInput;
-                }
-            } catch (final IOException e) {
-                throw ConditionContext.error(new IOExceptionCondition(e));
-            }
-        }
-
-        private static final int bufferCapacity = 8192;
-
-        private final @NotNull InputStream stream;
-        private final byte[] buffer = new byte[bufferCapacity];
-        private int position = 0;
-        private int bufferSize = 0;
-    }
-
-    private enum HitEof {
-        NO(false),
-        YES(true);
-
-        HitEof(final boolean booleanValue) {
-            this.booleanValue = booleanValue;
-        }
-
-        private boolean hitEof() {
-            return booleanValue;
-        }
-
-        private final boolean booleanValue;
-    }
 
     private enum ByteClass {
         REGULAR,

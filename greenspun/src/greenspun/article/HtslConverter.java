@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.article;
 
-import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Map;
@@ -14,6 +13,7 @@ import greenspun.pygments.PygmentsServer;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
 import greenspun.sexp.SymbolTable;
+import greenspun.sexp.reader.ByteStream;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.Trace;
 import greenspun.util.collections.ImmutableList;
@@ -167,8 +167,7 @@ public final class HtslConverter {
             return cachedNode;
         }
         final var formString = pygmentsServer.highlightCode(code, pygmentsLanguageName);
-        final var reader =
-            new Reader(new ByteArrayInputStream(formString.getBytes(StandardCharsets.UTF_8)), symbolTable);
+        final var reader = new Reader(new ByteStream(formString.getBytes(StandardCharsets.UTF_8)), symbolTable);
         final var textNodeJoiner = new TextNodeJoiner();
         for (@Nullable Sexp form; (form = reader.readTopLevelForm()) != null; ) {
             textNodeJoiner.add(convertForm(form));

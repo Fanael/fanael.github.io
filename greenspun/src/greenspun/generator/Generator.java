@@ -26,6 +26,7 @@ import greenspun.dom.Node;
 import greenspun.dom.Serializer;
 import greenspun.dom.Verifier;
 import greenspun.sexp.SymbolTable;
+import greenspun.sexp.reader.ByteStream;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.PathUtils;
 import greenspun.util.ThrowingFunction;
@@ -212,7 +213,7 @@ public final class Generator {
                 try (final var trace = new Trace(() -> "Loading article from " + fullSourcePath)) {
                     trace.use();
                     try (final var stream = Files.newInputStream(fullSourcePath)) {
-                        final var reader = new Reader(stream, symbolTable);
+                        final var reader = new Reader(new ByteStream(stream), symbolTable);
                         final var htslConverter =
                             new HtslConverter(symbolTable, sharedState.pygmentsServer(), sharedState.pygmentsCache());
                         return Parser.parseArticleForms(reader, htslConverter);
