@@ -18,7 +18,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import greenspun.util.SimpleClassValue;
 import greenspun.util.ThrowingFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -90,7 +89,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      */
     @SuppressWarnings("unchecked")
     public static <T> @NotNull ImmutableList<T> freeze(final @NotNull ArrayList<? extends T> list) {
-        return list.isEmpty() ? empty() : new Simple<>((T[]) getSafeArrayFromCollection(list));
+        return list.isEmpty() ? empty() : new Simple<>((T[]) SafeArrayAccess.toSafeArray(list));
     }
 
     /**
@@ -109,7 +108,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
         final @NotNull Collection<? extends T> collection,
         final @NotNull ThrowingFunction<? super T, ? extends R, E> function
     ) throws E {
-        final var array = getSafeArrayFromCollection(collection);
+        final var array = SafeArrayAccess.toSafeArray(collection);
         final var size = array.length;
         if (size == 0) {
             return empty();
@@ -295,24 +294,6 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
     private static @NotNull UnsupportedOperationException unsupportedModification() {
         throw new UnsupportedOperationException("Cannot modify an immutable list");
     }
-
-    private static Object @NotNull [] getSafeArrayFromCollection(final @NotNull Collection<?> collection) {
-        final var array = collection.toArray();
-        // Malicious or buggy collection types could leak the result of toArray() somewhere, which could potentially
-        // break the immutability guarantee. If it's not one of the types we trust, make a defensive copy.
-        return isTrustedCollection.get(collection.getClass()) ? array : array.clone();
-    }
-
-    private static boolean isTrustedCollectionType(final @NotNull Class<?> clazz) {
-        // At the moment, trust only ArrayList itself (not its potential child classes), its sub-lists and immutable
-        // lists themselves.
-        return clazz == ArrayList.class
-            || clazz.getDeclaringClass() == ArrayList.class
-            || ImmutableList.class.isAssignableFrom(clazz);
-    }
-
-    private static final SimpleClassValue<Boolean> isTrustedCollection =
-        new SimpleClassValue<>(ImmutableList::isTrustedCollectionType);
 
     private abstract static sealed class Iter<T> implements ListIterator<T> {
         static @NotNull NoSuchElementException noMoreElements() {
