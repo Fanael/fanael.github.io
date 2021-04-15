@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -196,11 +197,7 @@ public final class Reader {
 
     private @NotNull String convertUtf8(final byte[] bytes) throws Unwind {
         try {
-            final var decoder = StandardCharsets.UTF_8.newDecoder();
-            decoder.onMalformedInput(CodingErrorAction.REPORT);
-            decoder.onUnmappableCharacter(CodingErrorAction.REPORT);
-            final var charBuffer = decoder.decode(ByteBuffer.wrap(bytes));
-            return charBuffer.toString();
+            return utf8Decoder.decode(ByteBuffer.wrap(bytes)).toString();
         } catch (final CharacterCodingException e) {
             throw signalReadError("Invalid UTF-8 byte sequence detected");
         }
@@ -232,6 +229,13 @@ public final class Reader {
         return true;
     }
 
+    private static @NotNull CharsetDecoder newUtf8Decoder() {
+        final var decoder = StandardCharsets.UTF_8.newDecoder();
+        decoder.onMalformedInput(CodingErrorAction.REPORT);
+        decoder.onUnmappableCharacter(CodingErrorAction.REPORT);
+        return decoder;
+    }
+
     private static final byte lastControlByte = 0x1F;
     private static final int initialListCapacity = 8;
     private static final int initialStringCapacity = 256;
@@ -239,6 +243,7 @@ public final class Reader {
     private static final int maxDepth = 150;
     private final @NotNull ByteStream stream;
     private final @NotNull SymbolTable symbolTable;
+    private final @NotNull CharsetDecoder utf8Decoder = newUtf8Decoder();
     private int lineNumber = 1;
     private int topLevelFormLine = 0;
     private int currentDepth = 0;
