@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright © 2019-2020  Fanael Linithien
+# Copyright © 2019-2021  Fanael Linithien
 # SPDX-License-Identifier: GPL-3.0-or-later
 '''
 A simple pygments server, communicating over pipes, to reuse the same process
@@ -15,8 +15,7 @@ Command names, arguments and responses are simple strings unless noted
 otherwise.
 
 When the server is done processing a command, it sends the simple string
-":done". If the response is a multiline string, the multiline string terminating
-":done" and the command-finishing one are collapsed into one.
+":done".
 
 On recoverable errors, the server sends ":error" followed by a multiline string
 describing the error.
@@ -29,7 +28,20 @@ List of known commands:
    Two arguments:
     - pygments lexer name
     - source code to highlight (multiline string)
-   Reponse: A multiline string representing a lisp list of HTSL forms.
+   Response: A stream of tokens.
+   Each token consists of one or more strings. The first string is always a
+   simple string indicating the type of the token and its format:
+    - ":sr": simple raw, non-highlighted, text. The text itself follows.
+    - ":mr": multiline raw, non-highlighted, text. The text itself follows
+      (multiline string).
+    - ":sh": simple highlighted text. Two values follow:
+       - a name of a CSS class indicating the type of this token
+       - the text of the token
+    - ":mh": multiline highlighted text. Two values follow:
+       - a name of a CSS class indicating the type of this token
+       - the text of the token itself (multiline string)
+   The simple strings ":done" and ":error" can also occur in place of a token
+   type, with their usual semantics.
 '''
 import sys
 import traceback
@@ -69,21 +81,40 @@ def _get_effective_class_name(token_type):
 
 _TOKEN_TYPE_CLASSES = {t: _get_effective_class_name(t) for t in tok.STANDARD_TYPES}
 
-class _SexpFormatter(fmt.Formatter):
+def _read_line():
+    return sys.stdin.readline().rstrip('\n')
+
+def _send_done(out):
+    out.write(':done\n')
+
+def _print_multiline_string(string, out):
+    for line in string.splitlines():
+        out.write(f'>{line}\n')
+    _send_done(out)
+
+class _TokenStreamFormatter(fmt.Formatter):
     @staticmethod
     def format_unencoded(token_source, out):
         for token_type, value in token_source:
             class_name = _TOKEN_TYPE_CLASSES[token_type]
+            is_simple = '\n' not in value
             if class_name:
-                out.write(f' ((span :class "{class_name}")')
-            out.write(f' "{value.translate(_STRING_ESCAPES)}"')
-            if class_name:
-                out.write(')')
+                if is_simple:
+                    out.write(f':sh\n{class_name}\n{value}\n')
+                else:
+                    out.write(f':mh\n{class_name}\n')
+                    _print_multiline_string(value, out)
+            else:
+                if is_simple:
+                    out.write(f':sr\n{value}\n')
+                else:
+                    out.write(':mr\n')
+                    _print_multiline_string(value, out)
 
 def _read_multiline_string():
     source_lines = []
     while True:
-        line = input()
+        line = _read_line()
         if line.startswith('>'):
             source_lines.append(line[1:])
         elif line == ':done':
@@ -93,18 +124,10 @@ def _read_multiline_string():
     source_lines.append('')
     return '\n'.join(source_lines)
 
-def _finish_command():
-    print(':done', flush=True)
-
-def _print_multiline_string(string):
-    for line in string.splitlines():
-        print(f'>{line}')
-    _finish_command()
-
 def _print_exception(exception):
     print(':error')
     trace = traceback.format_exception(type(exception), exception, exception.__traceback__)
-    _print_multiline_string(''.join(trace))
+    _print_multiline_string(''.join(trace), sys.stdout)
 
 _COMMAND_MAP = {}
 
@@ -116,23 +139,26 @@ def _define_command(name):
 
 @_define_command(':quit')
 def _quit_server():
-    _finish_command()
+    _send_done(sys.stdout)
+    sys.stdout.flush()
     sys.exit(0)
 
 @_define_command(':highlight')
 def _highlight_code():
-    lexer_name = input()
+    lexer_name = _read_line()
     source_code = _read_multiline_string()
     lexer = lex.get_lexer_by_name(lexer_name)
-    _print_multiline_string(p.highlight(source_code, lexer, _SexpFormatter()))
+    p.highlight(source_code, lexer, _TokenStreamFormatter(), outfile=sys.stdout)
+    _send_done(sys.stdout)
 
 def _main():
     while True:
-        command = input()
+        command = _read_line()
         try:
             _COMMAND_MAP[command]()
         except Exception as exception:
             _print_exception(exception)
+        sys.stdout.flush()
 
 if __name__ == '__main__':
     _main()

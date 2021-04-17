@@ -9,11 +9,15 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import greenspun.dom.Node;
+import greenspun.dom.Tag;
 import greenspun.util.Trace;
 import greenspun.util.condition.ConditionContext;
+import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
 import org.jetbrains.annotations.NotNull;
@@ -77,8 +81,7 @@ public final class PygmentsServer implements AutoCloseable {
     /**
      * Highlights the syntax of the given code using the given language name for determining syntactic rules.
      * <p>
-     * If successful, returns a string representing the highlighted code in HTSL form. Use the
-     * {@link greenspun.article.HtslConverter} to convert it into DOM tree nodes.
+     * If successful, returns an {@link ArrayList} of DOM {@link Node}s representing the highlighted code.
      * <p>
      * It is safe for multiple threads to call this method on the same {@code PygmentsServer} instance at the same time
      * without external synchronization.
@@ -89,7 +92,10 @@ public final class PygmentsServer implements AutoCloseable {
      * <li>{@link PygmentsServerErrorCondition} if the Pygments server process reported an error.
      * </ul>
      */
-    public @NotNull String highlightCode(final @NotNull String code, final @NotNull String languageName) throws Unwind {
+    public @NotNull ArrayList<@NotNull Node> highlightCode(
+        final @NotNull String code,
+        final @NotNull String languageName
+    ) throws Unwind {
         try (final var trace = new Trace(() -> "Highlighting code in language " + languageName)) {
             trace.use();
             final var connection = acquireConnection();
@@ -190,7 +196,7 @@ public final class PygmentsServer implements AutoCloseable {
             reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
         }
 
-        private @NotNull String highlightCode(
+        private @NotNull ArrayList<@NotNull Node> highlightCode(
             final @NotNull String code,
             final @NotNull String languageName
         ) throws Unwind {
@@ -199,7 +205,7 @@ public final class PygmentsServer implements AutoCloseable {
                 sendSimpleString(languageName);
                 sendMultilineString(code);
                 writer.flush();
-                return receiveMultilineResponse();
+                return receiveNodeStream();
             } catch (final IOException e) {
                 process.destroy();
                 throw ConditionContext.error(new IOExceptionCondition(e));
@@ -242,6 +248,34 @@ public final class PygmentsServer implements AutoCloseable {
             }
         }
 
+        private @NotNull ArrayList<@NotNull Node> receiveNodeStream() throws IOException, Unwind {
+            final var accumulator = new NodeAccumulator();
+            loop:
+            while (true) {
+                final var response = reader.readLine();
+                if (response == null) {
+                    throw recoverFromServerError(null);
+                }
+                switch (response) {
+                    case ":done" -> {
+                        break loop;
+                    }
+                    case ":sr" -> accumulator.accumulate(null, receiveSimpleString());
+                    case ":mr" -> accumulator.accumulate(null, receiveMultilineString());
+                    case ":sh" -> {
+                        final var cssClass = receiveSimpleString();
+                        accumulator.accumulate(cssClass, receiveSimpleString());
+                    }
+                    case ":mh" -> {
+                        final var cssClass = receiveSimpleString();
+                        accumulator.accumulate(cssClass, receiveMultilineString());
+                    }
+                    default -> throw recoverFromServerError(response);
+                }
+            }
+            return accumulator.finish();
+        }
+
         private void sendSimpleString(final @NotNull String string) throws IOException {
             assert string.indexOf('\n') == -1 : "Multiline string sent as a simple string";
             writer.write(string);
@@ -275,32 +309,44 @@ public final class PygmentsServer implements AutoCloseable {
             writer.write('\n');
         }
 
-        private @NotNull String receiveMultilineResponse() throws IOException, Unwind {
+        private @NotNull String receiveSimpleString() throws IOException, Unwind {
+            final var line = reader.readLine();
+            // NB: ":error" is a perfectly cromulent simple string that can occur as a token value in regular code, so
+            // do NOT check for it here.
+            if (line == null) {
+                throw recoverFromServerError(null);
+            }
+            return line;
+        }
+
+        private @NotNull String receiveMultilineString() throws IOException, Unwind {
             final var builder = new StringBuilder();
             while (true) {
                 final var line = reader.readLine();
                 if (line == null) {
-                    recoverFromServerError(null);
+                    throw recoverFromServerError(null);
                 } else if (line.startsWith(">")) {
                     builder.append(line, 1, line.length());
                     builder.append('\n');
                 } else if (":done".equals(line)) {
                     break;
                 } else {
-                    recoverFromServerError(line);
+                    throw recoverFromServerError(line);
                 }
             }
             return builder.toString();
         }
 
-        private void recoverFromServerError(final @Nullable String firstLineOfResponse) throws Unwind {
+        private @NotNull UnhandledErrorError recoverFromServerError(
+            final @Nullable String firstLineOfResponse
+        ) throws Unwind {
             try (final var trace = new Trace("Attempting to recover from pygments server error")) {
                 trace.use();
                 @NotNull greenspun.util.condition.Condition condition;
                 if (":error".equals(firstLineOfResponse)) {
                     // Regular error, retrieve the error message and let the server live.
                     try {
-                        final var errorMessage = receiveMultilineResponse();
+                        final var errorMessage = receiveMultilineString();
                         condition = new PygmentsServerErrorCondition("Server reported an error", errorMessage);
                     } catch (final IOException e) {
                         // Okay, we can't let it live after all because we don't know what state it's in after possibly
@@ -323,5 +369,50 @@ public final class PygmentsServer implements AutoCloseable {
         private final @NotNull OutputStreamWriter writer;
         private final @NotNull BufferedReader reader;
         private boolean stillAlive = true;
+    }
+
+    // Due to how the Pygments library works internally, it's very common to see *tons* of consecutive nodes with
+    // the same CSS class (usually null) that tend to be very short: each typically consisting of only a handful of
+    // characters, sometimes even just *one*. This class cleans up that mess by merging them in order to decrease memory
+    // use and make it easier on code that visits every DOM node, like the DOM verifier or serializer. Since we're
+    // caching each highlighted snippet in DOM subtree form in the Pygments cache, this is worth it.
+    private static final class NodeAccumulator {
+        private void accumulate(final @Nullable String cssClass, final @NotNull String string) {
+            if (!Objects.equals(lastClass, cssClass)) {
+                flushBuilder();
+                lastClass = cssClass;
+            }
+            builder.append(string);
+        }
+
+        private @NotNull ArrayList<@NotNull Node> finish() {
+            flushBuilder();
+            return nodes;
+        }
+
+        private void flushBuilder() {
+            if (builder.isEmpty()) {
+                return;
+            }
+            nodes.add(makeNode());
+            builder.setLength(0);
+        }
+
+        private @NotNull Node makeNode() {
+            final var textNode = new Node.Text(builder.toString());
+            final var cssClass = lastClass;
+            if (cssClass == null) {
+                return textNode;
+            } else {
+                return Node.buildElement(Tag.SPAN)
+                    .setAttribute("class", cssClass)
+                    .appendChild(textNode)
+                    .toElement();
+            }
+        }
+
+        private final ArrayList<@NotNull Node> nodes = new ArrayList<>();
+        private final StringBuilder builder = new StringBuilder();
+        private @Nullable String lastClass = null;
     }
 }

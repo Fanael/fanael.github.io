@@ -4,7 +4,6 @@ package greenspun.sexp.reader;
 
 import java.io.IOException;
 import java.io.InputStream;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
@@ -17,20 +16,6 @@ import org.jetbrains.annotations.Nullable;
  * This class provides the lookahead necessary for the S-expression {@link Reader} to work.
  */
 public final class ByteStream {
-    /**
-     * Initializes a new byte stream that will read bytes from the given byte array.
-     * The byte stream will have no associated input stream, so no I/O errors are possible.
-     * <p>
-     * If a byte in the array is mutated, the byte stream will reflect that change.
-     */
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "This is the intended behavior")
-    public ByteStream(final byte @NotNull [] buffer) {
-        stream = null;
-        this.buffer = buffer;
-        position = 0;
-        bufferSize = buffer.length;
-    }
-
     /**
      * Initializes a new byte stream that will read bytes from the given input stream.
      * <p>

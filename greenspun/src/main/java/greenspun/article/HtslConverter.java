@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.article;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Map;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.dom.Node;
@@ -12,8 +10,6 @@ import greenspun.generator.Renderer;
 import greenspun.pygments.PygmentsServer;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
-import greenspun.sexp.SymbolTable;
-import greenspun.sexp.reader.ByteStream;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.Trace;
 import greenspun.util.collections.ImmutableList;
@@ -21,7 +17,6 @@ import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The HTSL converter: the primary means of converting HTSL forms into DOM tree nodes.
@@ -31,11 +26,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class HtslConverter {
     public HtslConverter(
-        final @NotNull SymbolTable symbolTable,
         final @NotNull PygmentsServer pygmentsServer,
         final @NotNull PygmentsCache pygmentsCache
     ) {
-        this.symbolTable = symbolTable;
         this.pygmentsServer = pygmentsServer;
         this.pygmentsCache = pygmentsCache;
     }
@@ -166,13 +159,8 @@ public final class HtslConverter {
         if (cachedNode != null) {
             return cachedNode;
         }
-        final var formString = pygmentsServer.highlightCode(code, pygmentsLanguageName);
-        final var reader = new Reader(new ByteStream(formString.getBytes(StandardCharsets.UTF_8)), symbolTable);
-        final var textNodeJoiner = new TextNodeJoiner();
-        for (@Nullable Sexp form; (form = reader.readTopLevelForm()) != null; ) {
-            textNodeJoiner.add(convertForm(form));
-        }
-        final var wrapped = Renderer.wrapHighlightedCode(textNodeJoiner.finish(), prettyLanguageName);
+        final var nodes = pygmentsServer.highlightCode(code, pygmentsLanguageName);
+        final var wrapped = Renderer.wrapHighlightedCode(nodes, prettyLanguageName);
         return pygmentsCache.put(codeDigest, wrapped);
     }
 
@@ -207,7 +195,6 @@ public final class HtslConverter {
         Sexp.KnownSymbol.KW_JAVA, "Java"
     );
 
-    private final @NotNull SymbolTable symbolTable;
     private final @NotNull PygmentsServer pygmentsServer;
     private final @NotNull PygmentsCache pygmentsCache;
 
@@ -221,38 +208,5 @@ public final class HtslConverter {
 
     @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private static record TagHead(@NotNull Sexp.Symbol tagName, @NotNull ImmutableList<Sexp> attributes) {
-    }
-
-    // The Pygments server has a habit of emitting *tons* of consecutive text nodes — each typically consisting of only
-    // a handful of characters, sometimes even just *one* — so this class cleans up that mess by merging them in order
-    // to decrease memory use and make it easier on code that visits every DOM node, like the verifier or serializer.
-    // Since we're caching each highlighted snippet in DOM subtree form in the Pygments cache, this is worth it.
-    private static final class TextNodeJoiner {
-        private void add(final @NotNull Node node) {
-            if (node instanceof Node.Text textNode) {
-                builder.append(textNode.text());
-                inText = true;
-            } else {
-                addJoinedTextNode();
-                nodes.add(node);
-            }
-        }
-
-        private @NotNull ArrayList<@NotNull Node> finish() {
-            addJoinedTextNode();
-            return nodes;
-        }
-
-        private void addJoinedTextNode() {
-            if (inText) {
-                nodes.add(new Node.Text(builder.toString()));
-                builder.setLength(0);
-                inText = false;
-            }
-        }
-
-        private final ArrayList<@NotNull Node> nodes = new ArrayList<>();
-        private final @NotNull StringBuilder builder = new StringBuilder();
-        private boolean inText = false;
     }
 }

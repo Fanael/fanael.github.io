@@ -215,7 +215,7 @@ public final class Generator {
                     try (final var stream = Files.newInputStream(fullSourcePath)) {
                         final var reader = new Reader(new ByteStream(stream), symbolTable);
                         final var htslConverter =
-                            new HtslConverter(symbolTable, sharedState.pygmentsServer(), sharedState.pygmentsCache());
+                            new HtslConverter(sharedState.pygmentsServer(), sharedState.pygmentsCache());
                         return Parser.parseArticleForms(reader, htslConverter);
                     } catch (final IOException e) {
                         throw ConditionContext.error(new IOExceptionCondition(e));
