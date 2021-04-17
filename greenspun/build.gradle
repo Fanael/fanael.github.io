@@ -40,16 +40,6 @@ application {
     mainClass.set "greenspun.cli.Main"
 }
 
-sourceSets.main {
-    java.srcDirs = ["src"]
-    resources.srcDirs = ["resources"]
-}
-
-sourceSets.test {
-    java.srcDirs = ["test"]
-    resources.srcDirs = ["test-resources"]
-}
-
 java.toolchain {
     languageVersion = JavaLanguageVersion.of(16)
 }

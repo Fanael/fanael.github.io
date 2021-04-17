@@ -65,6 +65,6 @@ final class GeneratorTest {
         }
     }
 
-    private static final Path testResourcesPath = Path.of("test-resources");
+    private static final Path testResourcesPath = Path.of("src/test/resources");
     private static final Path referenceDirectoryPath = testResourcesPath.resolve("reference");
 }
