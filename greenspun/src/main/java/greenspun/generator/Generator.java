@@ -458,23 +458,27 @@ public final class Generator {
             try {
                 results.add(future.get());
             } catch (final ExecutionException e) {
-                needsCancellation = true;
-                final var cause = e.getCause();
-                if (cause instanceof UnwindException u) {
-                    // Cross-thread unwind to a restart found, rethrow it to continue unwinding in the parent thread.
-                    throw u.unwind;
-                } else if (cause instanceof InterruptedException || cause instanceof UncheckedInterruptedException) {
-                    // Continue looking, some other future will likely have a more concrete throwable.
-                    foundInterrupt = true;
-                } else if (cause instanceof Error error) {
-                    // Errors should be passed through directly.
-                    throw error;
-                } else if (cause instanceof RuntimeException runtimeException) {
-                    // As should runtime exceptions.
-                    throw runtimeException;
-                } else {
-                    throw new AssertionError("An exception escaped from a worker through a future", cause);
-                }
+                recover(e);
+            }
+        }
+
+        private void recover(final @NotNull ExecutionException executionException) throws Unwind {
+            needsCancellation = true;
+            final var cause = executionException.getCause();
+            if (cause instanceof UnwindException unwind) {
+                // Cross-thread unwind to a restart found, rethrow it to continue unwinding in the parent thread.
+                throw unwind.unwind;
+            } else if (cause instanceof InterruptedException || cause instanceof UncheckedInterruptedException) {
+                // Continue looking, some other future will likely have a more concrete throwable.
+                foundInterrupt = true;
+            } else if (cause instanceof Error error) {
+                // Errors should be passed through directly.
+                throw error;
+            } else if (cause instanceof RuntimeException runtimeException) {
+                // As should runtime exceptions.
+                throw runtimeException;
+            } else {
+                throw new AssertionError("An exception escaped from a worker through a future", cause);
             }
         }
 
