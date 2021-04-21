@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.article;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -87,13 +90,13 @@ public final class PygmentsCache {
     }
 
     private static byte[] toByteArray(final int integer) {
-        return new byte[]{
-            (byte) integer,
-            (byte) (integer >> 8),
-            (byte) (integer >> 16),
-            (byte) (integer >> 24)
-        };
+        final var result = new byte[4];
+        asIntArray.set(result, 0, integer);
+        return result;
     }
+
+    private static final VarHandle asIntArray =
+        MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
 
     private ConcurrentHashMap<Digest, @NotNull Node> previousGeneration = new ConcurrentHashMap<>();
     private ConcurrentHashMap<Digest, @NotNull Node> currentGeneration = new ConcurrentHashMap<>();
@@ -121,9 +124,11 @@ public final class PygmentsCache {
         }
 
         @Override
+        // VarHandle#get is a signature-polymorphic intrinsic, it doesn't actually allocate an array for varargs.
+        @SuppressWarnings("ObjectInstantiationInEqualsHashCode")
         public int hashCode() {
             // Since what we have is the output of a cryptographic hash function, just take any four bytes.
-            return (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8) | ((bytes[2] & 0xFF) << 16) | ((bytes[3] & 0xFF) << 24);
+            return (int) asIntArray.get(bytes, 0);
         }
 
         private final byte[] bytes;
