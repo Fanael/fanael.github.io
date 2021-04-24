@@ -10,7 +10,6 @@ import greenspun.generator.Renderer;
 import greenspun.pygments.PygmentsServer;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
-import greenspun.sexp.reader.Reader;
 import greenspun.util.Trace;
 import greenspun.util.collections.ImmutableList;
 import greenspun.util.condition.ConditionContext;
@@ -42,8 +41,6 @@ public final class HtslConverter {
      * node.
      * <li>Any condition type that {@link PygmentsServer} can signal, if an error occurs in syntax highlighting during
      * the macro-expansion of {@code highlighted-code} tag macro.
-     * <li>Any condition type that {@link Reader} can signal, if an error occurs trying to parse the Pygments server
-     * response as S-expressions.
      * </ul>
      */
     public @NotNull ImmutableList<@NotNull Node> convert(

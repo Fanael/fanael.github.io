@@ -36,7 +36,7 @@ public final class Parser {
 
     /**
      * Parses the forms coming from the given S-expression {@code reader} into an {@link Article}.
-     * The given {@code htslParser} is used to convert HTSL forms into DOM tree {@link Node}s.
+     * The given {@code htslConverter} is used to convert HTSL forms into DOM tree {@link Node}s.
      * <p>
      * On error, a fatal condition is signaled:
      * <ul>
