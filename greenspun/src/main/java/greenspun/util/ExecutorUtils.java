@@ -154,9 +154,6 @@ public final class ExecutorUtils {
             } else if (cause instanceof Error error) {
                 // Errors should be passed through directly.
                 throw error;
-            } else if (cause instanceof RuntimeException runtimeException) {
-                // As should runtime exceptions.
-                throw runtimeException;
             } else {
                 throw new AssertionError("An exception escaped from a worker through a future", cause);
             }
