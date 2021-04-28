@@ -12,11 +12,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import greenspun.article.Article;
 import greenspun.article.HtslConverter;
 import greenspun.article.Parser;
@@ -27,13 +24,14 @@ import greenspun.dom.Verifier;
 import greenspun.sexp.SymbolTable;
 import greenspun.sexp.reader.ByteStream;
 import greenspun.sexp.reader.Reader;
+import greenspun.util.ExecutorUtils;
 import greenspun.util.PathUtils;
 import greenspun.util.Trace;
-import greenspun.util.UncheckedInterruptedException;
 import greenspun.util.collections.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
+import greenspun.util.function.ThrowingConsumer;
 import greenspun.util.function.ThrowingFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -97,11 +95,10 @@ public final class Generator {
 
     private void generatePages(final @NotNull List<Path> pageSourcePaths) throws Unwind, InterruptedException {
         final var renderer = makeNonArticleRenderer();
-        mapUsingExecutor(pageSourcePaths, sourceRelativePath -> generatePage(sourceRelativePath, renderer));
+        forEachUsingExecutor(pageSourcePaths, sourceRelativePath -> generatePage(sourceRelativePath, renderer));
     }
 
-    @SuppressWarnings("SameReturnValue")
-    private @Nullable Void generatePage(
+    private void generatePage(
         final @NotNull Path sourceRelativePath,
         final @NotNull Renderer renderer
     ) throws Unwind {
@@ -111,7 +108,6 @@ public final class Generator {
             final var loadedPage = loadArticle(sourceRelativePath);
             final var orderedPage = new OrderedArticle(loadedPage.article, sourceRelativePath, null, null);
             generateArticle(orderedPage, renderer);
-            return null;
         }
     }
 
@@ -354,23 +350,14 @@ public final class Generator {
         final @NotNull Collection<? extends T> collection,
         final @NotNull ThrowingFunction<? super T, ? extends R, Unwind> function
     ) throws Unwind, InterruptedException {
-        final var futures = new ArrayList<@NotNull Future<R>>(collection.size());
-        final var inheritedState = ConditionContext.saveInheritableState();
-        for (final var element : collection) {
-            futures.add(executorService.submit(() -> {
-                final var previousState = ConditionContext.inheritState(inheritedState);
-                try (final var t = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
-                    t.use();
-                    return function.apply(element);
-                } catch (final Unwind u) {
-                    // Need to repackage the unwind because it's checked and it's not an exception.
-                    throw new UnwindException(u);
-                } finally {
-                    ConditionContext.restoreState(previousState);
-                }
-            }));
-        }
-        return new AwaitAllImpl<>(futures).awaitAll();
+        return ExecutorUtils.map(executorService, collection, function);
+    }
+
+    private <T> void forEachUsingExecutor(
+        final @NotNull Collection<? extends T> collection,
+        final @NotNull ThrowingConsumer<? super T, Unwind> consumer
+    ) throws Unwind, InterruptedException {
+        ExecutorUtils.forEach(executorService, collection, consumer);
     }
 
     static final String pagesSubdirectoryName = "pages";
@@ -425,71 +412,5 @@ public final class Generator {
         @Nullable URI predecessorUri,
         @Nullable URI successorUri
     ) {
-    }
-
-    private static final class AwaitAllImpl<T> {
-        private AwaitAllImpl(final @NotNull Collection<? extends Future<? extends T>> futures) {
-            iterator = futures.iterator();
-            results = new ArrayList<>(futures.size());
-        }
-
-        private @NotNull ArrayList<T> awaitAll() throws Unwind, InterruptedException {
-            try {
-                while (iterator.hasNext()) {
-                    awaitOne(iterator.next());
-                }
-                if (foundInterrupt) {
-                    throw new AssertionError("A task was interrupted, but no other task threw anything concrete");
-                }
-                return results;
-            } finally {
-                if (needsCancellation) {
-                    while (iterator.hasNext()) {
-                        iterator.next().cancel(true);
-                    }
-                }
-            }
-        }
-
-        private void awaitOne(final @NotNull Future<? extends T> future) throws Unwind, InterruptedException {
-            try {
-                results.add(future.get());
-            } catch (final ExecutionException e) {
-                recover(e);
-            }
-        }
-
-        private void recover(final @NotNull ExecutionException executionException) throws Unwind {
-            needsCancellation = true;
-            final var cause = executionException.getCause();
-            if (cause instanceof UnwindException unwind) {
-                // Cross-thread unwind to a restart found, rethrow it to continue unwinding in the parent thread.
-                throw unwind.unwind;
-            } else if (cause instanceof InterruptedException || cause instanceof UncheckedInterruptedException) {
-                // Continue looking, some other future will likely have a more concrete throwable.
-                foundInterrupt = true;
-            } else if (cause instanceof Error error) {
-                // Errors should be passed through directly.
-                throw error;
-            } else if (cause instanceof RuntimeException runtimeException) {
-                // As should runtime exceptions.
-                throw runtimeException;
-            } else {
-                throw new AssertionError("An exception escaped from a worker through a future", cause);
-            }
-        }
-
-        private final @NotNull Iterator<? extends Future<? extends T>> iterator;
-        private final @NotNull ArrayList<T> results;
-        private boolean foundInterrupt = false;
-        private boolean needsCancellation = false;
-    }
-
-    private static final class UnwindException extends Exception {
-        private UnwindException(final @NotNull Unwind unwind) {
-            this.unwind = unwind;
-        }
-
-        private final @NotNull Unwind unwind;
     }
 }
