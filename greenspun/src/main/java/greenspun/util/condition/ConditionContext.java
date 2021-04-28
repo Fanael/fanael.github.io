@@ -4,7 +4,7 @@ package greenspun.util.condition;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import greenspun.util.ThrowingCallback;
+import greenspun.util.function.ThrowingCallback;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -75,7 +75,7 @@ public final class ConditionContext {
      * As this method is sometimes called as a part of cleanup process during stack unwinding, handlers are
      * <strong>not allowed</strong> to unwind to a restart point as a response to that condition.
      */
-    public static void withSuppressedExceptions(final @NotNull ThrowingCallback<?> callback) {
+    public static void withSuppressedExceptions(final @NotNull ThrowingCallback<? extends Exception> callback) {
         try {
             callback.call();
         } catch (final Exception e) {

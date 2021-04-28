@@ -28,13 +28,13 @@ import greenspun.sexp.SymbolTable;
 import greenspun.sexp.reader.ByteStream;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.PathUtils;
-import greenspun.util.ThrowingFunction;
 import greenspun.util.Trace;
 import greenspun.util.UncheckedInterruptedException;
 import greenspun.util.collections.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
+import greenspun.util.function.ThrowingFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

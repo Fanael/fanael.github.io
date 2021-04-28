@@ -15,12 +15,12 @@ import greenspun.dom.Node;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
 import greenspun.sexp.reader.Reader;
-import greenspun.util.ThrowingFunction;
 import greenspun.util.Trace;
 import greenspun.util.collections.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.Unwind;
+import greenspun.util.function.ThrowingFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

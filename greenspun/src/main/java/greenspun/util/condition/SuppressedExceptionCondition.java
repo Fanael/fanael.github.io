@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.util.condition;
 
-import greenspun.util.ThrowingCallback;
+import greenspun.util.function.ThrowingCallback;
 import org.jetbrains.annotations.NotNull;
 
 /**
