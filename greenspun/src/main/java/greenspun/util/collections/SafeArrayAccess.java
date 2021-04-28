@@ -15,10 +15,6 @@ final class SafeArrayAccess {
         return arrayExtractor.get(collection.getClass()).toArray(collection);
     }
 
-    private static Object @NotNull [] toArrayTrusted(final @NotNull Collection<?> collection) {
-        return collection.toArray();
-    }
-
     private static Object @NotNull [] toArrayDefensive(final @NotNull Collection<?> collection) {
         // Malicious or buggy collection types could leak the result of toArray() somewhere, which could potentially
         // break the immutability guarantee of ImmutableList, so we need to make a defensive copy here.
@@ -34,7 +30,7 @@ final class SafeArrayAccess {
     }
 
     private static @NotNull CollectionArrayExtractor getExtractor(final @NotNull Class<?> clazz) {
-        return isTrustedCollectionType(clazz) ? SafeArrayAccess::toArrayTrusted : SafeArrayAccess::toArrayDefensive;
+        return isTrustedCollectionType(clazz) ? Collection::toArray : SafeArrayAccess::toArrayDefensive;
     }
 
     private static final SimpleClassValue<@NotNull CollectionArrayExtractor> arrayExtractor =
