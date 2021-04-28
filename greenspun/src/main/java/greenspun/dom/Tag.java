@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.util.UnreachableCodeReachedError;
 import greenspun.util.collections.ImmutableList;
 import org.jetbrains.annotations.NotNull;
@@ -250,7 +249,6 @@ public enum Tag {
     private final @NotNull Map<String, Verifier.AttributeVerifier> allowedAttributes;
     private final @NotNull Set<String> requiredAttributes;
 
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private record StringSetVerifier(@NotNull Set<String> allowed) implements Verifier.AttributeVerifier {
         @Override
         public void verify(final @NotNull Verifier.AttributeVerificationContext context) {

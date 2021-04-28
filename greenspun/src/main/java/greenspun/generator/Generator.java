@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.article.Article;
 import greenspun.article.HtslConverter;
 import greenspun.article.Parser;
@@ -402,7 +401,6 @@ public final class Generator {
         private static final HeaderRenderImpl instance = new HeaderRenderImpl();
     }
 
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private static record LoadedArticle(@NotNull Article article, @NotNull Path sourceRelativePath) {
         private @NotNull URI destinationUri() {
             return makeDomainRelativeUri(PathUtils.changeExtension(sourceRelativePath, "html"));
@@ -421,7 +419,6 @@ public final class Generator {
         }
     }
 
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private static record OrderedArticle(
         @NotNull Article article,
         @NotNull Path sourceRelativePath,

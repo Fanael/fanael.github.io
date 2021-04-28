@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.dom.Node;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
@@ -364,7 +363,6 @@ public final class Parser {
     private final @NotNull HtslConverter htslConverter;
     private final HashMap<Sexp.Symbol, PartialSection> sectionsById = new HashMap<>();
 
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private static record ExtractedProperties(@NotNull Map<Sexp.Symbol, Sexp> properties, int remainderOffset) {
         private @NotNull Sexp get(final @NotNull Sexp.Symbol symbol) {
             final var sexp = properties.get(symbol);
@@ -372,11 +370,9 @@ public final class Parser {
         }
     }
 
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private static record SectionParent(@NotNull Sexp.Symbol section, @Nullable Sexp.Symbol parent) {
     }
 
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private static record PartialArticle(
         @NotNull String title,
         @NotNull String description,
@@ -387,7 +383,6 @@ public final class Parser {
     ) {
     }
 
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private static record PartialSection(
         @NotNull Sexp.Symbol identifier,
         @NotNull String header,

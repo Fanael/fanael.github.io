@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.article;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.dom.Node;
 import greenspun.sexp.Sexp;
 import greenspun.util.collections.ImmutableList;
@@ -16,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
  * @param children   The list of subsections this section contains.
  * @param body       A list of DOM tree nodes representing the body text of the section.
  */
-@SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
 public record Section(
     @NotNull Sexp.Symbol identifier,
     @NotNull String header,

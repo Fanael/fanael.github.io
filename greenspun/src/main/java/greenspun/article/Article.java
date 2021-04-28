@@ -3,7 +3,6 @@
 package greenspun.article;
 
 import java.time.LocalDate;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.util.collections.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,7 +16,6 @@ import org.jetbrains.annotations.NotNull;
  * @param topics                 The list of topics this article belongs to.
  * @param rootSection            The root section of the article.
  */
-@SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
 public record Article(
     @NotNull String title,
     @NotNull String description,

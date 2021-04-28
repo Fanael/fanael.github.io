@@ -14,11 +14,11 @@ repositories {
 
 dependencies {
     compileOnly group: "org.jetbrains", name: "annotations", version: "20.1.0"
-    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.2.2"
+    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.2.3"
     compileOnly project(":auki")
     annotationProcessor project(":auki")
     testCompileOnly group: "org.jetbrains", name: "annotations", version: "20.1.0"
-    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.2.2"
+    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.2.3"
     testCompileOnly project(":auki")
     testAnnotationProcessor project(":auki")
     testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.7.1"
@@ -27,7 +27,7 @@ dependencies {
 }
 
 spotbugs {
-    toolVersion.set "4.2.2"
+    toolVersion.set "4.2.3"
     showProgress.set true
     includeFilter.set file("spotbugs-include.xml")
     excludeFilter.set file("spotbugs-exclude.xml")

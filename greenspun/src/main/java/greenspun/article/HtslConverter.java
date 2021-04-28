@@ -3,7 +3,6 @@
 package greenspun.article;
 
 import java.util.Map;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
 import greenspun.generator.Renderer;
@@ -203,7 +202,6 @@ public final class HtslConverter {
         ) throws Unwind;
     }
 
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private static record TagHead(@NotNull Sexp.Symbol tagName, @NotNull ImmutableList<Sexp> attributes) {
     }
 }

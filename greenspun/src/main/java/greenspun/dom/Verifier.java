@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.util.UnreachableCodeReachedError;
 import greenspun.util.collections.ImmutableList;
 import greenspun.util.condition.ConditionContext;
@@ -203,7 +202,6 @@ public final class Verifier {
         void verify(@NotNull AttributeVerificationContext context);
     }
 
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     static record AttributeVerificationContext(
         @NotNull Verifier verifier,
         @NotNull Tag tag,
@@ -214,7 +212,6 @@ public final class Verifier {
         }
     }
 
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     private record AttributeTypeVerifier(
         @NotNull Class<? extends Attribute> type,
         @NotNull String message

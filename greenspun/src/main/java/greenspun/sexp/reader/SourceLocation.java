@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.sexp.reader;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.jetbrains.annotations.NotNull;
 
-@SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
 record SourceLocation(int lineNumber, int topLevelFormLine) {
     @Override
     public @NotNull String toString() {

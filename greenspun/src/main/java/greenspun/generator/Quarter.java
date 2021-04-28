@@ -3,11 +3,9 @@
 package greenspun.generator;
 
 import java.time.LocalDate;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
-@SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
 record Quarter(int year, byte quarter) implements Comparable<Quarter> {
     Quarter {
         assert quarter >= 1 && quarter <= 4 : "Quarter out of range";

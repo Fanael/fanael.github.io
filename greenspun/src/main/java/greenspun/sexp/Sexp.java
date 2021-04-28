@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.util.collections.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +32,6 @@ public sealed interface Sexp {
     /**
      * An S-expression integer object.
      */
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     record Integer(@NotNull BigInteger value) implements Sexp {
     }
 
@@ -42,14 +40,12 @@ public sealed interface Sexp {
      * <p>
      * Dotted lists are unsupported.
      */
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     record List(@NotNull ImmutableList<@NotNull Sexp> value) implements Sexp {
     }
 
     /**
      * An S-expression string object.
      */
-    @SuppressFBWarnings(value = "EQ_UNUSUAL", justification = "SpotBugs doesn't understand equals() of records yet")
     record String(@NotNull java.lang.String value) implements Sexp {
     }
 
