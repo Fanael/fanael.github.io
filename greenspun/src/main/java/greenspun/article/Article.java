@@ -3,7 +3,7 @@
 package greenspun.article;
 
 import java.time.LocalDate;
-import greenspun.util.collections.ImmutableList;
+import greenspun.util.collection.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 
 /**

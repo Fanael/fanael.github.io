@@ -28,7 +28,7 @@ import greenspun.sexp.reader.Reader;
 import greenspun.util.ExecutorUtils;
 import greenspun.util.PathUtils;
 import greenspun.util.Trace;
-import greenspun.util.collections.ImmutableList;
+import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;

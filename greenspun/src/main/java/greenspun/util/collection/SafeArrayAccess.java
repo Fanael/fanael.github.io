@@ -1,6 +1,6 @@
 // Copyright © 2021  Fanael Linithien
 // SPDX-License-Identifier: GPL-3.0-or-later
-package greenspun.util.collections;
+package greenspun.util.collection;
 
 import java.util.ArrayList;
 import java.util.Collection;

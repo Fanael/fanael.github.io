@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.dom;
 
-import greenspun.util.collections.ImmutableList;
+import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.Condition;
 import org.jetbrains.annotations.NotNull;
 

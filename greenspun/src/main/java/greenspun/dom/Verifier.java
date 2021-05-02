@@ -7,7 +7,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
 import greenspun.util.UnreachableCodeReachedError;
-import greenspun.util.collections.ImmutableList;
+import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;

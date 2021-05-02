@@ -4,7 +4,7 @@ package greenspun.article;
 
 import greenspun.dom.Node;
 import greenspun.sexp.Sexp;
-import greenspun.util.collections.ImmutableList;
+import greenspun.util.collection.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 
 /**

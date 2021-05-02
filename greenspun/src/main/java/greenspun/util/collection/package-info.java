@@ -4,4 +4,4 @@
 /**
  * Additional collection types.
  */
-package greenspun.util.collections;
+package greenspun.util.collection;

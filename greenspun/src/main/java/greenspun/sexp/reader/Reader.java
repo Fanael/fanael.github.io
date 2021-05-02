@@ -15,7 +15,7 @@ import java.util.Arrays;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.SymbolTable;
 import greenspun.util.UnreachableCodeReachedError;
-import greenspun.util.collections.ImmutableList;
+import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.Unwind;

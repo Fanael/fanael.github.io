@@ -11,7 +11,7 @@ import greenspun.article.Section;
 import greenspun.dom.Attribute;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
-import greenspun.util.collections.ImmutableList;
+import greenspun.util.collection.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

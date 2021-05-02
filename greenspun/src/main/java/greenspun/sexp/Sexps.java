@@ -4,7 +4,7 @@ package greenspun.sexp;
 
 import java.math.BigInteger;
 import greenspun.util.UnreachableCodeReachedError;
-import greenspun.util.collections.ImmutableList;
+import greenspun.util.collection.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
