@@ -57,7 +57,7 @@ final class GeneratorTest {
         } else {
             Assertions.assertThat(actualFilePath)
                 .usingCharset(StandardCharsets.UTF_8)
-                .hasSameTextualContentAs(referenceFilePath);
+                .hasSameTextualContentAs(referenceFilePath, StandardCharsets.UTF_8);
         }
     }
 
