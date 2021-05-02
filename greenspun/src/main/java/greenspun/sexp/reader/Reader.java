@@ -239,8 +239,9 @@ public final class Reader {
     private static final byte lastControlByte = 0x1F;
     private static final int initialListCapacity = 8;
     private static final int initialStringCapacity = 256;
-    private static final int initialSymbolCapacity = 32;
+    private static final int initialSymbolCapacity = 16;
     private static final int maxDepth = 150;
+
     private final @NotNull ByteStream stream;
     private final @NotNull SymbolTable symbolTable;
     private final @NotNull CharsetDecoder utf8Decoder = newUtf8Decoder();
