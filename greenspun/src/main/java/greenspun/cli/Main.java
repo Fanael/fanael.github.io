@@ -35,7 +35,7 @@ final class Main {
     ) throws Unwind {
         try (
             final var pygmentsServerCode = ServerCodeTemporaryFile.save();
-            final var pygmentsServer = new PygmentsServer(pygmentsServerCode.path())
+            final var pygmentsServer = new PygmentsServer(pygmentsServerCode)
         ) {
             final var repl = new Repl(sourceDirectory, destinationDirectory, executorService, pygmentsServer);
             repl.run();

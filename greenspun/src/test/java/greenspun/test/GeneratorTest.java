@@ -37,7 +37,7 @@ final class GeneratorTest {
         final var executorService = Executors.newSingleThreadExecutor();
         try (
             final var serverCode = ServerCodeTemporaryFile.save();
-            final var server = new PygmentsServer(serverCode.path())
+            final var server = new PygmentsServer(serverCode)
         ) {
             final var generator = new Generator(
                 testResourcesPath.resolve("source"),

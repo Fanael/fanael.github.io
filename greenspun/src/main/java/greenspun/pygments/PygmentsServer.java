@@ -33,15 +33,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class PygmentsServer implements AutoCloseable {
     /**
-     * Initializes a new Pygments server connection pool using the given path to run processes from.
+     * Initializes a new Pygments server connection pool using the given temporary file to run processes from.
      * <p>
-     * The file under the given path should exist for at least as long as the pool itself, because the pool may decide
-     * to spawn a new Pygments server process at any time.
-     * <p>
-     * Since the path is used as a program path for Python, it should be a regular file system path.
+     * The temporary file should exist for at least as long as the pool itself, because the pool may decide to spawn
+     * a new Pygments server process at any time.
      */
-    public PygmentsServer(final @NotNull Path sourceCodePath) {
-        this.sourceCodePath = sourceCodePath;
+    public PygmentsServer(final @NotNull ServerCodeTemporaryFile file) {
+        sourceCodePath = file.path();
     }
 
     /**

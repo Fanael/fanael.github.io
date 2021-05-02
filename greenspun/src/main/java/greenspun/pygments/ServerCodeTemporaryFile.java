@@ -41,13 +41,6 @@ public final class ServerCodeTemporaryFile implements AutoCloseable {
     }
 
     /**
-     * Retrieves the path to the temporary file.
-     */
-    public @NotNull Path path() {
-        return path;
-    }
-
-    /**
      * Closes the resource, deleting the temporary file.
      * <p>
      * If an I/O error of any kind occurs, the exception is signaled as a <em>non-fatal</em>
@@ -59,6 +52,10 @@ public final class ServerCodeTemporaryFile implements AutoCloseable {
             trace.use();
             ConditionContext.withSuppressedExceptions(() -> Files.delete(path));
         }
+    }
+
+    @NotNull Path path() {
+        return path;
     }
 
     private static @NotNull InputStream openInputStream() throws IOException {
