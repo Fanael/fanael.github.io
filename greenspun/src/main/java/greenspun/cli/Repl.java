@@ -7,9 +7,9 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import greenspun.article.PygmentsCache;
 import greenspun.generator.Generator;
-import greenspun.generator.SharedState;
+import greenspun.pygments.PygmentsCache;
+import greenspun.pygments.PygmentsServer;
 import greenspun.util.Trace;
 import greenspun.util.UncheckedInterruptedException;
 import greenspun.util.condition.ConditionContext;
@@ -22,10 +22,10 @@ final class Repl {
         final @NotNull Path sourceDirectory,
         final @NotNull Path destinationDirectory,
         final @NotNull ExecutorService executorService,
-        final @NotNull SharedState sharedState
+        final @NotNull PygmentsServer pygmentsServer
     ) {
-        pygmentsCache = sharedState.pygmentsCache();
-        generator = new Generator(sourceDirectory, destinationDirectory, executorService, sharedState);
+        pygmentsCache = new PygmentsCache(pygmentsServer);
+        generator = new Generator(sourceDirectory, destinationDirectory, executorService, pygmentsCache);
     }
 
     void run() throws Unwind {

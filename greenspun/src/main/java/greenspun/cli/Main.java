@@ -8,8 +8,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import greenspun.article.PygmentsCache;
-import greenspun.generator.SharedState;
 import greenspun.pygments.PygmentsServer;
 import greenspun.pygments.ServerCodeTemporaryFile;
 import greenspun.util.UncheckedInterruptedException;
@@ -39,8 +37,7 @@ final class Main {
             final var pygmentsServerCode = ServerCodeTemporaryFile.save();
             final var pygmentsServer = new PygmentsServer(pygmentsServerCode.path())
         ) {
-            final var sharedState = new SharedState(pygmentsServer, new PygmentsCache());
-            final var repl = new Repl(sourceDirectory, destinationDirectory, executorService, sharedState);
+            final var repl = new Repl(sourceDirectory, destinationDirectory, executorService, pygmentsServer);
             repl.run();
         }
     }

@@ -1,6 +1,6 @@
 // Copyright © 2021  Fanael Linithien
 // SPDX-License-Identifier: GPL-3.0-or-later
-package greenspun.article;
+package greenspun.pygments;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -12,6 +12,8 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import greenspun.dom.Node;
+import greenspun.generator.Renderer;
+import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,16 +31,11 @@ import org.jetbrains.annotations.Nullable;
  * no external synchronization.
  */
 public final class PygmentsCache {
-    static @NotNull Digest computeDigest(final @NotNull String code, final @NotNull String languageName) {
-        try {
-            final var digest = MessageDigest.getInstance("SHA-256");
-            digest.update(toByteArray(languageName.length()));
-            digest.update(languageName.getBytes(StandardCharsets.UTF_8));
-            digest.update(code.getBytes(StandardCharsets.UTF_8));
-            return new Digest(digest.digest());
-        } catch (final NoSuchAlgorithmException e) {
-            throw new AssertionError("SHA-256 not found despite being guaranteed by spec", e);
-        }
+    /**
+     * Initializes a new, empty Pygments cache that will use the given Pygments server for highlighting.
+     */
+    public PygmentsCache(final @NotNull PygmentsServer server) {
+        this.server = server;
     }
 
     /**
@@ -55,7 +52,30 @@ public final class PygmentsCache {
         }
     }
 
-    @Nullable Node get(final @NotNull Digest digest) {
+    /**
+     * Highlights the syntax of the given code using the given language name for determining syntactic rules.
+     * The given pretty name will be included in the DOM.
+     * <p>
+     * If successful, returns a DOM {@link Node} representing the highlighted code.
+     * <p>
+     * On error, a fatal condition is signaled, following the same contract as
+     * {@link PygmentsServer#highlightCode(String, String)}.
+     */
+    public @NotNull Node highlightCode(
+        final @NotNull String code,
+        final @NotNull String languageName,
+        final @NotNull String prettyName
+    ) throws Unwind {
+        final var digest = computeDigest(code, languageName, prettyName);
+        final var cachedNode = getCached(digest);
+        if (cachedNode != null) {
+            return cachedNode;
+        }
+        final var node = Renderer.wrapHighlightedCode(server.highlightCode(code, languageName), prettyName);
+        return putCached(digest, node);
+    }
+
+    private @Nullable Node getCached(final @NotNull Digest digest) {
         final var lock = readWriteLock.readLock();
         lock.lock();
         try {
@@ -72,7 +92,7 @@ public final class PygmentsCache {
         }
     }
 
-    @NotNull Node put(final @NotNull Digest digest, final @NotNull Node node) {
+    private @NotNull Node putCached(final @NotNull Digest digest, final @NotNull Node node) {
         final var lock = readWriteLock.readLock();
         lock.lock();
         try {
@@ -89,6 +109,28 @@ public final class PygmentsCache {
         return (oldValue != null) ? oldValue : node;
     }
 
+    private static @NotNull Digest computeDigest(
+        final @NotNull String code,
+        final @NotNull String languageName,
+        final @NotNull String prettyName
+    ) {
+        try {
+            final var digest = MessageDigest.getInstance("SHA-256");
+            updateDigest(digest, languageName);
+            updateDigest(digest, prettyName);
+            updateDigest(digest, code);
+            return new Digest(digest.digest());
+        } catch (final NoSuchAlgorithmException e) {
+            throw new AssertionError("SHA-256 not found despite being guaranteed by spec", e);
+        }
+    }
+
+    private static void updateDigest(final @NotNull MessageDigest digest, final @NotNull String string) {
+        final var bytes = string.getBytes(StandardCharsets.UTF_8);
+        digest.update(toByteArray(bytes.length));
+        digest.update(bytes);
+    }
+
     private static byte[] toByteArray(final int integer) {
         final var result = new byte[4];
         asIntArray.set(result, 0, integer);
@@ -98,14 +140,16 @@ public final class PygmentsCache {
     private static final VarHandle asIntArray =
         MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
 
-    private ConcurrentHashMap<Digest, @NotNull Node> previousGeneration = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Digest, @NotNull Node> currentGeneration = new ConcurrentHashMap<>();
+    private final @NotNull PygmentsServer server;
     // NB: this only protects map *references*, so only nextGeneration needs exclusive access.
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private ConcurrentHashMap<Digest, @NotNull Node> previousGeneration = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Digest, @NotNull Node> currentGeneration = new ConcurrentHashMap<>();
 
-    // Keep only a cryptographic hash of the (code, languageName) pair to avoid holding a reference to the entire code
-    // string. Collisions are extremely unlikely: the probability of two digests colliding is about 2^-128.
-    static final class Digest {
+    // We only keep a cryptographic hash of the (code, languageName, prettyName) tuple to avoid holding a reference to
+    // the entire code string. Collisions are extremely unlikely: the probability of two digests colliding is about
+    // 2^-128.
+    private static final class Digest {
         private Digest(final byte[] bytes) {
             assert bytes.length == 32;
             this.bytes = bytes;

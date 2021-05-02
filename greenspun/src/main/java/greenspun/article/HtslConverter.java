@@ -5,8 +5,7 @@ package greenspun.article;
 import java.util.Map;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
-import greenspun.generator.Renderer;
-import greenspun.pygments.PygmentsServer;
+import greenspun.pygments.PygmentsCache;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
 import greenspun.util.Trace;
@@ -23,11 +22,10 @@ import org.jetbrains.annotations.NotNull;
  * source files.
  */
 public final class HtslConverter {
-    public HtslConverter(
-        final @NotNull PygmentsServer pygmentsServer,
-        final @NotNull PygmentsCache pygmentsCache
-    ) {
-        this.pygmentsServer = pygmentsServer;
+    /**
+     * Initializes a new HTSL converter that will use the given Pygments cache for highlighting code snippets.
+     */
+    public HtslConverter(final @NotNull PygmentsCache pygmentsCache) {
         this.pygmentsCache = pygmentsCache;
     }
 
@@ -38,8 +36,8 @@ public final class HtslConverter {
      * <ul>
      * <li>{@link HtslConversionErrorCondition} is signaled if an S-expression could not be converted into a DOM tree
      * node.
-     * <li>Any condition type that {@link PygmentsServer} can signal, if an error occurs in syntax highlighting during
-     * the macro-expansion of {@code highlighted-code} tag macro.
+     * <li>Any condition type that {@link PygmentsCache#highlightCode(String, String, String)} can signal, if an error
+     * occurs in syntax highlighting during the macro-expansion of {@code highlighted-code} tag macro.
      * </ul>
      */
     public @NotNull ImmutableList<@NotNull Node> convert(
@@ -150,14 +148,7 @@ public final class HtslConverter {
         }
         final var code = codeNode.value();
         final var pygmentsLanguageName = languageTag.symbolName().substring(1);
-        final var codeDigest = PygmentsCache.computeDigest(code, pygmentsLanguageName);
-        final var cachedNode = pygmentsCache.get(codeDigest);
-        if (cachedNode != null) {
-            return cachedNode;
-        }
-        final var nodes = pygmentsServer.highlightCode(code, pygmentsLanguageName);
-        final var wrapped = Renderer.wrapHighlightedCode(nodes, prettyLanguageName);
-        return pygmentsCache.put(codeDigest, wrapped);
+        return pygmentsCache.highlightCode(code, pygmentsLanguageName, prettyLanguageName);
     }
 
     private @NotNull Node expandImageFigure(
@@ -191,7 +182,6 @@ public final class HtslConverter {
         Sexp.KnownSymbol.KW_JAVA, "Java"
     );
 
-    private final @NotNull PygmentsServer pygmentsServer;
     private final @NotNull PygmentsCache pygmentsCache;
 
     private interface TagMacroExpander {

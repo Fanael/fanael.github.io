@@ -21,6 +21,7 @@ import greenspun.article.Section;
 import greenspun.dom.Node;
 import greenspun.dom.Serializer;
 import greenspun.dom.Verifier;
+import greenspun.pygments.PygmentsCache;
 import greenspun.sexp.SymbolTable;
 import greenspun.sexp.reader.ByteStream;
 import greenspun.sexp.reader.Reader;
@@ -45,18 +46,18 @@ public final class Generator {
      * directory.
      * <p>
      * Parallelizable parts of the generation process will submit tasks to the given executor service, sharing the given
-     * shared state.
+     * Pygments cache.
      */
     public Generator(
         final @NotNull Path sourceDirectory,
         final @NotNull Path destinationDirectory,
         final @NotNull ExecutorService executorService,
-        final @NotNull SharedState sharedState
+        final @NotNull PygmentsCache pygmentsCache
     ) {
         this.sourceDirectory = sourceDirectory;
         this.destinationDirectory = destinationDirectory;
         this.executorService = executorService;
-        this.sharedState = sharedState;
+        this.pygmentsCache = pygmentsCache;
     }
 
     /**
@@ -209,9 +210,8 @@ public final class Generator {
                     trace.use();
                     try (final var stream = Files.newInputStream(fullSourcePath)) {
                         final var reader = new Reader(new ByteStream(stream), symbolTable);
-                        final var htslConverter =
-                            new HtslConverter(sharedState.pygmentsServer(), sharedState.pygmentsCache());
-                        return Parser.parseArticleForms(reader, htslConverter);
+                        final var converter = new HtslConverter(pygmentsCache);
+                        return Parser.parseArticleForms(reader, converter);
                     } catch (final IOException e) {
                         throw ConditionContext.error(new IOExceptionCondition(e));
                     }
@@ -372,7 +372,7 @@ public final class Generator {
     private final @NotNull Path sourceDirectory;
     private final @NotNull Path destinationDirectory;
     private final @NotNull ExecutorService executorService;
-    private final @NotNull SharedState sharedState;
+    private final @NotNull PygmentsCache pygmentsCache;
 
     private static final class HeaderRenderImpl implements HeaderRenderMode {
         @Override

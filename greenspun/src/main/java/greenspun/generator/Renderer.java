@@ -31,7 +31,7 @@ public final class Renderer {
     /**
      * Wraps the given list of DOM nodes representing highlighted code into a single node.
      * <p>
-     * Exposed as public so that it's accessible to {@link greenspun.article.HtslConverter}.
+     * Exposed as public so that it's accessible to {@link greenspun.pygments.PygmentsCache}.
      */
     public static @NotNull Node wrapHighlightedCode(
         final @NotNull List<@NotNull Node> nodes,
