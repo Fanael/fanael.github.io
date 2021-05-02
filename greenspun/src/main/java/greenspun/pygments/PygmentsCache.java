@@ -156,15 +156,8 @@ public final class PygmentsCache {
         }
 
         @Override
-        public boolean equals(final @Nullable Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            final var other = (Digest) o;
-            return Arrays.equals(bytes, other.bytes);
+        public boolean equals(final @Nullable Object object) {
+            return object instanceof Digest other && Arrays.equals(bytes, other.bytes);
         }
 
         @Override
