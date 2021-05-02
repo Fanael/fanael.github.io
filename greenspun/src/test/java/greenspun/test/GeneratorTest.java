@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.Executors;
 import greenspun.generator.Generator;
 import greenspun.pygments.PygmentsCache;
 import greenspun.pygments.PygmentsServer;
@@ -33,6 +34,7 @@ final class GeneratorTest {
     }
 
     private static void runGenerator(final @NotNull Path destinationDirectory) throws Unwind, InterruptedException {
+        final var executorService = Executors.newSingleThreadExecutor();
         try (
             final var serverCode = ServerCodeTemporaryFile.save();
             final var server = new PygmentsServer(serverCode.path())
@@ -40,10 +42,12 @@ final class GeneratorTest {
             final var generator = new Generator(
                 testResourcesPath.resolve("source"),
                 destinationDirectory,
-                new TestExecutorService(),
+                executorService,
                 new PygmentsCache(server)
             );
             generator.generate(Instant.EPOCH);
+        } finally {
+            executorService.shutdownNow();
         }
     }
 
