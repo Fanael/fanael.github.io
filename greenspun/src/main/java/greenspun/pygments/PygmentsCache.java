@@ -114,12 +114,16 @@ public final class PygmentsCache {
         final @NotNull String languageName,
         final @NotNull String prettyName
     ) {
+        final var digest = createSha256Digest();
+        updateDigest(digest, languageName);
+        updateDigest(digest, prettyName);
+        updateDigest(digest, code);
+        return new Digest(digest.digest());
+    }
+
+    private static @NotNull MessageDigest createSha256Digest() {
         try {
-            final var digest = MessageDigest.getInstance("SHA-256");
-            updateDigest(digest, languageName);
-            updateDigest(digest, prettyName);
-            updateDigest(digest, code);
-            return new Digest(digest.digest());
+            return MessageDigest.getInstance("SHA-256");
         } catch (final NoSuchAlgorithmException e) {
             throw new AssertionError("SHA-256 not found despite being guaranteed by spec", e);
         }
