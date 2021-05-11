@@ -182,6 +182,10 @@ aside {
     border: medium solid #658;
 }
 
+em, strong {
+    color: #800;
+}
+
 /* Figures, code blocks and syntax highlighting */
 pre, code, samp, kbd, .program-name {
     /* Browsers completely break relative font sizing when the font family
@@ -433,6 +437,10 @@ article:not(:last-child) .read-full {
 
     article header p {
         color: #bbb;
+    }
+
+    em, strong {
+        color: #aec;
     }
 
     figure, pre.codeblock, pre.codeblock::before {
