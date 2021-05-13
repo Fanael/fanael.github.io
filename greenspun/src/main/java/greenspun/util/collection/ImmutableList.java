@@ -736,13 +736,13 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
             if (object == null) {
                 for (int i = from; i < to; i += 1) {
                     if (items[i] == null) {
-                        return i;
+                        return i - from;
                     }
                 }
             } else {
                 for (int i = from; i < to; i += 1) {
                     if (object.equals(items[i])) {
-                        return i;
+                        return i - from;
                     }
                 }
             }
@@ -758,13 +758,13 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
             if (object == null) {
                 for (int i = to - 1; i >= from; i -= 1) {
                     if (items[i] == null) {
-                        return i;
+                        return i - from;
                     }
                 }
             } else {
                 for (int i = to - 1; i >= from; i -= 1) {
                     if (object.equals(items[i])) {
-                        return i;
+                        return i - from;
                     }
                 }
             }
