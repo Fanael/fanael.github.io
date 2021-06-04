@@ -120,6 +120,7 @@ public final class Sexps {
             final var iterator = list.iterator();
             if (!iterator.hasNext()) {
                 builder.append("()");
+                return;
             }
             builder.append('(');
             appendDispatch(iterator.next(), level + 1);
