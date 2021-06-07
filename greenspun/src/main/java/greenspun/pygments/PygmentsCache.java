@@ -41,11 +41,13 @@ public final class PygmentsCache {
      * Advances the cache into the next generation, removing all entries that weren't referenced since the last call.
      */
     public void nextGeneration() {
-        @NotNull State oldState, newState;
-        do {
-            oldState = currentState;
-            newState = new State(oldState);
-        } while (!currentStateHandle.compareAndSet(this, oldState, newState));
+        final var previousGeneration = (int) currentGenerationHandle.getAndAdd(this, 1);
+        final var currentGeneration = previousGeneration + 1;
+        map.entrySet().removeIf(entry -> {
+            final var entryGeneration = entry.getValue().generation;
+            // Allow the current generation as well, in case there are concurrent writers.
+            return entryGeneration != previousGeneration && entryGeneration != currentGeneration;
+        });
     }
 
     /**
@@ -63,13 +65,16 @@ public final class PygmentsCache {
         final @NotNull String prettyName
     ) throws Unwind {
         final var digest = computeDigest(code, languageName, prettyName);
-        final var cachedNode = currentState.get(digest);
+        final var cachedNode = map.get(digest);
         if (cachedNode != null) {
-            return cachedNode;
+            cachedNode.generation = currentGeneration;
+            return cachedNode.node;
         }
         final var node = Renderer.wrapHighlightedCode(server.highlightCode(code, languageName), prettyName);
-        // NB: deliberately read the current state reference again, in case we've advanced to a new generation.
-        return currentState.put(digest, node);
+        // If multiple threads try to add an entry with the same digest at the same time, just let the first one win
+        // and use its DOM subtree, as DOM nodes are immutable anyway.
+        final var newCachedNode = map.putIfAbsent(digest, new CachedNode(node, currentGeneration));
+        return (newCachedNode != null) ? newCachedNode.node : node;
     }
 
     private static @NotNull Digest computeDigest(
@@ -106,51 +111,31 @@ public final class PygmentsCache {
 
     private static final VarHandle asIntArray =
         MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
-    private static final VarHandle currentStateHandle;
+    private static final VarHandle currentGenerationHandle;
 
     private final @NotNull PygmentsServer server;
+    private final ConcurrentHashMap<Digest, CachedNode> map = new ConcurrentHashMap<>();
     @SuppressWarnings("FieldMayBeFinal") // It cannot be, it's mutated through a VarHandle.
-    private volatile @NotNull State currentState = new State();
+    private volatile int currentGeneration = 0;
 
     static {
         try {
-            currentStateHandle = MethodHandles.lookup()
-                .findVarHandle(PygmentsCache.class, "currentState", State.class)
+            currentGenerationHandle = MethodHandles.lookup()
+                .findVarHandle(PygmentsCache.class, "currentGeneration", int.class)
                 .withInvokeExactBehavior();
         } catch (final NoSuchFieldException | IllegalAccessException e) {
             throw new ExceptionInInitializerError(e);
         }
     }
 
-    private static final class State {
-        private State() {
-            previous = new ConcurrentHashMap<>();
+    private static final class CachedNode {
+        private CachedNode(final @NotNull Node node, final int generation) {
+            this.node = node;
+            this.generation = generation;
         }
 
-        private State(final @NotNull State previous) {
-            this.previous = previous.current;
-        }
-
-        private @Nullable Node get(final @NotNull Digest digest) {
-            final var node = current.get(digest);
-            if (node != null) {
-                return node;
-            }
-            // The value may be present in the old generation. If it is, we need to promote it to the current generation
-            // so that the next call to nextGeneration preserves it.
-            final var oldNode = previous.get(digest);
-            return (oldNode != null) ? put(digest, oldNode) : null;
-        }
-
-        private @NotNull Node put(final @NotNull Digest digest, final @NotNull Node node) {
-            // If multiple threads try to add an entry with the same digest at the same time, just let the first one win
-            // and use its DOM subtree, as DOM nodes are immutable anyway.
-            final var oldValue = current.putIfAbsent(digest, node);
-            return (oldValue != null) ? oldValue : node;
-        }
-
-        private final @NotNull ConcurrentHashMap<Digest, @NotNull Node> current = new ConcurrentHashMap<>();
-        private final @NotNull ConcurrentHashMap<Digest, @NotNull Node> previous;
+        private final @NotNull Node node;
+        private volatile int generation;
     }
 
     // We only keep a cryptographic hash of the (code, languageName, prettyName) tuple to avoid holding a reference to
