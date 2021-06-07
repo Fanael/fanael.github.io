@@ -10,7 +10,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import greenspun.dom.Node;
 import greenspun.generator.Renderer;
 import greenspun.util.condition.Unwind;
@@ -42,14 +41,11 @@ public final class PygmentsCache {
      * Advances the cache into the next generation, removing all entries that weren't referenced since the last call.
      */
     public void nextGeneration() {
-        final var lock = readWriteLock.writeLock();
-        lock.lock();
-        try {
-            previousGeneration = currentGeneration;
-            currentGeneration = new ConcurrentHashMap<>();
-        } finally {
-            lock.unlock();
-        }
+        @NotNull State oldState, newState;
+        do {
+            oldState = currentState;
+            newState = new State(oldState);
+        } while (!currentStateHandle.compareAndSet(this, oldState, newState));
     }
 
     /**
@@ -67,46 +63,13 @@ public final class PygmentsCache {
         final @NotNull String prettyName
     ) throws Unwind {
         final var digest = computeDigest(code, languageName, prettyName);
-        final var cachedNode = getCached(digest);
+        final var cachedNode = currentState.get(digest);
         if (cachedNode != null) {
             return cachedNode;
         }
         final var node = Renderer.wrapHighlightedCode(server.highlightCode(code, languageName), prettyName);
-        return putCached(digest, node);
-    }
-
-    private @Nullable Node getCached(final @NotNull Digest digest) {
-        final var lock = readWriteLock.readLock();
-        lock.lock();
-        try {
-            final var node = currentGeneration.get(digest);
-            if (node != null) {
-                return node;
-            }
-            // The value may be present in the old generation. If it is, we need to promote it to the current generation
-            // so that the next call to nextGeneration preserves it.
-            final var oldNode = previousGeneration.get(digest);
-            return (oldNode != null) ? putToCurrent(digest, oldNode) : null;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    private @NotNull Node putCached(final @NotNull Digest digest, final @NotNull Node node) {
-        final var lock = readWriteLock.readLock();
-        lock.lock();
-        try {
-            return putToCurrent(digest, node);
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    private @NotNull Node putToCurrent(final @NotNull Digest digest, final @NotNull Node node) {
-        // If multiple threads can try to add an entry with the same digest at the same time, just let the first one
-        // win and use its DOM subtree, as DOM nodes are immutable anyway.
-        final var oldValue = currentGeneration.putIfAbsent(digest, node);
-        return (oldValue != null) ? oldValue : node;
+        // NB: deliberately read the current state reference again, in case we've advanced to a new generation.
+        return currentState.put(digest, node);
     }
 
     private static @NotNull Digest computeDigest(
@@ -143,12 +106,52 @@ public final class PygmentsCache {
 
     private static final VarHandle asIntArray =
         MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
+    private static final VarHandle currentStateHandle;
 
     private final @NotNull PygmentsServer server;
-    // NB: this only protects map *references*, so only nextGeneration needs exclusive access.
-    private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
-    private ConcurrentHashMap<Digest, @NotNull Node> previousGeneration = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Digest, @NotNull Node> currentGeneration = new ConcurrentHashMap<>();
+    @SuppressWarnings("FieldMayBeFinal") // It cannot be, it's mutated through a VarHandle.
+    private volatile @NotNull State currentState = new State();
+
+    static {
+        try {
+            currentStateHandle = MethodHandles.lookup()
+                .findVarHandle(PygmentsCache.class, "currentState", State.class)
+                .withInvokeExactBehavior();
+        } catch (final NoSuchFieldException | IllegalAccessException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    private static final class State {
+        private State() {
+            previous = new ConcurrentHashMap<>();
+        }
+
+        private State(final @NotNull State previous) {
+            this.previous = previous.current;
+        }
+
+        private @Nullable Node get(final @NotNull Digest digest) {
+            final var node = current.get(digest);
+            if (node != null) {
+                return node;
+            }
+            // The value may be present in the old generation. If it is, we need to promote it to the current generation
+            // so that the next call to nextGeneration preserves it.
+            final var oldNode = previous.get(digest);
+            return (oldNode != null) ? put(digest, oldNode) : null;
+        }
+
+        private @NotNull Node put(final @NotNull Digest digest, final @NotNull Node node) {
+            // If multiple threads try to add an entry with the same digest at the same time, just let the first one win
+            // and use its DOM subtree, as DOM nodes are immutable anyway.
+            final var oldValue = current.putIfAbsent(digest, node);
+            return (oldValue != null) ? oldValue : node;
+        }
+
+        private final @NotNull ConcurrentHashMap<Digest, @NotNull Node> current = new ConcurrentHashMap<>();
+        private final @NotNull ConcurrentHashMap<Digest, @NotNull Node> previous;
+    }
 
     // We only keep a cryptographic hash of the (code, languageName, prettyName) tuple to avoid holding a reference to
     // the entire code string. Collisions are extremely unlikely: the probability of two digests colliding is about
