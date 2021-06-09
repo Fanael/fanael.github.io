@@ -114,8 +114,6 @@ article header p {
 h1, h2, h3, h4, h5, h6 {
     padding: 0.5rem 0;
     page-break-after: avoid;
-    position: relative;
-    text-indent: 3ch;
 }
 
 h1, h2, h3 {
@@ -165,13 +163,8 @@ article section h2::before, article section h3::before, article section h4::befo
 }
 
 a.section-header-link {
-    left: 0;
-    line-height: 1;
     padding: 0 1ch;
-    position: absolute;
     text-decoration: none;
-    text-indent: 0;
-    top: 0.625em;
 }
 
 p {
