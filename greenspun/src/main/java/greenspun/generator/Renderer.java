@@ -267,8 +267,8 @@ public final class Renderer {
         final var innerArticle = article.article();
         final var headerBuilder = Node.buildElement(Tag.HEADER);
         headerBuilder.appendChild(Node.buildElement(Tag.H1)
-            .appendChild(Constants.rootSectionHeaderLink)
-            .appendChild(new Node.Text(article.article().title())));
+            .appendChild(new Node.Text(article.article().title()))
+            .appendChild(Constants.rootSectionHeaderLink));
         if (headerRenderMode.shouldRender()) {
             headerBuilder.appendChild(renderPublicationDate(innerArticle.date()));
             final var topicsNode = renderArticleTopics(innerArticle.topics());
@@ -360,8 +360,8 @@ public final class Renderer {
         final var headingTag = Tag.byHtmlName("h" + Math.min(nestingLevel, 6));
         assert headingTag != null;
         return Node.buildElement(headingTag)
-            .appendChild(renderSectionHeaderLink(section.identifier().symbolName()))
             .appendChild(new Node.Text(section.header()))
+            .appendChild(renderSectionHeaderLink(section.identifier().symbolName()))
             .toElement();
     }
 
@@ -369,6 +369,7 @@ public final class Renderer {
         return Node.buildElement(Tag.A)
             .setAttribute("class", "section-header-link")
             .setAttribute("href", '#' + targetId)
+            .setAttribute("aria-label", "anchor")
             .appendChild(new Node.Text("§"))
             .toElement();
     }

@@ -151,6 +151,7 @@ h6 {
 }
 
 a.section-header-link {
+    float: left;
     padding: 0 1ch;
     text-decoration: none;
 }
