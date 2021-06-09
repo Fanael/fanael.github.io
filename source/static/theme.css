@@ -150,6 +150,18 @@ h6 {
     font-size: 100%;
 }
 
+article section:first-of-type {
+    counter-reset: section;
+}
+
+article section {
+    counter-increment: section;
+}
+
+article section h2::before, article section h3::before, article section h4::before, article section h5::before, article section h6::before {
+    content: counters(section, ".") ". ";
+}
+
 a.section-header-link {
     float: left;
     padding: 0 1ch;
