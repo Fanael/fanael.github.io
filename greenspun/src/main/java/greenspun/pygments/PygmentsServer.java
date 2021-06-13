@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
@@ -54,7 +55,7 @@ public final class PygmentsServer implements AutoCloseable {
     public void close() {
         lock.lock();
         try {
-            assert freeConnections.size() == activeConnectionCount
+            assert freeConnections.size() == activeConnectionCount.get()
                 : "Attempted to shut down the connection pool with outstanding busy connections";
             for (final var connection : freeConnections) {
                 connection.initiateShutdown();
@@ -68,7 +69,7 @@ public final class PygmentsServer implements AutoCloseable {
                 connection.destroy();
             }
             freeConnections.clear();
-            activeConnectionCount = 0;
+            activeConnectionCount.set(0);
         } finally {
             lock.unlock();
         }
@@ -104,43 +105,44 @@ public final class PygmentsServer implements AutoCloseable {
     }
 
     private @NotNull Connection acquireConnection() throws Unwind {
-        final @NotNull Connection connection;
-        lock.lock();
-        try {
-            if (freeConnections.isEmpty()) {
-                connection = openNewConnection();
-            } else {
-                connection = freeConnections.remove(freeConnections.size() - 1);
-            }
-        } finally {
-            lock.unlock();
+        final var connection = popFreeConnection();
+        if (connection != null) {
+            assert connection.stillAlive;
+            return connection;
         }
-        assert connection.stillAlive;
-        return connection;
+        return openNewConnection();
     }
 
     private void releaseConnection(final @NotNull Connection connection) {
+        if (connection.stillAlive) {
+            lock.lock();
+            try {
+                freeConnections.add(connection);
+            } finally {
+                lock.unlock();
+            }
+        } else {
+            activeConnectionCount.decrementAndGet();
+        }
+    }
+
+    private @Nullable Connection popFreeConnection() {
         lock.lock();
         try {
-            if (connection.stillAlive) {
-                freeConnections.add(connection);
-            } else {
-                activeConnectionCount -= 1;
-            }
+            return freeConnections.isEmpty() ? null : freeConnections.remove(freeConnections.size() - 1);
         } finally {
             lock.unlock();
         }
     }
 
     private @NotNull Connection openNewConnection() throws Unwind {
-        assert lock.isHeldByCurrentThread();
         try (final var trace = new Trace("Spawning a new pygments server process")) {
             trace.use();
             final var builder = new ProcessBuilder("python3", sourceCodePath.toString());
             builder.redirectErrorStream(true);
             try {
                 final var connection = new Connection(builder.start());
-                activeConnectionCount += 1;
+                activeConnectionCount.incrementAndGet();
                 return connection;
             } catch (final IOException e) {
                 throw ConditionContext.error(new IOExceptionCondition(e));
@@ -149,9 +151,9 @@ public final class PygmentsServer implements AutoCloseable {
     }
 
     private final @NotNull Path sourceCodePath;
+    private final AtomicInteger activeConnectionCount = new AtomicInteger(0);
     private final ReentrantLock lock = new ReentrantLock();
     private final ArrayList<@NotNull Connection> freeConnections = new ArrayList<>();
-    private int activeConnectionCount = 0;
 
     private static final class Connection {
         private Connection(final @NotNull Process process) {
