@@ -10,8 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
@@ -109,12 +107,10 @@ public final class PygmentsServer implements AutoCloseable {
         final @NotNull Connection connection;
         lock.lock();
         try {
-            if (activeConnectionCount == 0) {
+            if (freeConnections.isEmpty()) {
                 connection = openNewConnection();
-            } else if (!freeConnections.isEmpty()) {
-                connection = freeConnections.remove(freeConnections.size() - 1);
             } else {
-                connection = waitForFreeConnection();
+                connection = freeConnections.remove(freeConnections.size() - 1);
             }
         } finally {
             lock.unlock();
@@ -128,7 +124,6 @@ public final class PygmentsServer implements AutoCloseable {
         try {
             if (connection.stillAlive) {
                 freeConnections.add(connection);
-                hasFreeConnections.signal();
             } else {
                 activeConnectionCount -= 1;
             }
@@ -137,32 +132,8 @@ public final class PygmentsServer implements AutoCloseable {
         }
     }
 
-    private @NotNull Connection waitForFreeConnection() throws Unwind {
-        if (shortWaitCount == shortWaitMaxCount) {
-            // If we've hit the short wait count limit, open a new connection to relieve the contention a bit.
-            shortWaitCount = 0;
-            return openNewConnection();
-        }
-
-        var nanosecondsRemaining = TimeUnit.MILLISECONDS.toNanos(shortWaitMilliseconds);
-        try {
-            while (freeConnections.isEmpty() && nanosecondsRemaining > 0) {
-                nanosecondsRemaining = hasFreeConnections.awaitNanos(nanosecondsRemaining);
-            }
-        } catch (final InterruptedException e) {
-            // Set the interrupt flag back, short waits aren't intended to be interruption points.
-            Thread.currentThread().interrupt();
-        }
-
-        if (freeConnections.isEmpty()) {
-            return openNewConnection();
-        } else {
-            shortWaitCount += 1;
-            return freeConnections.remove(freeConnections.size() - 1);
-        }
-    }
-
     private @NotNull Connection openNewConnection() throws Unwind {
+        assert lock.isHeldByCurrentThread();
         try (final var trace = new Trace("Spawning a new pygments server process")) {
             trace.use();
             final var builder = new ProcessBuilder("python3", sourceCodePath.toString());
@@ -177,15 +148,10 @@ public final class PygmentsServer implements AutoCloseable {
         }
     }
 
-    private static final int shortWaitMilliseconds = 3;
-    private static final int shortWaitMaxCount = 10;
-
     private final @NotNull Path sourceCodePath;
     private final ReentrantLock lock = new ReentrantLock();
-    private final Condition hasFreeConnections = lock.newCondition();
     private final ArrayList<@NotNull Connection> freeConnections = new ArrayList<>();
     private int activeConnectionCount = 0;
-    private int shortWaitCount = 0;
 
     private static final class Connection {
         private Connection(final @NotNull Process process) {
