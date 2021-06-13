@@ -10,6 +10,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import greenspun.dom.Node;
 import greenspun.generator.Renderer;
 import greenspun.util.condition.Unwind;
@@ -41,7 +42,7 @@ public final class PygmentsCache {
      * Advances the cache into the next generation, removing all entries that weren't referenced since the last call.
      */
     public void nextGeneration() {
-        final var previousGeneration = (int) currentGenerationHandle.getAndAdd(this, 1);
+        final var previousGeneration = currentGeneration.getAndAdd(1);
         final var currentGeneration = previousGeneration + 1;
         map.entrySet().removeIf(entry -> {
             final var entryGeneration = entry.getValue().generation;
@@ -67,13 +68,13 @@ public final class PygmentsCache {
         final var digest = computeDigest(code, languageName, prettyName);
         final var cachedNode = map.get(digest);
         if (cachedNode != null) {
-            cachedNode.generation = currentGeneration;
+            cachedNode.generation = currentGeneration.get();
             return cachedNode.node;
         }
         final var node = Renderer.wrapHighlightedCode(server.highlightCode(code, languageName), prettyName);
         // If multiple threads try to add an entry with the same digest at the same time, just let the first one win
         // and use its DOM subtree, as DOM nodes are immutable anyway.
-        final var newCachedNode = map.putIfAbsent(digest, new CachedNode(node, currentGeneration));
+        final var newCachedNode = map.putIfAbsent(digest, new CachedNode(node, currentGeneration.get()));
         return (newCachedNode != null) ? newCachedNode.node : node;
     }
 
@@ -111,22 +112,10 @@ public final class PygmentsCache {
 
     private static final VarHandle asIntArray =
         MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
-    private static final VarHandle currentGenerationHandle;
 
     private final @NotNull PygmentsServer server;
     private final ConcurrentHashMap<Digest, CachedNode> map = new ConcurrentHashMap<>();
-    @SuppressWarnings("FieldMayBeFinal") // It cannot be, it's mutated through a VarHandle.
-    private volatile int currentGeneration = 0;
-
-    static {
-        try {
-            currentGenerationHandle = MethodHandles.lookup()
-                .findVarHandle(PygmentsCache.class, "currentGeneration", int.class)
-                .withInvokeExactBehavior();
-        } catch (final NoSuchFieldException | IllegalAccessException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+    private final AtomicInteger currentGeneration = new AtomicInteger(0);
 
     private static final class CachedNode {
         private CachedNode(final @NotNull Node node, final int generation) {
