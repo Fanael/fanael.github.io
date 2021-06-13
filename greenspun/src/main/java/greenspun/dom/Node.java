@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import greenspun.util.collection.ImmutableList;
-import greenspun.util.function.ThrowingConsumer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,14 +19,18 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract sealed class Node {
     /**
-     * Returns a new element builder that will create an element of the given tag.
+     * Builds a new DOM node representing the given HTML tag.
+     * <p>
+     * The given build function is passed a new element builder, which it's expected to modify.
+     * <p>
+     * Exceptions thrown by the build function are passed through.
      */
     public static <E extends Throwable> @NotNull Element build(
         final @NotNull Tag tag,
-        final @NotNull ThrowingConsumer<? super ElementBuilder, E> buildFunction
+        final @NotNull BuildFunction<E> buildFunction
     ) throws E {
         final var builder = new ElementBuilder(tag);
-        buildFunction.accept(builder);
+        buildFunction.build(builder);
         return builder.toElement();
     }
 
@@ -36,6 +39,21 @@ public abstract sealed class Node {
      */
     public static @NotNull Element makeEmptyElement(final @NotNull Tag tag) {
         return new Element(tag, ImmutableList.empty(), ImmutableList.empty());
+    }
+
+    /**
+     * A functional interface for functions that operate on an element builder.
+     * <p>
+     * The {@code build} method is allowed to throw arbitrary exceptions of type {@code E}.
+     *
+     * @see Node#build(Tag, BuildFunction)
+     */
+    @FunctionalInterface
+    public interface BuildFunction<E extends Throwable> {
+        /**
+         * Builds a DOM element by modifying the given element builder.
+         */
+        void build(@NotNull ElementBuilder builder) throws E;
     }
 
     /**
@@ -105,7 +123,7 @@ public abstract sealed class Node {
      * A builder class that allows easy and convenient creation of {@link Element} objects with specified attributes
      * and children.
      * <p>
-     * Instances of this class cannot be created directly, use {@link Node#build(Tag, ThrowingConsumer)}} instead.
+     * Instances of this class cannot be created directly, use {@link Node#build(Tag, BuildFunction)}} instead.
      */
     public static final class ElementBuilder {
         private ElementBuilder(final @NotNull Tag tag) {
@@ -151,11 +169,11 @@ public abstract sealed class Node {
          * Equivalent to {@code this.append(Node.build(tag, buildFunction))}.
          *
          * @see #append(Node)
-         * @see Node#build(Tag, ThrowingConsumer)
+         * @see Node#build(Tag, BuildFunction)
          */
         public <E extends Throwable> void appendBuild(
             final @NotNull Tag tag,
-            final @NotNull ThrowingConsumer<? super ElementBuilder, E> buildFunction
+            final @NotNull BuildFunction<E> buildFunction
         ) throws E {
             append(build(tag, buildFunction));
         }
