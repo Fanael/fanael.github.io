@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
+import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import greenspun.util.function.ThrowingConsumer;
@@ -16,90 +17,87 @@ import greenspun.util.function.ThrowingFunction;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A utility class containing miscellaneous operations on {@link java.util.concurrent.Executor}s and
- * {@link ExecutorService}s.
+ * A wrapper around {@link ExecutorService} providing convenient methods for concurrent operations on collections.
  */
-public final class ExecutorUtils {
-    private ExecutorUtils() {
+public final class CollectionExecutorService {
+    /**
+     * Initializes a new collection executor service that will submit tasks to the given executor service.
+     */
+    public CollectionExecutorService(final @NotNull ExecutorService executorService) {
+        this.executorService = executorService;
     }
 
     /**
      * Returns a fresh {@link ArrayList} containing the results of applying the given function to the elements of
-     * the given collection, in order of the collection's iterator.
+     * the given collection, in order of the collection's iterator if the collection guarantees an order.
      * <p>
-     * Elements are processed concurrently by submitting tasks to the given {@link ExecutorService}. The tasks inherit
-     * the {@link ConditionContext} state from the calling thread. Unwinds that escape a task are propagated to
+     * Elements are processed concurrently by submitting tasks to the associated {@link ExecutorService}. The tasks
+     * inherit the {@link ConditionContext} state from the calling thread. Unwinds that escape a task are propagated to
      * the calling thread.
      * <p>
-     * This methods waits for the submitted tasks to finish.
+     * This methods waits for all of the submitted tasks to finish before returning.
      */
-    public static <T, R> @NotNull ArrayList<R> map(
-        final @NotNull ExecutorService executorService,
+    public <T, R> @NotNull ArrayList<R> map(
         final @NotNull Collection<? extends T> collection,
         final @NotNull ThrowingFunction<? super T, ? extends R, Unwind> function
     ) throws Unwind, InterruptedException {
-        return collectResults(submitTasks(executorService, collection, function));
+        return collectResults(submitTasks(collection, function));
     }
 
     /**
      * Applies the given consumer to the elements of the given collection.
      * <p>
-     * Elements are processed concurrently by submitting tasks to the given {@link ExecutorService}. The tasks inherit
-     * the {@link ConditionContext} state from the calling thread. Unwinds that escape a task are propagated to
+     * Elements are processed concurrently by submitting tasks to the associated {@link ExecutorService}. The tasks
+     * inherit the {@link ConditionContext} state from the calling thread. Unwinds that escape a task are propagated to
      * the calling thread.
      * <p>
-     * This methods waits for the submitted tasks to finish.
+     * This methods waits for all of the submitted tasks to finish before returning.
      */
-    public static <T> void forEach(
-        final @NotNull ExecutorService executorService,
+    public <T> void forEach(
         final @NotNull Collection<? extends T> collection,
         final @NotNull ThrowingConsumer<? super T, Unwind> consumer
     ) throws Unwind, InterruptedException {
-        waitForResults(submitTasks(executorService, collection, value -> {
+        waitForResults(submitTasks(collection, value -> {
             consumer.accept(value);
             return null;
         }));
     }
 
-    private static <T, R> @NotNull ArrayList<@NotNull Future<R>> submitTasks(
-        final @NotNull ExecutorService executorService,
+    private <T, R> @NotNull ImmutableList<@NotNull Future<R>> submitTasks(
         final @NotNull Collection<? extends T> collection,
         final @NotNull ThrowingFunction<? super T, ? extends R, Unwind> function
     ) {
         final var inheritedState = ConditionContext.saveInheritableState();
-        final var futures = new ArrayList<@NotNull Future<R>>(collection.size());
-        // Need to explicitly iterate to guarantee that the order is the same as the collection's iterator order.
-        for (final var element : collection) {
-            futures.add(executorService.submit(() -> {
-                final var previousState = ConditionContext.inheritState(inheritedState);
-                try (final var t = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
-                    t.use();
-                    return function.apply(element);
-                } catch (final Unwind u) {
-                    // Need to repackage the unwind because it's checked and it's not an exception.
-                    throw new UnwindException(u);
-                } finally {
-                    ConditionContext.restoreState(previousState);
-                }
-            }));
-        }
-        return futures;
+        return ImmutableList.map(collection, element -> executorService.submit(() -> {
+            final var previousState = ConditionContext.inheritState(inheritedState);
+            try (final var trace = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
+                trace.use();
+                return function.apply(element);
+            } catch (final Unwind u) {
+                // Need to repackage the unwind because it's checked and it's not an exception.
+                throw new UnwindException(u);
+            } finally {
+                ConditionContext.restoreState(previousState);
+            }
+        }));
     }
 
     private static <T> @NotNull ArrayList<T> collectResults(
-        final @NotNull ArrayList<@NotNull Future<T>> futures
+        final @NotNull ImmutableList<@NotNull Future<T>> futures
     ) throws Unwind, InterruptedException {
         final var result = new ArrayList<T>(futures.size());
         new AwaitImpl<>(futures.iterator(), result::add).awaitAll();
         return result;
     }
 
-    private static <T> void waitForResults(
-        final @NotNull ArrayList<@NotNull Future<T>> futures
+    private static void waitForResults(
+        final @NotNull ImmutableList<@NotNull Future<Object>> futures
     ) throws Unwind, InterruptedException {
         new AwaitImpl<>(futures.iterator(), value -> {
         }).awaitAll();
     }
+
+    private final @NotNull ExecutorService executorService;
 
     private static final class AwaitImpl<T> {
         private AwaitImpl(final @NotNull Iterator<Future<T>> iterator, final @NotNull Consumer<T> consumer) {

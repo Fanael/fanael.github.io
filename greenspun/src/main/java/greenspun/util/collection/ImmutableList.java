@@ -96,12 +96,12 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      * Returns an immutable list containing the results of applying the given function to the elements of the given
      * collection.
      * <p>
-     * For each index {@code i} in the returned {@code list}, {@code list.get(i)} corresponds to the result of applying
-     * {@code function} to the {@code i}th element of the array returned by the {@code collection.toArray()} call.
+     * If the given collection makes any guarantees regarding the order of its elements as returned by its iterator,
+     * the returned list will contain the elements in the same order; otherwise no particular order is guaranteed.
      * <p>
      * If the given collection is empty, has the same effect as {@link #empty()}.
      * <p>
-     * Exceptions thrown by the function are passed through.
+     * Exceptions thrown by the given function are passed through.
      */
     @SuppressWarnings("unchecked")
     public static <T, R, E extends Throwable> @NotNull ImmutableList<R> map(
@@ -109,6 +109,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
         final @NotNull ThrowingFunction<? super T, ? extends R, E> function
     ) throws E {
         final var array = SafeArrayAccess.toSafeArray(collection);
+        assert array.getClass().getComponentType() == Object.class;
         final var size = array.length;
         if (size == 0) {
             return empty();

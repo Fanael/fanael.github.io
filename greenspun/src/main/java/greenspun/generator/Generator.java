@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -25,15 +24,13 @@ import greenspun.pygments.PygmentsCache;
 import greenspun.sexp.SymbolTable;
 import greenspun.sexp.reader.ByteStream;
 import greenspun.sexp.reader.Reader;
-import greenspun.util.ExecutorUtils;
+import greenspun.util.CollectionExecutorService;
 import greenspun.util.PathUtils;
 import greenspun.util.Trace;
 import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
-import greenspun.util.function.ThrowingConsumer;
-import greenspun.util.function.ThrowingFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,7 +53,7 @@ public final class Generator {
     ) {
         this.sourceDirectory = sourceDirectory;
         this.destinationDirectory = destinationDirectory;
-        this.executorService = executorService;
+        executor = new CollectionExecutorService(executorService);
         this.pygmentsCache = pygmentsCache;
     }
 
@@ -96,7 +93,7 @@ public final class Generator {
 
     private void generatePages(final @NotNull List<Path> pageSourcePaths) throws Unwind, InterruptedException {
         final var renderer = makeNonArticleRenderer();
-        forEachUsingExecutor(pageSourcePaths, sourceRelativePath -> generatePage(sourceRelativePath, renderer));
+        executor.forEach(pageSourcePaths, sourceRelativePath -> generatePage(sourceRelativePath, renderer));
     }
 
     private void generatePage(
@@ -115,7 +112,7 @@ public final class Generator {
     private @NotNull ArrayList<ArchivedArticle> generateArticles(
         final @NotNull List<Path> articleSourcePaths
     ) throws Unwind, InterruptedException {
-        final var articles = mapUsingExecutor(articleSourcePaths, this::loadArticle);
+        final var articles = executor.map(articleSourcePaths, this::loadArticle);
         // Use the file name as a tie breaker to ensure we don't rely on the order the file system returned paths in.
         articles.sort(
             Comparator.comparing((final @NotNull LoadedArticle article) -> article.article.date())
@@ -133,7 +130,7 @@ public final class Generator {
             orderedArticles.add(new OrderedArticle(innerArticle, sourceRelativePath, predecessorUri, successorUri));
         }
         final var renderer = makeArticleRenderer();
-        return mapUsingExecutor(orderedArticles, article -> generateArticle(article, renderer));
+        return executor.map(orderedArticles, article -> generateArticle(article, renderer));
     }
 
     private @NotNull ArchivedArticle generateArticle(
@@ -264,7 +261,7 @@ public final class Generator {
                     articlesByTopic.computeIfAbsent(topic, key -> new ArrayList<>()).add(article);
                 }
             }
-            final var topics = mapUsingExecutor(articlesByTopic.entrySet(), entry -> {
+            final var topics = executor.map(articlesByTopic.entrySet(), entry -> {
                 final var topicName = entry.getKey();
                 final var topicArticles = entry.getValue();
                 try (final var innerTrace = new Trace(() -> "Generating archives of topic " + topicName)) {
@@ -291,7 +288,7 @@ public final class Generator {
                 final var quarter = Quarter.fromDate(article.article().date());
                 articlesByQuarter.computeIfAbsent(quarter, key -> new ArrayList<>()).add(article);
             }
-            final var quarters = mapUsingExecutor(articlesByQuarter.entrySet(), entry -> {
+            final var quarters = executor.map(articlesByQuarter.entrySet(), entry -> {
                 final var quarter = entry.getKey();
                 final var quarterArticles = entry.getValue();
                 try (final var innerTrace = new Trace(() -> "Generating quarterly archives for the " + quarter)) {
@@ -346,20 +343,6 @@ public final class Generator {
         return new Renderer(HeaderRenderMode.Skip.instance());
     }
 
-    private <T, R> @NotNull ArrayList<R> mapUsingExecutor(
-        final @NotNull Collection<? extends T> collection,
-        final @NotNull ThrowingFunction<? super T, ? extends R, Unwind> function
-    ) throws Unwind, InterruptedException {
-        return ExecutorUtils.map(executorService, collection, function);
-    }
-
-    private <T> void forEachUsingExecutor(
-        final @NotNull Collection<? extends T> collection,
-        final @NotNull ThrowingConsumer<? super T, Unwind> consumer
-    ) throws Unwind, InterruptedException {
-        ExecutorUtils.forEach(executorService, collection, consumer);
-    }
-
     static final String pagesSubdirectoryName = "pages";
     static final String archivesSubdirectoryName = "archives";
     private static final Path archivesSubdirectoryPath = Path.of(archivesSubdirectoryName);
@@ -371,7 +354,7 @@ public final class Generator {
 
     private final @NotNull Path sourceDirectory;
     private final @NotNull Path destinationDirectory;
-    private final @NotNull ExecutorService executorService;
+    private final @NotNull CollectionExecutorService executor;
     private final @NotNull PygmentsCache pygmentsCache;
 
     private static final class HeaderRenderImpl implements HeaderRenderMode {
