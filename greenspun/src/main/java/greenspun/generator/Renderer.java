@@ -137,20 +137,15 @@ public final class Renderer {
         final @NotNull List<ArchivedArticle> articles
     ) {
         final var quarterListElements = ImmutableList.map(quarters,
-            quarter -> Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
-                a.set("href", quarter.uri().toString());
-                a.appendText("The " + quarter.quarter());
-            }))));
+            quarter -> Node.build(Tag.LI,
+                li -> li.append(renderSimpleLink(quarter.uri().toString(), "The " + quarter.quarter()))));
         final var topicListElements = ImmutableList.map(topics,
-            topic -> Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
-                a.set("href", topic.uri().toString());
-                a.appendText(topic.topic());
-            }))));
+            topic -> Node.build(Tag.LI, li -> li.append(renderSimpleLink(topic.uri().toString(), topic.topic()))));
         final var articleListElements = ImmutableList.map(articles,
-            article -> Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
-                a.set("href", article.uri().toString());
-                a.appendText(renderIsoDate(article.article().date()) + " — " + article.article().title());
-            }))));
+            article -> Node.build(Tag.LI, li -> li.append(renderSimpleLink(
+                article.uri().toString(),
+                renderIsoDate(article.article().date()) + " — " + article.article().title()
+            ))));
         return ImmutableList.of(
             Node.build(Tag.HEADER, header -> header.append(Node.build(Tag.H1, h1 -> h1.appendText("Blog archives")))),
             Node.build(Tag.SECTION, section -> {
@@ -198,10 +193,8 @@ public final class Renderer {
             nav.append(Constants.tocLabel);
             nav.append(Node.build(Tag.OL, ol -> {
                 for (final var article : articles) {
-                    ol.append(Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
-                        a.set("href", '#' + article.identifier());
-                        a.append(new Node.Text(article.article().title()));
-                    }))));
+                    ol.append(Node.build(Tag.LI,
+                        li -> li.append(renderSimpleLink('#' + article.identifier(), article.article().title()))));
                 }
             }));
         });
@@ -213,10 +206,8 @@ public final class Renderer {
             return Node.build(Tag.ARTICLE, articleElement -> {
                 articleElement.set("id", article.identifier());
                 articleElement.append(Node.build(Tag.HEADER, header -> {
-                    header.append(Node.build(Tag.H2, h2 -> h2.append(Node.build(Tag.A, a -> {
-                        a.set("href", article.uri().toString());
-                        a.append(new Node.Text(title));
-                    }))));
+                    header.append(Node.build(Tag.H2,
+                        h2 -> h2.append(renderSimpleLink(article.uri().toString(), title))));
                     header.append(renderPublicationDate(article.article().date()));
                     final var topics = renderArticleTopics(article.article().topics());
                     if (topics != null) {
@@ -310,10 +301,7 @@ public final class Renderer {
             p.appendText("Topics: ");
             final var nodes = new ArrayList<@NotNull Node>(2 * topics.size());
             for (final String topicName : topics) {
-                nodes.add(Node.build(Tag.A, a -> {
-                    a.set("href", headerRenderMode.getTopicArchiveUri(topicName));
-                    a.appendText(topicName);
-                }));
+                nodes.add(renderSimpleLink(headerRenderMode.getTopicArchiveUri(topicName), topicName));
                 nodes.add(new Node.Text(", "));
             }
             nodes.remove(nodes.size() - 1);
@@ -334,10 +322,7 @@ public final class Renderer {
         return Node.build(Tag.OL, ol -> {
             for (final var child : children) {
                 ol.append(Node.build(Tag.LI, li -> {
-                    li.append(Node.build(Tag.A, a -> {
-                        a.set("href", '#' + child.identifier().symbolName());
-                        a.appendText(child.header());
-                    }));
+                    li.append(renderSimpleLink('#' + child.identifier().symbolName(), child.header()));
                     final var grandchildren = child.children();
                     if (!grandchildren.isEmpty()) {
                         li.append(renderTableOfContentsList(grandchildren));
@@ -373,6 +358,13 @@ public final class Renderer {
             a.set("href", '#' + targetId);
             a.set("aria-label", "anchor");
             a.appendText("§");
+        });
+    }
+
+    private static @NotNull Node.Element renderSimpleLink(final @NotNull String href, final @NotNull String text) {
+        return Node.build(Tag.A, a -> {
+            a.set("href", href);
+            a.appendText(text);
         });
     }
 
@@ -462,18 +454,10 @@ public final class Renderer {
                 nav.set("aria-label", "Primary");
                 nav.append(Node.build(Tag.UL, ul -> {
                     ul.set("id", "navmenu");
-                    ul.append(Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
-                        a.set("href", "/");
-                        a.appendText("Main page");
-                    }))));
-                    ul.append(Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
-                        a.set("href", "/archives/");
-                        a.appendText("Archives");
-                    }))));
-                    ul.append(Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
-                        a.set("href", "https://github.com/Fanael/fanael.github.io/");
-                        a.appendText("GitHub");
-                    }))));
+                    ul.append(Node.build(Tag.LI, li -> li.append(renderSimpleLink("/", "Main page"))));
+                    ul.append(Node.build(Tag.LI, li -> li.append(renderSimpleLink("/archives/", "Archives"))));
+                    ul.append(Node.build(Tag.LI,
+                        li -> li.append(renderSimpleLink("https://github.com/Fanael/fanael.github.io/", "GitHub"))));
                     ul.append(Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
                         a.set("rel", "author");
                         a.set("href", "/pages/about.html");
@@ -500,16 +484,11 @@ public final class Renderer {
 
         private static final Node.Element topLink = Node.build(Tag.LI, li -> {
             li.set("class", "top");
-            li.append(Node.build(Tag.A, a -> {
-                a.set("href", "#skip-nav");
-                a.appendText("↑ Top ↑");
-            }));
+            li.append(renderSimpleLink("#skip-nav", "↑ Top ↑"));
         });
 
-        private static final Node.Element archivesLink = Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
-            a.set("href", "/archives/");
-            a.appendText("Blog archives");
-        })));
+        private static final Node.Element archivesLink = Node.build(Tag.LI,
+            li -> li.append(renderSimpleLink("/archives/", "Blog archives")));
 
         private static final Node.Element rootSectionHeaderLink = renderSectionHeaderLink("main");
 
