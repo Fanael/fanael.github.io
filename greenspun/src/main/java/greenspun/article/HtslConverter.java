@@ -156,15 +156,15 @@ public final class HtslConverter {
         final @NotNull ImmutableList<Sexp> children
     ) throws Unwind {
         return Node.build(Tag.FIGURE, figure -> {
-            figure.append(Node.build(Tag.FIGCAPTION, figcaption -> {
+            figure.appendBuild(Tag.FIGCAPTION, figcaption -> {
                 for (final var child : children) {
                     figcaption.append(convertForm(child));
                 }
-            }));
-            figure.append(Node.build(Tag.DIV, div -> {
+            });
+            figure.appendBuild(Tag.DIV, div -> {
                 div.set("class", "holder");
-                div.append(Node.build(Tag.IMG, img -> convertAttributes(img, attributes)));
-            }));
+                div.appendBuild(Tag.IMG, img -> convertAttributes(img, attributes));
+            });
         });
     }
 

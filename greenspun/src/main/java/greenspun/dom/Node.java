@@ -146,6 +146,21 @@ public abstract sealed class Node {
         }
 
         /**
+         * A convenience method that appends a newly-built element node to the list of children.
+         * <p>
+         * Equivalent to {@code this.append(Node.build(tag, buildFunction))}.
+         *
+         * @see #append(Node)
+         * @see Node#build(Tag, ThrowingConsumer)
+         */
+        public <E extends Throwable> void appendBuild(
+            final @NotNull Tag tag,
+            final @NotNull ThrowingConsumer<? super ElementBuilder, E> buildFunction
+        ) throws E {
+            append(build(tag, buildFunction));
+        }
+
+        /**
          * Sets the given attribute to a new value.
          * <p>
          * If the element being built already has an attribute with the same name, the value is overwritten.

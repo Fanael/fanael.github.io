@@ -42,7 +42,7 @@ public final class Renderer {
         return Node.build(Tag.PRE, pre -> {
             pre.set("class", "codeblock");
             pre.set("data-code-language", prettyLanguageName);
-            pre.append(Node.build(Tag.CODE, code -> code.append(nodes)));
+            pre.appendBuild(Tag.CODE, code -> code.append(nodes));
         });
     }
 
@@ -63,10 +63,10 @@ public final class Renderer {
             renderHead(null, "Latest posts on " + RenderConstants.siteTitle),
             Constants.simpleBottomNav,
             main -> {
-                main.append(Node.build(Tag.HEADER,
-                    header -> header.append(Node.build(Tag.H1, h1 -> h1.appendText("Latest articles")))));
+                main.appendBuild(Tag.HEADER,
+                    header -> header.appendBuild(Tag.H1, h1 -> h1.appendText("Latest articles")));
                 if (articles.isEmpty()) {
-                    main.append(Node.build(Tag.P, p -> p.appendText("There are no articles yet.")));
+                    main.appendBuild(Tag.P, p -> p.appendText("There are no articles yet."));
                 } else {
                     renderExcerpts(main, articles);
                 }
@@ -110,8 +110,7 @@ public final class Renderer {
         final @NotNull List<ArchivedTopic> topics,
         final @NotNull List<ArchivedArticle> articles
     ) {
-        parent.append(Node.build(Tag.HEADER,
-            header -> header.append(Node.build(Tag.H1, h1 -> h1.appendText("Blog archives")))));
+        parent.appendBuild(Tag.HEADER, header -> header.appendBuild(Tag.H1, h1 -> h1.appendText("Blog archives")));
         parent.append(renderArchiveIndexSection("By date", quarters,
             quarter -> renderSimpleLink(quarter.uri().toString(), "The " + quarter.quarter())));
         parent.append(renderArchiveIndexSection("By topic", topics,
@@ -129,12 +128,12 @@ public final class Renderer {
         final @NotNull Function<? super T, ? extends Node> linkFormatter
     ) {
         return Node.build(Tag.SECTION, section -> {
-            section.append(Node.build(Tag.H2, h2 -> h2.appendText(name)));
-            section.append(Node.build(Tag.UL, ul -> {
+            section.appendBuild(Tag.H2, h2 -> h2.appendText(name));
+            section.appendBuild(Tag.UL, ul -> {
                 for (final var element : elements) {
-                    ul.append(Node.build(Tag.LI, li -> li.append(linkFormatter.apply(element))));
+                    ul.appendBuild(Tag.LI, li -> li.append(linkFormatter.apply(element)));
                 }
-            }));
+            });
         });
     }
 
@@ -147,8 +146,8 @@ public final class Renderer {
             renderHead(title, title),
             Constants.simpleBottomNav,
             main -> {
-                main.append(Node.build(Tag.HEADER,
-                    headerElement -> headerElement.append(Node.build(Tag.H1, h1 -> h1.appendText(header)))));
+                main.appendBuild(Tag.HEADER,
+                    headerElement -> headerElement.appendBuild(Tag.H1, h1 -> h1.appendText(header)));
                 main.append(renderArchiveTableOfContents(articles));
                 renderExcerpts(main, articles);
             }
@@ -163,15 +162,15 @@ public final class Renderer {
         return Node.build(Tag.HTML, html -> {
             html.set(Constants.htmlLang);
             html.append(head);
-            html.append(Node.build(Tag.BODY, body -> {
+            html.appendBuild(Tag.BODY, body -> {
                 body.append(Constants.header);
-                body.append(Node.build(Tag.MAIN, main -> {
+                body.appendBuild(Tag.MAIN, main -> {
                     main.set(Constants.idMain);
                     mainBuildFunction.accept(main);
-                }));
+                });
                 body.append(bottomNav);
                 body.append(Constants.footer);
-            }));
+            });
         });
     }
 
@@ -180,12 +179,12 @@ public final class Renderer {
             nav.set("class", "toc");
             nav.set("aria-labelledby", "toc-label");
             nav.append(Constants.tocLabel);
-            nav.append(Node.build(Tag.OL, ol -> {
+            nav.appendBuild(Tag.OL, ol -> {
                 for (final var article : articles) {
-                    ol.append(Node.build(Tag.LI,
-                        li -> li.append(renderSimpleLink('#' + article.identifier(), article.article().title()))));
+                    ol.appendBuild(Tag.LI,
+                        li -> li.append(renderSimpleLink('#' + article.identifier(), article.article().title())));
                 }
-            }));
+            });
         });
     }
 
@@ -196,25 +195,24 @@ public final class Renderer {
         for (final var article : articles) {
             final var innerArticle = article.article();
             final var title = innerArticle.title();
-            parent.append(Node.build(Tag.ARTICLE, articleElement -> {
+            parent.appendBuild(Tag.ARTICLE, articleElement -> {
                 articleElement.set("id", article.identifier());
-                articleElement.append(Node.build(Tag.HEADER, header -> {
-                    header.append(Node.build(Tag.H2,
-                        h2 -> h2.append(renderSimpleLink(article.uri().toString(), title))));
+                articleElement.appendBuild(Tag.HEADER, header -> {
+                    header.appendBuild(Tag.H2, h2 -> h2.append(renderSimpleLink(article.uri().toString(), title)));
                     header.append(renderPublicationDate(innerArticle.date()));
                     final var topics = renderArticleTopics(innerArticle.topics());
                     if (topics != null) {
                         header.append(topics);
                     }
-                }));
+                });
                 articleElement.append(innerArticle.rootSection().body());
-                articleElement.append(Node.build(Tag.A, a -> {
+                articleElement.appendBuild(Tag.A, a -> {
                     a.set("class", "read-full");
                     a.set("href", article.uri().toString());
                     a.set("aria-label", "Read the full article: " + title);
                     a.appendText("Read the full article…");
-                }));
-            }));
+                });
+            });
         }
     }
 
@@ -224,14 +222,14 @@ public final class Renderer {
     ) {
         return Node.build(Tag.HEAD, head -> {
             head.append(Constants.headPrefix);
-            head.append(Node.build(Tag.META_NAMED, meta -> {
+            head.appendBuild(Tag.META_NAMED, meta -> {
                 meta.set("name", "description");
                 meta.set("content", description);
-            }));
+            });
             head.append(Constants.headSuffix);
             final var effectiveTitle =
                 (title != null) ? (title + " - " + RenderConstants.siteTitle) : RenderConstants.siteTitle;
-            head.append(Node.build(Tag.TITLE, titleElement -> titleElement.appendText(effectiveTitle)));
+            head.appendBuild(Tag.TITLE, titleElement -> titleElement.appendText(effectiveTitle));
         });
     }
 
@@ -251,10 +249,10 @@ public final class Renderer {
 
     private @NotNull Node.Element renderArticleHeader(final @NotNull Article article) {
         return Node.build(Tag.HEADER, header -> {
-            header.append(Node.build(Tag.H1, h1 -> {
+            header.appendBuild(Tag.H1, h1 -> {
                 h1.appendText(article.title());
                 h1.append(Constants.rootSectionHeaderLink);
-            }));
+            });
             if (headerRenderMode.shouldRender()) {
                 header.append(renderPublicationDate(article.date()));
                 final var topicsNode = renderArticleTopics(article.topics());
@@ -268,7 +266,7 @@ public final class Renderer {
     private static @NotNull Node.Element renderPublicationDate(final @NotNull LocalDate date) {
         return Node.build(Tag.P, p -> {
             p.appendText("Published on the ");
-            p.append(Node.build(Tag.TIME, time -> {
+            p.appendBuild(Tag.TIME, time -> {
                 time.set("datetime", renderIsoDate(date));
                 final var day = date.getDayOfMonth();
                 final var daySuffix = switch (day % 10) {
@@ -280,7 +278,7 @@ public final class Renderer {
                 final var prettyDate =
                     day + daySuffix + " of " + Constants.monthNames[date.getMonthValue() - 1] + ' ' + date.getYear();
                 time.appendText(prettyDate);
-            }));
+            });
         });
     }
 
@@ -314,13 +312,13 @@ public final class Renderer {
     private static @NotNull Node.Element renderTableOfContentsList(final @NotNull ImmutableList<Section> children) {
         return Node.build(Tag.OL, ol -> {
             for (final var child : children) {
-                ol.append(Node.build(Tag.LI, li -> {
+                ol.appendBuild(Tag.LI, li -> {
                     li.append(renderSimpleLink('#' + child.identifier().symbolName(), child.header()));
                     final var grandchildren = child.children();
                     if (!grandchildren.isEmpty()) {
                         li.append(renderTableOfContentsList(grandchildren));
                     }
-                }));
+                });
             }
         });
     }
@@ -367,31 +365,31 @@ public final class Renderer {
     ) {
         return Node.build(Tag.NAV, nav -> {
             nav.set("aria-label", "Chronological, secondary");
-            nav.append(Node.build(Tag.UL, ul -> {
+            nav.appendBuild(Tag.UL, ul -> {
                 ul.set("id", "prevnext");
                 ul.append(Constants.topLink);
-                ul.append(Node.build(Tag.LI, li -> {
+                ul.appendBuild(Tag.LI, li -> {
                     li.set("class", "prev");
                     if (predecessorUri != null) {
-                        li.append(Node.build(Tag.A, a -> {
+                        li.appendBuild(Tag.A, a -> {
                             a.set("rel", "prev");
                             a.set("href", predecessorUri.toString());
                             a.appendText("← Older");
-                        }));
+                        });
                     }
-                }));
+                });
                 ul.append(Constants.archivesLink);
-                ul.append(Node.build(Tag.LI, li -> {
+                ul.appendBuild(Tag.LI, li -> {
                     li.set("class", "next");
                     if (successorUri != null) {
-                        li.append(Node.build(Tag.A, a -> {
+                        li.appendBuild(Tag.A, a -> {
                             a.set("rel", "next");
                             a.set("href", successorUri.toString());
                             a.appendText("Newer →");
-                        }));
+                        });
                     }
-                }));
-            }));
+                });
+            });
         });
     }
 
@@ -445,35 +443,34 @@ public final class Renderer {
             }),
             Node.build(Tag.NAV, nav -> {
                 nav.set("aria-label", "Primary");
-                nav.append(Node.build(Tag.UL, ul -> {
+                nav.appendBuild(Tag.UL, ul -> {
                     ul.set("id", "navmenu");
-                    ul.append(Node.build(Tag.LI, li -> li.append(renderSimpleLink("/", "Main page"))));
-                    ul.append(Node.build(Tag.LI, li -> li.append(renderSimpleLink("/archives/", "Archives"))));
-                    ul.append(Node.build(Tag.LI,
-                        li -> li.append(renderSimpleLink("https://github.com/Fanael/fanael.github.io/", "GitHub"))));
-                    ul.append(Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
+                    ul.appendBuild(Tag.LI, li -> li.append(renderSimpleLink("/", "Main page")));
+                    ul.appendBuild(Tag.LI, li -> li.append(renderSimpleLink("/archives/", "Archives")));
+                    ul.appendBuild(Tag.LI,
+                        li -> li.append(renderSimpleLink("https://github.com/Fanael/fanael.github.io/", "GitHub")));
+                    ul.appendBuild(Tag.LI, li -> li.appendBuild(Tag.A, a -> {
                         a.set("rel", "author");
                         a.set("href", "/pages/about.html");
                         a.appendText("About");
-                    }))));
-                }));
+                    }));
+                });
             })
         );
 
-        private static final Node.Element footer =
-            Node.build(Tag.FOOTER, footer -> footer.append(Node.build(Tag.UL, ul -> {
-                ul.set("id", "footerstuff");
-                ul.append(Node.build(Tag.LI, li -> li.appendText("Powered by HTML & CSS")));
-                ul.append(Node.build(Tag.LI, li -> li.appendText(RenderConstants.copyrightLine)));
-                ul.append(Node.build(Tag.LI, li -> {
-                    li.appendText("Licensed under a ");
-                    li.append(Node.build(Tag.A, a -> {
-                        a.set("rel", "license");
-                        a.set("href", "https://creativecommons.org/licenses/by-sa/4.0/");
-                        a.appendText("Creative Commons Attribution-ShareAlike 4.0 International License");
-                    }));
-                }));
-            })));
+        private static final Node.Element footer = Node.build(Tag.FOOTER, footer -> footer.appendBuild(Tag.UL, ul -> {
+            ul.set("id", "footerstuff");
+            ul.appendBuild(Tag.LI, li -> li.appendText("Powered by HTML & CSS"));
+            ul.appendBuild(Tag.LI, li -> li.appendText(RenderConstants.copyrightLine));
+            ul.appendBuild(Tag.LI, li -> {
+                li.appendText("Licensed under a ");
+                li.appendBuild(Tag.A, a -> {
+                    a.set("rel", "license");
+                    a.set("href", "https://creativecommons.org/licenses/by-sa/4.0/");
+                    a.appendText("Creative Commons Attribution-ShareAlike 4.0 International License");
+                });
+            });
+        }));
 
         private static final Node.Element topLink = Node.build(Tag.LI, li -> {
             li.set("class", "top");
