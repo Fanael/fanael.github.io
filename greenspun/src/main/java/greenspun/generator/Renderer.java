@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import greenspun.article.Article;
 import greenspun.article.Section;
 import greenspun.dom.Attribute;
@@ -50,35 +51,27 @@ public final class Renderer {
         final @NotNull List<@NotNull ArchivedTopic> topics,
         final @NotNull List<@NotNull ArchivedArticle> articles
     ) {
-        return Node.build(Tag.HTML, html -> {
-            html.set(Constants.htmlLang);
-            html.append(renderHead("Blog archive index", "Main page of blog archives"));
-            html.append(Node.build(Tag.BODY, body -> {
-                body.append(Constants.header);
-                body.append(Node.build(Tag.MAIN, main -> {
-                    main.set(Constants.idMain);
-                    main.append(renderArchiveIndexBody(quarters, topics, articles));
-                }));
-                body.append(renderBottomNav(null, null));
-                body.append(Constants.footer);
-            }));
-        });
+        return renderDocument(
+            renderHead("Blog archive index", "Main page of blog archives"),
+            Constants.simpleBottomNav,
+            main -> main.append(renderArchiveIndexBody(quarters, topics, articles))
+        );
     }
 
     @NotNull Node.Element renderFrontPage(final @NotNull List<@NotNull ArchivedArticle> articles) {
-        return Node.build(Tag.HTML, html -> {
-            html.set(Constants.htmlLang);
-            html.append(renderHead(null, "Latest posts on " + RenderConstants.siteTitle));
-            html.append(Node.build(Tag.BODY, body -> {
-                body.append(Constants.header);
-                body.append(Node.build(Tag.MAIN, main -> {
-                    main.set(Constants.idMain);
-                    main.append(renderFrontPageBody(articles));
-                }));
-                body.append(renderBottomNav(null, null));
-                body.append(Constants.footer);
-            }));
-        });
+        return renderDocument(
+            renderHead(null, "Latest posts on " + RenderConstants.siteTitle),
+            Constants.simpleBottomNav,
+            main -> {
+                main.append(Node.build(Tag.HEADER,
+                    header -> header.append(Node.build(Tag.H1, h1 -> h1.appendText("Latest articles")))));
+                if (articles.isEmpty()) {
+                    main.append(Node.build(Tag.P, p -> p.appendText("There are no articles yet.")));
+                } else {
+                    main.append(renderExcerpts(articles));
+                }
+            }
+        );
     }
 
     @NotNull Node.Element renderTopicArchive(
@@ -104,31 +97,11 @@ public final class Renderer {
     }
 
     @NotNull Node.Element renderArticle(final @NotNull ArticleToRender article) {
-        return Node.build(Tag.HTML, html -> {
-            html.set(Constants.htmlLang);
-            html.append(renderHead(article.article().title(), article.article().description()));
-            html.append(Node.build(Tag.BODY, body -> {
-                body.append(Constants.header);
-                body.append(Node.build(Tag.MAIN, main -> {
-                    main.set(Constants.idMain);
-                    main.append(renderArticleBody(article));
-                }));
-                body.append(renderBottomNav(article.predecessorUri(), article.successorUri()));
-                body.append(Constants.footer);
-            }));
-        });
-    }
-
-    private @NotNull ArrayList<Node.Element> renderFrontPageBody(final @NotNull List<ArchivedArticle> articles) {
-        final var nodes = new ArrayList<Node.Element>();
-        nodes.add(Node.build(Tag.HEADER,
-            header -> header.append(Node.build(Tag.H1, h1 -> h1.appendText("Latest articles")))));
-        if (articles.isEmpty()) {
-            nodes.add(Node.build(Tag.P, p -> p.appendText("There are no articles yet.")));
-        } else {
-            nodes.addAll(renderExcerpts(articles));
-        }
-        return nodes;
+        return renderDocument(
+            renderHead(article.article().title(), article.article().description()),
+            renderBottomNav(article.predecessorUri(), article.successorUri()),
+            main -> main.append(renderArticleBody(article))
+        );
     }
 
     private static @NotNull ImmutableList<Node.Element> renderArchiveIndexBody(
@@ -168,19 +141,33 @@ public final class Renderer {
         final @NotNull String header,
         final @NotNull List<ArchivedArticle> articles
     ) {
+        return renderDocument(
+            renderHead(title, title),
+            Constants.simpleBottomNav,
+            main -> {
+                main.append(Node.build(Tag.HEADER,
+                    headerElement -> headerElement.append(Node.build(Tag.H1, h1 -> h1.appendText(header)))));
+                main.append(renderArchiveTableOfContents(articles));
+                main.append(renderExcerpts(articles));
+            }
+        );
+    }
+
+    private static @NotNull Node.Element renderDocument(
+        final @NotNull Node.Element head,
+        final @NotNull Node.Element bottomNav,
+        final @NotNull Consumer<? super Node.ElementBuilder> mainBuildFunction
+    ) {
         return Node.build(Tag.HTML, html -> {
             html.set(Constants.htmlLang);
-            html.append(renderHead(title, title));
+            html.append(head);
             html.append(Node.build(Tag.BODY, body -> {
                 body.append(Constants.header);
                 body.append(Node.build(Tag.MAIN, main -> {
                     main.set(Constants.idMain);
-                    main.append(Node.build(Tag.HEADER,
-                        headerElement -> headerElement.append(Node.build(Tag.H1, h1 -> h1.appendText(header)))));
-                    main.append(renderArchiveTableOfContents(articles));
-                    main.append(renderExcerpts(articles));
+                    mainBuildFunction.accept(main);
                 }));
-                body.append(renderBottomNav(null, null));
+                body.append(bottomNav);
                 body.append(Constants.footer);
             }));
         });
@@ -489,6 +476,8 @@ public final class Renderer {
 
         private static final Node.Element archivesLink = Node.build(Tag.LI,
             li -> li.append(renderSimpleLink("/archives/", "Blog archives")));
+
+        private static final Node.Element simpleBottomNav = renderBottomNav(null, null);
 
         private static final Node.Element rootSectionHeaderLink = renderSectionHeaderLink("main");
 
