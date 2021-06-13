@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import greenspun.util.collection.ImmutableList;
+import greenspun.util.function.ThrowingConsumer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,8 +22,13 @@ public abstract sealed class Node {
     /**
      * Returns a new element builder that will create an element of the given tag.
      */
-    public static @NotNull ElementBuilder buildElement(final @NotNull Tag tag) {
-        return new ElementBuilder(tag);
+    public static <E extends Throwable> @NotNull Element build(
+        final @NotNull Tag tag,
+        final @NotNull ThrowingConsumer<? super ElementBuilder, E> buildFunction
+    ) throws E {
+        final var builder = new ElementBuilder(tag);
+        buildFunction.accept(builder);
+        return builder.toElement();
     }
 
     /**
@@ -99,20 +105,11 @@ public abstract sealed class Node {
      * A builder class that allows easy and convenient creation of {@link Element} objects with specified attributes
      * and children.
      * <p>
-     * Instances of this class cannot be created directly, use {@link Node#buildElement(Tag)} instead.
+     * Instances of this class cannot be created directly, use {@link Node#build(Tag, ThrowingConsumer)}} instead.
      */
     public static final class ElementBuilder {
         private ElementBuilder(final @NotNull Tag tag) {
             this.tag = tag;
-        }
-
-        /**
-         * Returns a new element using the builder's current state.
-         * <p>
-         * The state of the builder remains unchanged.
-         */
-        public @NotNull Element toElement() {
-            return new Element(tag, ImmutableList.freeze(attributes), ImmutableList.freeze(children));
         }
 
         /**
@@ -121,22 +118,9 @@ public abstract sealed class Node {
          * This method doesn't perform any checking: it can be used to create cycles in the DOM "tree" or to insert
          * nodes into contexts they don't belong in. This is not checked here, but it can be detected by the DOM
          * {@link Verifier}.
-         *
-         * @return {@code this}, for chaining
          */
-        public @NotNull ElementBuilder appendChild(final @NotNull Node child) {
+        public void append(final @NotNull Node child) {
             children.add(child);
-            return this;
-        }
-
-        /**
-         * A convenience method that appends a new element built by the given builder to the list of children.
-         *
-         * @return {@code this}, for chaining
-         * @see #appendChild(Node)
-         */
-        public @NotNull ElementBuilder appendChild(final @NotNull ElementBuilder builder) {
-            return appendChild(builder.toElement());
         }
 
         /**
@@ -147,12 +131,18 @@ public abstract sealed class Node {
          * This method doesn't perform any checking: it can be used to create cycles in the DOM "tree" or to insert
          * nodes into contexts they don't belong in. This is not checked here, but it can be detected by the DOM
          * {@link Verifier}.
-         *
-         * @return {@code this}, for chaining
          */
-        public @NotNull ElementBuilder appendChildren(final @NotNull Collection<? extends @NotNull Node> newChildren) {
+        public void append(final @NotNull Collection<? extends @NotNull Node> newChildren) {
             children.addAll(newChildren);
-            return this;
+        }
+
+        /**
+         * A convenience method that appends a new text node representing the given string to the list of children.
+         *
+         * @see #append(Node)
+         */
+        public void appendText(final @NotNull String string) {
+            append(new Text(string));
         }
 
         /**
@@ -162,49 +152,46 @@ public abstract sealed class Node {
          * <p>
          * This method doesn't perform any checking: it can be used to set unrecognized attributes or give attributes
          * bogus values. This is not checked here, but it can be detected by the DOM {@link Verifier}.
-         *
-         * @return {@code this}, for chaining
          */
-        public @NotNull ElementBuilder setAttribute(final @NotNull Attribute attribute) {
+        public void set(final @NotNull Attribute attribute) {
             final var index = findAttributeIndex(attributes, attribute.name());
             if (index == -1) {
                 attributes.add(attribute);
             } else {
                 attributes.set(index, attribute);
             }
-            return this;
         }
 
         /**
          * A convenience method that sets a string attribute to the given value.
          *
-         * @return {@code this}, for chaining
-         * @see #setAttribute(Attribute)
+         * @see #set(Attribute)
          */
-        public @NotNull ElementBuilder setAttribute(final @NotNull String name, final @NotNull String value) {
-            return setAttribute(new Attribute.String(name, value));
+        public void set(final @NotNull String name, final @NotNull String value) {
+            set(new Attribute.String(name, value));
         }
 
         /**
          * A convenience method that sets an integer attribute to the given value.
          *
-         * @return {@code this}, for chaining
-         * @see #setAttribute(Attribute)
+         * @see #set(Attribute)
          */
-        @SuppressWarnings("UnusedReturnValue")
-        public @NotNull ElementBuilder setAttribute(final @NotNull String name, final @NotNull BigInteger value) {
-            return setAttribute(new Attribute.Integer(name, value));
+        public void set(final @NotNull String name, final @NotNull BigInteger value) {
+            set(new Attribute.Integer(name, value));
         }
 
         /**
          * A convenience method that sets a boolean attribute to the given value.
          *
-         * @return {@code this}, for chaining
-         * @see #setAttribute(Attribute)
+         * @see #set(Attribute)
          */
-        @SuppressWarnings({"BooleanParameter", "UnusedReturnValue"})
-        public @NotNull ElementBuilder setAttribute(final @NotNull String name, final boolean value) {
-            return setAttribute(new Attribute.Boolean(name, value));
+        @SuppressWarnings("BooleanParameter")
+        public void set(final @NotNull String name, final boolean value) {
+            set(new Attribute.Boolean(name, value));
+        }
+
+        private @NotNull Element toElement() {
+            return new Element(tag, ImmutableList.freeze(attributes), ImmutableList.freeze(children));
         }
 
         private static int findAttributeIndex(final @NotNull List<Attribute> attributes, final @NotNull String name) {

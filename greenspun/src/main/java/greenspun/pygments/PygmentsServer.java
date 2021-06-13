@@ -367,14 +367,10 @@ public final class PygmentsServer implements AutoCloseable {
         private @NotNull Node makeNode() {
             final var textNode = new Node.Text(builder.toString());
             final var cssClass = lastClass;
-            if (cssClass == null) {
-                return textNode;
-            } else {
-                return Node.buildElement(Tag.SPAN)
-                    .setAttribute("class", cssClass)
-                    .appendChild(textNode)
-                    .toElement();
-            }
+            return cssClass == null ? textNode : Node.build(Tag.SPAN, span -> {
+                span.set("class", cssClass);
+                span.append(textNode);
+            });
         }
 
         private final ArrayList<@NotNull Node> nodes = new ArrayList<>();

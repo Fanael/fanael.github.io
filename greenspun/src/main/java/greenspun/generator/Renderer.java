@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import greenspun.article.Article;
 import greenspun.article.Section;
 import greenspun.dom.Attribute;
 import greenspun.dom.Node;
@@ -37,46 +38,50 @@ public final class Renderer {
         final @NotNull List<@NotNull Node> nodes,
         final @NotNull String prettyLanguageName
     ) {
-        return Node.buildElement(Tag.PRE)
-            .setAttribute("class", "codeblock")
-            .setAttribute("data-code-language", prettyLanguageName)
-            .appendChild(Node.buildElement(Tag.CODE).appendChildren(nodes))
-            .toElement();
+        return Node.build(Tag.PRE, pre -> {
+            pre.set("class", "codeblock");
+            pre.set("data-code-language", prettyLanguageName);
+            pre.append(Node.build(Tag.CODE, code -> code.append(nodes)));
+        });
     }
 
-    static @NotNull Node renderArchiveIndex(
+    static @NotNull Node.Element renderArchiveIndex(
         final @NotNull List<@NotNull ArchivedQuarter> quarters,
         final @NotNull List<@NotNull ArchivedTopic> topics,
         final @NotNull List<@NotNull ArchivedArticle> articles
     ) {
-        return Node.buildElement(Tag.HTML)
-            .setAttribute(Constants.htmlLang)
-            .appendChild(renderHead("Blog archive index", "Main page of blog archives"))
-            .appendChild(Node.buildElement(Tag.BODY)
-                .appendChildren(Constants.header)
-                .appendChild(Node.buildElement(Tag.MAIN)
-                    .setAttribute(Constants.idMain)
-                    .appendChildren(renderArchiveIndexBody(quarters, topics, articles)))
-                .appendChild(renderBottomNav(null, null))
-                .appendChild(Constants.footer))
-            .toElement();
+        return Node.build(Tag.HTML, html -> {
+            html.set(Constants.htmlLang);
+            html.append(renderHead("Blog archive index", "Main page of blog archives"));
+            html.append(Node.build(Tag.BODY, body -> {
+                body.append(Constants.header);
+                body.append(Node.build(Tag.MAIN, main -> {
+                    main.set(Constants.idMain);
+                    main.append(renderArchiveIndexBody(quarters, topics, articles));
+                }));
+                body.append(renderBottomNav(null, null));
+                body.append(Constants.footer);
+            }));
+        });
     }
 
-    @NotNull Node renderFrontPage(final @NotNull List<@NotNull ArchivedArticle> articles) {
-        return Node.buildElement(Tag.HTML)
-            .setAttribute(Constants.htmlLang)
-            .appendChild(renderHead(null, "Latest posts on " + RenderConstants.siteTitle))
-            .appendChild(Node.buildElement(Tag.BODY)
-                .appendChildren(Constants.header)
-                .appendChild(Node.buildElement(Tag.MAIN)
-                    .setAttribute(Constants.idMain)
-                    .appendChildren(renderFrontPageBody(articles)))
-                .appendChild(renderBottomNav(null, null))
-                .appendChild(Constants.footer))
-            .toElement();
+    @NotNull Node.Element renderFrontPage(final @NotNull List<@NotNull ArchivedArticle> articles) {
+        return Node.build(Tag.HTML, html -> {
+            html.set(Constants.htmlLang);
+            html.append(renderHead(null, "Latest posts on " + RenderConstants.siteTitle));
+            html.append(Node.build(Tag.BODY, body -> {
+                body.append(Constants.header);
+                body.append(Node.build(Tag.MAIN, main -> {
+                    main.set(Constants.idMain);
+                    main.append(renderFrontPageBody(articles));
+                }));
+                body.append(renderBottomNav(null, null));
+                body.append(Constants.footer);
+            }));
+        });
     }
 
-    @NotNull Node renderTopicArchive(
+    @NotNull Node.Element renderTopicArchive(
         final @NotNull String topicName,
         final @NotNull List<@NotNull ArchivedArticle> articles
     ) {
@@ -87,7 +92,7 @@ public final class Renderer {
         );
     }
 
-    @NotNull Node renderQuarterlyArchive(
+    @NotNull Node.Element renderQuarterlyArchive(
         final @NotNull Quarter quarter,
         final @NotNull List<@NotNull ArchivedArticle> articles
     ) {
@@ -98,417 +103,420 @@ public final class Renderer {
         );
     }
 
-    @NotNull Node renderArticle(final @NotNull ArticleToRender article) {
-        return Node.buildElement(Tag.HTML)
-            .setAttribute(Constants.htmlLang)
-            .appendChild(renderHead(article.article().title(), article.article().description()))
-            .appendChild(Node.buildElement(Tag.BODY)
-                .appendChildren(Constants.header)
-                .appendChild(Node.buildElement(Tag.MAIN)
-                    .setAttribute(Constants.idMain)
-                    .appendChild(renderArticleBody(article)))
-                .appendChild(renderBottomNav(article.predecessorUri(), article.successorUri()))
-                .appendChild(Constants.footer))
-            .toElement();
+    @NotNull Node.Element renderArticle(final @NotNull ArticleToRender article) {
+        return Node.build(Tag.HTML, html -> {
+            html.set(Constants.htmlLang);
+            html.append(renderHead(article.article().title(), article.article().description()));
+            html.append(Node.build(Tag.BODY, body -> {
+                body.append(Constants.header);
+                body.append(Node.build(Tag.MAIN, main -> {
+                    main.set(Constants.idMain);
+                    main.append(renderArticleBody(article));
+                }));
+                body.append(renderBottomNav(article.predecessorUri(), article.successorUri()));
+                body.append(Constants.footer);
+            }));
+        });
     }
 
-    private @NotNull ArrayList<Node> renderFrontPageBody(final @NotNull List<ArchivedArticle> articles) {
-        final var nodes = new ArrayList<Node>();
-        nodes.add(Node.buildElement(Tag.HEADER)
-            .appendChild(Node.buildElement(Tag.H1).appendChild(new Node.Text("Latest articles")))
-            .toElement());
+    private @NotNull ArrayList<Node.Element> renderFrontPageBody(final @NotNull List<ArchivedArticle> articles) {
+        final var nodes = new ArrayList<Node.Element>();
+        nodes.add(Node.build(Tag.HEADER,
+            header -> header.append(Node.build(Tag.H1, h1 -> h1.appendText("Latest articles")))));
         if (articles.isEmpty()) {
-            nodes.add(Node.buildElement(Tag.P).appendChild(new Node.Text("There are no articles yet.")).toElement());
+            nodes.add(Node.build(Tag.P, p -> p.appendText("There are no articles yet.")));
         } else {
             nodes.addAll(renderExcerpts(articles));
         }
         return nodes;
     }
 
-    private static @NotNull ImmutableList<Node> renderArchiveIndexBody(
+    private static @NotNull ImmutableList<Node.Element> renderArchiveIndexBody(
         final @NotNull List<ArchivedQuarter> quarters,
         final @NotNull List<ArchivedTopic> topics,
         final @NotNull List<ArchivedArticle> articles
     ) {
         final var quarterListElements = ImmutableList.map(quarters,
-            quarter -> Node.buildElement(Tag.LI)
-                .appendChild(Node.buildElement(Tag.A)
-                    .setAttribute("href", quarter.uri().toString())
-                    .appendChild(new Node.Text("The " + quarter.quarter())))
-                .toElement());
+            quarter -> Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
+                a.set("href", quarter.uri().toString());
+                a.appendText("The " + quarter.quarter());
+            }))));
         final var topicListElements = ImmutableList.map(topics,
-            topic -> Node.buildElement(Tag.LI)
-                .appendChild(Node.buildElement(Tag.A)
-                    .setAttribute("href", topic.uri().toString())
-                    .appendChild(new Node.Text(topic.topic())))
-                .toElement());
+            topic -> Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
+                a.set("href", topic.uri().toString());
+                a.appendText(topic.topic());
+            }))));
         final var articleListElements = ImmutableList.map(articles,
-            article -> Node.buildElement(Tag.LI)
-                .appendChild(Node.buildElement(Tag.A)
-                    .setAttribute("href", article.uri().toString())
-                    .appendChild(
-                        new Node.Text(renderIsoDate(article.article().date()) + " — " + article.article().title())))
-                .toElement());
+            article -> Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
+                a.set("href", article.uri().toString());
+                a.appendText(renderIsoDate(article.article().date()) + " — " + article.article().title());
+            }))));
         return ImmutableList.of(
-            Node.buildElement(Tag.HEADER)
-                .appendChild(Node.buildElement(Tag.H1).appendChild(new Node.Text("Blog archives")))
-                .toElement(),
-            Node.buildElement(Tag.SECTION)
-                .appendChild(Node.buildElement(Tag.H2).appendChild(new Node.Text("By date")))
-                .appendChild(Node.buildElement(Tag.UL).appendChildren(quarterListElements))
-                .toElement(),
-            Node.buildElement(Tag.SECTION)
-                .appendChild(Node.buildElement(Tag.H2).appendChild(new Node.Text("By topic")))
-                .appendChild(Node.buildElement(Tag.UL).appendChildren(topicListElements))
-                .toElement(),
-            Node.buildElement(Tag.SECTION)
-                .appendChild(Node.buildElement(Tag.H2).appendChild(new Node.Text("By article title")))
-                .appendChild(Node.buildElement(Tag.UL).appendChildren(articleListElements))
-                .toElement()
+            Node.build(Tag.HEADER, header -> header.append(Node.build(Tag.H1, h1 -> h1.appendText("Blog archives")))),
+            Node.build(Tag.SECTION, section -> {
+                section.append(Node.build(Tag.H2, h2 -> h2.appendText("By date")));
+                section.append(Node.build(Tag.UL, ul -> ul.append(quarterListElements)));
+            }),
+            Node.build(Tag.SECTION, section -> {
+                section.append(Node.build(Tag.H2, h2 -> h2.appendText("By topic")));
+                section.append(Node.build(Tag.UL, ul -> ul.append(topicListElements)));
+            }),
+            Node.build(Tag.SECTION, section -> {
+                section.append(Node.build(Tag.H2, h2 -> h2.appendText("By article title")));
+                section.append(Node.build(Tag.UL, ul -> ul.append(articleListElements)));
+            })
         );
     }
 
-    private @NotNull Node renderArchive(
+    private @NotNull Node.Element renderArchive(
         final @NotNull String title,
         final @NotNull String header,
         final @NotNull List<ArchivedArticle> articles
     ) {
-        return Node.buildElement(Tag.HTML)
-            .setAttribute(Constants.htmlLang)
-            .appendChild(renderHead(title, title))
-            .appendChild(Node.buildElement(Tag.BODY)
-                .appendChildren(Constants.header)
-                .appendChild(Node.buildElement(Tag.MAIN)
-                    .setAttribute(Constants.idMain)
-                    .appendChild(Node.buildElement(Tag.HEADER)
-                        .appendChild(Node.buildElement(Tag.H1).appendChild(new Node.Text(header))))
-                    .appendChild(renderArchiveTableOfContents(articles))
-                    .appendChildren(renderExcerpts(articles)))
-                .appendChild(renderBottomNav(null, null))
-                .appendChild(Constants.footer))
-            .toElement();
+        return Node.build(Tag.HTML, html -> {
+            html.set(Constants.htmlLang);
+            html.append(renderHead(title, title));
+            html.append(Node.build(Tag.BODY, body -> {
+                body.append(Constants.header);
+                body.append(Node.build(Tag.MAIN, main -> {
+                    main.set(Constants.idMain);
+                    main.append(Node.build(Tag.HEADER,
+                        headerElement -> headerElement.append(Node.build(Tag.H1, h1 -> h1.appendText(header)))));
+                    main.append(renderArchiveTableOfContents(articles));
+                    main.append(renderExcerpts(articles));
+                }));
+                body.append(renderBottomNav(null, null));
+                body.append(Constants.footer);
+            }));
+        });
     }
 
-    private static @NotNull Node renderArchiveTableOfContents(final @NotNull List<ArchivedArticle> articles) {
-        final var ol = Node.buildElement(Tag.OL);
-        for (final var article : articles) {
-            ol.appendChild(Node.buildElement(Tag.LI)
-                .appendChild(Node.buildElement(Tag.A)
-                    .setAttribute("href", '#' + article.identifier())
-                    .appendChild(new Node.Text(article.article().title()))));
-        }
-        return Node.buildElement(Tag.NAV)
-            .setAttribute("class", "toc")
-            .setAttribute("aria-labelledby", "toc-label")
-            .appendChild(Constants.tocLabel)
-            .appendChild(ol)
-            .toElement();
+    private static @NotNull Node.Element renderArchiveTableOfContents(final @NotNull List<ArchivedArticle> articles) {
+        return Node.build(Tag.NAV, nav -> {
+            nav.set("class", "toc");
+            nav.set("aria-labelledby", "toc-label");
+            nav.append(Constants.tocLabel);
+            nav.append(Node.build(Tag.OL, ol -> {
+                for (final var article : articles) {
+                    ol.append(Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
+                        a.set("href", '#' + article.identifier());
+                        a.append(new Node.Text(article.article().title()));
+                    }))));
+                }
+            }));
+        });
     }
 
     private @NotNull ImmutableList<Node.Element> renderExcerpts(final @NotNull List<ArchivedArticle> articles) {
         return ImmutableList.map(articles, article -> {
             final var title = article.article().title();
-            final var header = Node.buildElement(Tag.HEADER)
-                .appendChild(Node.buildElement(Tag.H2)
-                    .appendChild(Node.buildElement(Tag.A)
-                        .setAttribute("href", article.uri().toString())
-                        .appendChild(new Node.Text(title))))
-                .appendChild(renderPublicationDate(article.article().date()));
-            final var topics = renderArticleTopics(article.article().topics());
-            if (topics != null) {
-                header.appendChild(topics);
-            }
-            return Node.buildElement(Tag.ARTICLE)
-                .setAttribute("id", article.identifier())
-                .appendChild(header)
-                .appendChildren(article.article().rootSection().body())
-                .appendChild(Node.buildElement(Tag.A)
-                    .setAttribute("class", "read-full")
-                    .setAttribute("href", article.uri().toString())
-                    .setAttribute("aria-label", "Read the full article: " + title)
-                    .appendChild(new Node.Text("Read the full article…")))
-                .toElement();
+            return Node.build(Tag.ARTICLE, articleElement -> {
+                articleElement.set("id", article.identifier());
+                articleElement.append(Node.build(Tag.HEADER, header -> {
+                    header.append(Node.build(Tag.H2, h2 -> h2.append(Node.build(Tag.A, a -> {
+                        a.set("href", article.uri().toString());
+                        a.append(new Node.Text(title));
+                    }))));
+                    header.append(renderPublicationDate(article.article().date()));
+                    final var topics = renderArticleTopics(article.article().topics());
+                    if (topics != null) {
+                        header.append(topics);
+                    }
+                }));
+                articleElement.append(article.article().rootSection().body());
+                articleElement.append(Node.build(Tag.A, a -> {
+                    a.set("class", "read-full");
+                    a.set("href", article.uri().toString());
+                    a.set("aria-label", "Read the full article: " + title);
+                    a.appendText("Read the full article…");
+                }));
+            });
         });
     }
 
-    private static @NotNull Node renderHead(
+    private static @NotNull Node.Element renderHead(
         final @Nullable String title,
         final @NotNull String description
     ) {
-        final var head = Node.buildElement(Tag.HEAD);
-        head.appendChildren(Constants.headPrefix);
-        head.appendChild(Node.buildElement(Tag.META_NAMED)
-            .setAttribute("name", "description")
-            .setAttribute("content", description));
-        head.appendChildren(Constants.headSuffix);
-        final var effectiveTitle =
-            (title != null) ? (title + " - " + RenderConstants.siteTitle) : RenderConstants.siteTitle;
-        head.appendChild(Node.buildElement(Tag.TITLE)
-            .appendChild(new Node.Text(effectiveTitle)));
-        return head.toElement();
+        return Node.build(Tag.HEAD, head -> {
+            head.append(Constants.headPrefix);
+            head.append(Node.build(Tag.META_NAMED, meta -> {
+                meta.set("name", "description");
+                meta.set("content", description);
+            }));
+            head.append(Constants.headSuffix);
+            final var effectiveTitle =
+                (title != null) ? (title + " - " + RenderConstants.siteTitle) : RenderConstants.siteTitle;
+            head.append(Node.build(Tag.TITLE, titleElement -> titleElement.appendText(effectiveTitle)));
+        });
     }
 
-    private @NotNull Node renderArticleBody(final @NotNull ArticleToRender article) {
+    private @NotNull Node.Element renderArticleBody(final @NotNull ArticleToRender article) {
         final var innerArticle = article.article();
-        final var builder = Node.buildElement(Tag.ARTICLE);
-        builder.appendChild(renderArticleHeader(article));
-        builder.appendChildren(innerArticle.rootSection().body());
-        final var children = innerArticle.rootSection().children();
-        if (!children.isEmpty() && !innerArticle.inhibitTableOfContents()) {
-            builder.appendChild(renderTableOfContents(children));
-        }
-        for (final var child : children) {
-            builder.appendChild(renderSubsection(child, 2));
-        }
-        return builder.toElement();
-    }
-
-    private @NotNull Node renderArticleHeader(final @NotNull ArticleToRender article) {
-        final var innerArticle = article.article();
-        final var headerBuilder = Node.buildElement(Tag.HEADER);
-        headerBuilder.appendChild(Node.buildElement(Tag.H1)
-            .appendChild(new Node.Text(article.article().title()))
-            .appendChild(Constants.rootSectionHeaderLink));
-        if (headerRenderMode.shouldRender()) {
-            headerBuilder.appendChild(renderPublicationDate(innerArticle.date()));
-            final var topicsNode = renderArticleTopics(innerArticle.topics());
-            if (topicsNode != null) {
-                headerBuilder.appendChild(topicsNode);
+        return Node.build(Tag.ARTICLE, articleElement -> {
+            articleElement.append(renderArticleHeader(article.article()));
+            articleElement.append(innerArticle.rootSection().body());
+            final var children = innerArticle.rootSection().children();
+            if (!children.isEmpty() && !innerArticle.inhibitTableOfContents()) {
+                articleElement.append(renderTableOfContents(children));
             }
-        }
-        return headerBuilder.toElement();
+            for (final var child : children) {
+                articleElement.append(renderSubsection(child, 2));
+            }
+        });
     }
 
-    private static @NotNull Node renderPublicationDate(final @NotNull LocalDate date) {
-        final var day = date.getDayOfMonth();
-        final var daySuffix = switch (day % 10) {
-            case 1 -> (day == 11) ? "th" : "st";
-            case 2 -> (day == 12) ? "th" : "nd";
-            case 3 -> (day == 13) ? "th" : "rd";
-            default -> "th";
-        };
-        final var prettyDate =
-            day + daySuffix + " of " + Constants.monthNames[date.getMonthValue() - 1] + ' ' + date.getYear();
-        return Node.buildElement(Tag.P)
-            .appendChild(new Node.Text("Published on the "))
-            .appendChild(Node.buildElement(Tag.TIME)
-                .setAttribute("datetime", renderIsoDate(date))
-                .appendChild(new Node.Text(prettyDate)))
-            .toElement();
+    private @NotNull Node.Element renderArticleHeader(final @NotNull Article article) {
+        return Node.build(Tag.HEADER, header -> {
+            header.append(Node.build(Tag.H1, h1 -> {
+                h1.appendText(article.title());
+                h1.append(Constants.rootSectionHeaderLink);
+            }));
+            if (headerRenderMode.shouldRender()) {
+                header.append(renderPublicationDate(article.date()));
+                final var topicsNode = renderArticleTopics(article.topics());
+                if (topicsNode != null) {
+                    header.append(topicsNode);
+                }
+            }
+        });
+    }
+
+    private static @NotNull Node.Element renderPublicationDate(final @NotNull LocalDate date) {
+        return Node.build(Tag.P, p -> {
+            p.appendText("Published on the ");
+            p.append(Node.build(Tag.TIME, time -> {
+                time.set("datetime", renderIsoDate(date));
+                final var day = date.getDayOfMonth();
+                final var daySuffix = switch (day % 10) {
+                    case 1 -> (day == 11) ? "th" : "st";
+                    case 2 -> (day == 12) ? "th" : "nd";
+                    case 3 -> (day == 13) ? "th" : "rd";
+                    default -> "th";
+                };
+                final var prettyDate =
+                    day + daySuffix + " of " + Constants.monthNames[date.getMonthValue() - 1] + ' ' + date.getYear();
+                time.appendText(prettyDate);
+            }));
+        });
     }
 
     private static @NotNull String renderIsoDate(final @NotNull LocalDate date) {
         return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
     }
 
-    private @Nullable Node renderArticleTopics(final @NotNull ImmutableList<String> topics) {
-        if (topics.isEmpty()) {
-            return null;
-        }
-        final var nodes = new ArrayList<@NotNull Node>(2 * topics.size());
-        for (final String topicName : topics) {
-            nodes.add(Node.buildElement(Tag.A)
-                .setAttribute("href", headerRenderMode.getTopicArchiveUri(topicName))
-                .appendChild(new Node.Text(topicName))
-                .toElement());
-            nodes.add(new Node.Text(", "));
-        }
-        nodes.remove(nodes.size() - 1);
-        return Node.buildElement(Tag.P)
-            .appendChild(new Node.Text("Topics: "))
-            .appendChildren(nodes)
-            .toElement();
-    }
-
-    private static @NotNull Node renderTableOfContents(final @NotNull ImmutableList<Section> childrenOfRoot) {
-        return Node.buildElement(Tag.NAV)
-            .setAttribute("class", "toc")
-            .setAttribute("aria-labelledby", "toc-label")
-            .appendChild(Constants.tocLabel)
-            .appendChild(renderTableOfContentsList(childrenOfRoot))
-            .toElement();
-    }
-
-    private static @NotNull Node renderTableOfContentsList(final @NotNull ImmutableList<Section> children) {
-        final var listBuilder = Node.buildElement(Tag.OL);
-        for (final var child : children) {
-            final var itemBuilder = Node.buildElement(Tag.LI);
-            itemBuilder.appendChild(Node.buildElement(Tag.A)
-                .setAttribute("href", '#' + child.identifier().symbolName())
-                .appendChild(new Node.Text(child.header())));
-            final var grandchildren = child.children();
-            if (!grandchildren.isEmpty()) {
-                itemBuilder.appendChild(renderTableOfContentsList(grandchildren));
+    private @Nullable Node.Element renderArticleTopics(final @NotNull ImmutableList<String> topics) {
+        return topics.isEmpty() ? null : Node.build(Tag.P, p -> {
+            p.appendText("Topics: ");
+            final var nodes = new ArrayList<@NotNull Node>(2 * topics.size());
+            for (final String topicName : topics) {
+                nodes.add(Node.build(Tag.A, a -> {
+                    a.set("href", headerRenderMode.getTopicArchiveUri(topicName));
+                    a.appendText(topicName);
+                }));
+                nodes.add(new Node.Text(", "));
             }
-            listBuilder.appendChild(itemBuilder);
-        }
-        return listBuilder.toElement();
+            nodes.remove(nodes.size() - 1);
+            p.append(nodes);
+        });
     }
 
-    private static @NotNull Node renderSubsection(final @NotNull Section section, final int nestingLevel) {
-        final var builder = Node.buildElement(Tag.SECTION);
-        builder.setAttribute("id", section.identifier().symbolName());
-        builder.appendChild(renderSectionHeader(section, nestingLevel));
-        builder.appendChildren(section.body());
-        for (final var child : section.children()) {
-            builder.appendChild(renderSubsection(child, nestingLevel + 1));
-        }
-        return builder.toElement();
+    private static @NotNull Node.Element renderTableOfContents(final @NotNull ImmutableList<Section> childrenOfRoot) {
+        return Node.build(Tag.NAV, nav -> {
+            nav.set("class", "toc");
+            nav.set("aria-labelledby", "toc-label");
+            nav.append(Constants.tocLabel);
+            nav.append(renderTableOfContentsList(childrenOfRoot));
+        });
     }
 
-    private static @NotNull Node renderSectionHeader(final @NotNull Section section, final int nestingLevel) {
+    private static @NotNull Node.Element renderTableOfContentsList(final @NotNull ImmutableList<Section> children) {
+        return Node.build(Tag.OL, ol -> {
+            for (final var child : children) {
+                ol.append(Node.build(Tag.LI, li -> {
+                    li.append(Node.build(Tag.A, a -> {
+                        a.set("href", '#' + child.identifier().symbolName());
+                        a.appendText(child.header());
+                    }));
+                    final var grandchildren = child.children();
+                    if (!grandchildren.isEmpty()) {
+                        li.append(renderTableOfContentsList(grandchildren));
+                    }
+                }));
+            }
+        });
+    }
+
+    private static @NotNull Node.Element renderSubsection(final @NotNull Section section, final int nestingLevel) {
+        return Node.build(Tag.SECTION, sectionElement -> {
+            sectionElement.set("id", section.identifier().symbolName());
+            sectionElement.append(renderSectionHeader(section, nestingLevel));
+            sectionElement.append(section.body());
+            for (final var child : section.children()) {
+                sectionElement.append(renderSubsection(child, nestingLevel + 1));
+            }
+        });
+    }
+
+    private static @NotNull Node.Element renderSectionHeader(final @NotNull Section section, final int nestingLevel) {
         final var headingTag = Tag.byHtmlName("h" + Math.min(nestingLevel, 6));
         assert headingTag != null;
-        return Node.buildElement(headingTag)
-            .appendChild(new Node.Text(section.header()))
-            .appendChild(renderSectionHeaderLink(section.identifier().symbolName()))
-            .toElement();
+        return Node.build(headingTag, heading -> {
+            heading.appendText(section.header());
+            heading.append(renderSectionHeaderLink(section.identifier().symbolName()));
+        });
     }
 
     private static @NotNull Node.Element renderSectionHeaderLink(final @NotNull String targetId) {
-        return Node.buildElement(Tag.A)
-            .setAttribute("class", "section-header-link")
-            .setAttribute("href", '#' + targetId)
-            .setAttribute("aria-label", "anchor")
-            .appendChild(new Node.Text("§"))
-            .toElement();
+        return Node.build(Tag.A, a -> {
+            a.set("class", "section-header-link");
+            a.set("href", '#' + targetId);
+            a.set("aria-label", "anchor");
+            a.appendText("§");
+        });
     }
 
-    private static @NotNull Node renderBottomNav(final @Nullable URI predecessorUri, final @Nullable URI successorUri) {
-        final var predecessorBuilder = Node.buildElement(Tag.LI);
-        predecessorBuilder.setAttribute("class", "prev");
-        if (predecessorUri != null) {
-            predecessorBuilder.appendChild(Node.buildElement(Tag.A)
-                .setAttribute("rel", "prev")
-                .setAttribute("href", predecessorUri.toString())
-                .appendChild(new Node.Text("← Older")));
-        }
-        final var successorBuilder = Node.buildElement(Tag.LI);
-        successorBuilder.setAttribute("class", "next");
-        if (successorUri != null) {
-            successorBuilder.appendChild(Node.buildElement(Tag.A)
-                .setAttribute("rel", "next")
-                .setAttribute("href", successorUri.toString())
-                .appendChild(new Node.Text("Newer →")));
-        }
-        return Node.buildElement(Tag.NAV)
-            .setAttribute("aria-label", "Chronological, secondary")
-            .appendChild(Node.buildElement(Tag.UL)
-                .setAttribute("id", "prevnext")
-                .appendChild(Constants.topLink)
-                .appendChild(predecessorBuilder)
-                .appendChild(Constants.archivesLink)
-                .appendChild(successorBuilder))
-            .toElement();
+    private static @NotNull Node.Element renderBottomNav(
+        final @Nullable URI predecessorUri,
+        final @Nullable URI successorUri
+    ) {
+        return Node.build(Tag.NAV, nav -> {
+            nav.set("aria-label", "Chronological, secondary");
+            nav.append(Node.build(Tag.UL, ul -> {
+                ul.set("id", "prevnext");
+                ul.append(Constants.topLink);
+                ul.append(Node.build(Tag.LI, li -> {
+                    li.set("class", "prev");
+                    if (predecessorUri != null) {
+                        li.append(Node.build(Tag.A, a -> {
+                            a.set("rel", "prev");
+                            a.set("href", predecessorUri.toString());
+                            a.appendText("← Older");
+                        }));
+                    }
+                }));
+                ul.append(Constants.archivesLink);
+                ul.append(Node.build(Tag.LI, li -> {
+                    li.set("class", "next");
+                    if (successorUri != null) {
+                        li.append(Node.build(Tag.A, a -> {
+                            a.set("rel", "next");
+                            a.set("href", successorUri.toString());
+                            a.appendText("Newer →");
+                        }));
+                    }
+                }));
+            }));
+        });
     }
 
     private final @NotNull HeaderRenderMode headerRenderMode;
 
-    // Put constants in a separate class, so that they're created on first access rather than when the template is
+    // Put constants in a separate class, so that they're created on first access rather than when the renderer class is
     // loaded.
     private static final class Constants {
         private static final ImmutableList<Node.Element> headPrefix = ImmutableList.of(
             Node.makeEmptyElement(Tag.META_CHARSET_UTF8),
-            Node.buildElement(Tag.META_NAMED)
-                .setAttribute("name", "viewport")
-                .setAttribute("content", "width=device-width, initial-scale=1")
-                .toElement(),
-            Node.buildElement(Tag.META_HTTP_EQUIV)
-                .setAttribute("name", "Content-Security-Policy")
-                .setAttribute("content", "default-src 'self'; object-src 'none'")
-                .toElement(),
-            Node.buildElement(Tag.META_NAMED)
-                .setAttribute("name", "generator")
-                .setAttribute("content", "Some custom Common Lisp")
-                .toElement()
+            Node.build(Tag.META_NAMED, meta -> {
+                meta.set("name", "viewport");
+                meta.set("content", "width=device-width, initial-scale=1");
+            }),
+            Node.build(Tag.META_HTTP_EQUIV, meta -> {
+                meta.set("name", "Content-Security-Policy");
+                meta.set("content", "default-src 'self'; object-src 'none'");
+            }),
+            Node.build(Tag.META_NAMED, meta -> {
+                meta.set("name", "generator");
+                meta.set("content", "Some custom Common Lisp");
+            })
         );
 
         private static final ImmutableList<Node.Element> headSuffix = ImmutableList.of(
-            Node.buildElement(Tag.LINK)
-                .setAttribute("rel", "alternate")
-                .setAttribute("href", '/' + RenderConstants.feedFileName)
-                .setAttribute("title", RenderConstants.siteTitle)
-                .setAttribute("type", "application/rss+xml")
-                .toElement(),
-            Node.buildElement(Tag.LINK)
-                .setAttribute("rel", "stylesheet")
-                .setAttribute("href", "/static/theme.css")
-                .toElement(),
-            Node.buildElement(Tag.LINK)
-                .setAttribute("rel", "license")
-                .setAttribute("href", "https://creativecommons.org/licenses/by-sa/4.0/")
-                .toElement()
+            Node.build(Tag.LINK, link -> {
+                link.set("rel", "alternate");
+                link.set("href", '/' + RenderConstants.feedFileName);
+                link.set("title", RenderConstants.siteTitle);
+                link.set("type", "application/rss+xml");
+            }),
+            Node.build(Tag.LINK, link -> {
+                link.set("rel", "stylesheet");
+                link.set("href", "/static/theme.css");
+            }),
+            Node.build(Tag.LINK, link -> {
+                link.set("rel", "license");
+                link.set("href", "https://creativecommons.org/licenses/by-sa/4.0/");
+            })
         );
 
         private static final ImmutableList<Node.Element> header = ImmutableList.of(
-            Node.buildElement(Tag.A)
-                .setAttribute("id", "skip-nav")
-                .setAttribute("href", "#main")
-                .appendChild(new Node.Text("Skip to main content"))
-                .toElement(),
-            Node.buildElement(Tag.HEADER)
-                .setAttribute("id", "mainheader")
-                .appendChild(new Node.Text(RenderConstants.siteTitle))
-                .toElement(),
-            Node.buildElement(Tag.NAV)
-                .setAttribute("aria-label", "Primary")
-                .appendChild(Node.buildElement(Tag.UL)
-                    .setAttribute("id", "navmenu")
-                    .appendChild(Node.buildElement(Tag.LI)
-                        .appendChild(Node.buildElement(Tag.A)
-                            .setAttribute("href", "/")
-                            .appendChild(new Node.Text("Main page"))))
-                    .appendChild(Node.buildElement(Tag.LI)
-                        .appendChild(Node.buildElement(Tag.A)
-                            .setAttribute("href", "/archives/")
-                            .appendChild(new Node.Text("Archives"))))
-                    .appendChild(Node.buildElement(Tag.LI)
-                        .appendChild(Node.buildElement(Tag.A)
-                            .setAttribute("href", "https://github.com/Fanael/fanael.github.io/")
-                            .appendChild(new Node.Text("GitHub"))))
-                    .appendChild(Node.buildElement(Tag.LI)
-                        .appendChild(Node.buildElement(Tag.A)
-                            .setAttribute("rel", "author")
-                            .setAttribute("href", "/pages/about.html")
-                            .appendChild(new Node.Text("About")))))
-                .toElement()
+            Node.build(Tag.A, a -> {
+                a.set("id", "skip-nav");
+                a.set("href", "#main");
+                a.appendText("Skip to main content");
+            }),
+            Node.build(Tag.HEADER, header -> {
+                header.set("id", "mainheader");
+                header.appendText(RenderConstants.siteTitle);
+            }),
+            Node.build(Tag.NAV, nav -> {
+                nav.set("aria-label", "Primary");
+                nav.append(Node.build(Tag.UL, ul -> {
+                    ul.set("id", "navmenu");
+                    ul.append(Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
+                        a.set("href", "/");
+                        a.appendText("Main page");
+                    }))));
+                    ul.append(Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
+                        a.set("href", "/archives/");
+                        a.appendText("Archives");
+                    }))));
+                    ul.append(Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
+                        a.set("href", "https://github.com/Fanael/fanael.github.io/");
+                        a.appendText("GitHub");
+                    }))));
+                    ul.append(Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
+                        a.set("rel", "author");
+                        a.set("href", "/pages/about.html");
+                        a.appendText("About");
+                    }))));
+                }));
+            })
         );
 
-        private static final Node.Element footer = Node.buildElement(Tag.FOOTER)
-            .appendChild(Node.buildElement(Tag.UL)
-                .setAttribute("id", "footerstuff")
-                .appendChild(Node.buildElement(Tag.LI)
-                    .appendChild(new Node.Text("Powered by HTML & CSS")))
-                .appendChild(Node.buildElement(Tag.LI)
-                    .appendChild(new Node.Text(RenderConstants.copyrightLine)))
-                .appendChild(Node.buildElement(Tag.LI)
-                    .appendChild(new Node.Text("Licensed under a "))
-                    .appendChild(Node.buildElement(Tag.A)
-                        .setAttribute("rel", "license")
-                        .setAttribute("href", "https://creativecommons.org/licenses/by-sa/4.0/")
-                        .appendChild(
-                            new Node.Text("Creative Commons Attribution-ShareAlike 4.0 International License")))))
-            .toElement();
+        private static final Node.Element footer =
+            Node.build(Tag.FOOTER, footer -> footer.append(Node.build(Tag.UL, ul -> {
+                ul.set("id", "footerstuff");
+                ul.append(Node.build(Tag.LI, li -> li.appendText("Powered by HTML & CSS")));
+                ul.append(Node.build(Tag.LI, li -> li.appendText(RenderConstants.copyrightLine)));
+                ul.append(Node.build(Tag.LI, li -> {
+                    li.appendText("Licensed under a ");
+                    li.append(Node.build(Tag.A, a -> {
+                        a.set("rel", "license");
+                        a.set("href", "https://creativecommons.org/licenses/by-sa/4.0/");
+                        a.appendText("Creative Commons Attribution-ShareAlike 4.0 International License");
+                    }));
+                }));
+            })));
 
-        private static final Node.Element topLink = Node.buildElement(Tag.LI)
-            .setAttribute("class", "top")
-            .appendChild(Node.buildElement(Tag.A)
-                .setAttribute("href", "#skip-nav")
-                .appendChild(new Node.Text("↑ Top ↑")))
-            .toElement();
+        private static final Node.Element topLink = Node.build(Tag.LI, li -> {
+            li.set("class", "top");
+            li.append(Node.build(Tag.A, a -> {
+                a.set("href", "#skip-nav");
+                a.appendText("↑ Top ↑");
+            }));
+        });
 
-        private static final Node.Element archivesLink = Node.buildElement(Tag.LI)
-            .appendChild(Node.buildElement(Tag.A)
-                .setAttribute("href", "/archives/")
-                .appendChild(new Node.Text("Blog archives")))
-            .toElement();
+        private static final Node.Element archivesLink = Node.build(Tag.LI, li -> li.append(Node.build(Tag.A, a -> {
+            a.set("href", "/archives/");
+            a.appendText("Blog archives");
+        })));
 
         private static final Node.Element rootSectionHeaderLink = renderSectionHeaderLink("main");
 
-        private static final Node.Element tocLabel = Node.buildElement(Tag.SPAN)
-            .setAttribute("id", "toc-label")
-            .appendChild(new Node.Text("Table of contents"))
-            .toElement();
+        private static final Node.Element tocLabel = Node.build(Tag.SPAN, span -> {
+            span.set("id", "toc-label");
+            span.appendText("Table of contents");
+        });
 
         private static final Attribute.String htmlLang = new Attribute.String("lang", "en");
 

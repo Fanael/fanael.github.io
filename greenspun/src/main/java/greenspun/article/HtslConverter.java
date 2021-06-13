@@ -67,7 +67,7 @@ public final class HtslConverter {
         }
     }
 
-    private @NotNull Node convertElement(
+    private @NotNull Node.Element convertElement(
         final @NotNull Sexp.Symbol tagName,
         final @NotNull ImmutableList<Sexp> attributes,
         final @NotNull ImmutableList<Sexp> children
@@ -76,12 +76,12 @@ public final class HtslConverter {
         if (tag == null) {
             throw signalError("Unknown tag name " + tagName);
         }
-        final var builder = Node.buildElement(tag);
-        convertAttributes(builder, attributes);
-        for (final var childForm : children) {
-            builder.appendChild(convertForm(childForm));
-        }
-        return builder.toElement();
+        return Node.build(tag, builder -> {
+            convertAttributes(builder, attributes);
+            for (final var childForm : children) {
+                builder.append(convertForm(childForm));
+            }
+        });
     }
 
     private static void convertAttributes(
@@ -97,13 +97,13 @@ public final class HtslConverter {
             final var attributeName = key.symbolName().substring(1);
             final var value = (i + 1 < size) ? attributes.get(i + 1) : Sexp.KnownSymbol.NIL;
             if (value instanceof Sexp.String string) {
-                builder.setAttribute(attributeName, string.value());
+                builder.set(attributeName, string.value());
             } else if (value instanceof Sexp.Integer integer) {
-                builder.setAttribute(attributeName, integer.value());
+                builder.set(attributeName, integer.value());
             } else if (Sexps.isNil(value)) {
-                builder.setAttribute(attributeName, false);
+                builder.set(attributeName, false);
             } else if (value == Sexp.KnownSymbol.T) {
-                builder.setAttribute(attributeName, true);
+                builder.set(attributeName, true);
             } else {
                 throw signalError("Don't know what to do with this attribute value: " + Sexps.prettyPrint(value));
             }
@@ -155,16 +155,17 @@ public final class HtslConverter {
         final @NotNull ImmutableList<Sexp> attributes,
         final @NotNull ImmutableList<Sexp> children
     ) throws Unwind {
-        final var img = Node.buildElement(Tag.IMG);
-        convertAttributes(img, attributes);
-        final var caption = Node.buildElement(Tag.FIGCAPTION);
-        for (final var child : children) {
-            caption.appendChild(convertForm(child));
-        }
-        return Node.buildElement(Tag.FIGURE)
-            .appendChild(caption)
-            .appendChild(Node.buildElement(Tag.DIV).setAttribute("class", "holder").appendChild(img))
-            .toElement();
+        return Node.build(Tag.FIGURE, figure -> {
+            figure.append(Node.build(Tag.FIGCAPTION, figcaption -> {
+                for (final var child : children) {
+                    figcaption.append(convertForm(child));
+                }
+            }));
+            figure.append(Node.build(Tag.DIV, div -> {
+                div.set("class", "holder");
+                div.append(Node.build(Tag.IMG, img -> convertAttributes(img, attributes)));
+            }));
+        });
     }
 
     private static @NotNull UnhandledErrorError signalError(final @NotNull String message) throws Unwind {
