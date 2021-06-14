@@ -6,7 +6,6 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import greenspun.article.Article;
 import greenspun.article.Section;
@@ -157,7 +156,7 @@ public final class Renderer {
     private static @NotNull Node.Element renderDocument(
         final @NotNull Node.Element head,
         final @NotNull Node.Element bottomNav,
-        final @NotNull Consumer<? super Node.ElementBuilder> mainBuildFunction
+        final @NotNull Node.BuildFunction<? extends RuntimeException> mainBuildFunction
     ) {
         return Node.build(Tag.HTML, html -> {
             html.set(Constants.htmlLang);
@@ -166,7 +165,7 @@ public final class Renderer {
                 body.append(Constants.header);
                 body.appendBuild(Tag.MAIN, main -> {
                     main.set(Constants.idMain);
-                    mainBuildFunction.accept(main);
+                    mainBuildFunction.build(main);
                 });
                 body.append(bottomNav);
                 body.append(Constants.footer);
