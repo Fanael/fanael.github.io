@@ -15,6 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
 import greenspun.util.Trace;
+import greenspun.util.condition.Condition;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.Unwind;
@@ -308,7 +309,7 @@ public final class PygmentsServer implements AutoCloseable {
         ) throws Unwind {
             try (final var trace = new Trace("Attempting to recover from pygments server error")) {
                 trace.use();
-                @NotNull greenspun.util.condition.Condition condition;
+                @NotNull Condition condition;
                 if (":error".equals(firstLineOfResponse)) {
                     // Regular error, retrieve the error message and let the server live.
                     try {
