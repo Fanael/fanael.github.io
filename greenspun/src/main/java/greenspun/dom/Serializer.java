@@ -3,6 +3,8 @@
 package greenspun.dom;
 
 import java.io.IOException;
+import java.io.Writer;
+import java.util.Objects;
 import greenspun.util.UnreachableCodeReachedError;
 import greenspun.util.collection.ImmutableList;
 import org.jetbrains.annotations.NotNull;
@@ -12,20 +14,20 @@ import org.jetbrains.annotations.Nullable;
  * The DOM-to-HTML serializer.
  */
 public final class Serializer {
-    private Serializer(final @NotNull Appendable appendable) {
-        this.appendable = appendable;
+    private Serializer(final @NotNull Writer writer) {
+        this.writer = writer;
     }
 
     /**
-     * Serializes the DOM tree rooted at {@code rootNode} to HTML, appending the output to the given {@link Appendable}.
+     * Serializes the DOM tree rooted at {@code rootNode} to HTML, writing the output to the given {@link Writer}.
      * <p>
-     * Any {@link IOException}s thrown by the appendable are allowed to propagate.
+     * Any {@link IOException}s thrown by the writer are allowed to propagate.
      */
     public static void serialize(
-        final @NotNull Appendable appendable,
+        final @NotNull Writer writer,
         final @NotNull Node rootNode
     ) throws IOException {
-        final var serializer = new Serializer(appendable);
+        final var serializer = new Serializer(writer);
         serializer.serializeNode(rootNode);
     }
 
@@ -35,17 +37,17 @@ public final class Serializer {
         final @NotNull ImmutableList<@NotNull Node> children,
         final boolean omitClosingTag
     ) throws IOException {
-        appendable.append('<');
-        appendable.append(elementName);
+        writer.write('<');
+        writer.write(elementName);
         serializeAttributes(attributes);
-        appendable.append('>');
+        writer.write('>');
         for (final var child : children) {
             serializeNode(child);
         }
         if (!omitClosingTag) {
-            appendable.append("</");
-            appendable.append(elementName);
-            appendable.append('>');
+            writer.write("</");
+            writer.write(elementName);
+            writer.write('>');
         }
     }
 
@@ -78,14 +80,14 @@ public final class Serializer {
                 }
             } else if (attribute instanceof Attribute.Integer integerAttr) {
                 serializeAttributeName(integerAttr.name());
-                appendable.append("=\"");
-                appendable.append(integerAttr.value().toString());
-                appendable.append('"');
+                writer.write("=\"");
+                writer.write(integerAttr.value().toString());
+                writer.write('"');
             } else if (attribute instanceof Attribute.String stringAttr) {
                 serializeAttributeName(stringAttr.name());
-                appendable.append("=\"");
+                writer.write("=\"");
                 serializeString(stringAttr.value(), AttributeEscaper.instance);
-                appendable.append('"');
+                writer.write('"');
             } else {
                 throw new UnreachableCodeReachedError();
             }
@@ -96,18 +98,18 @@ public final class Serializer {
         int index = 0;
         int indexToEscape;
         while ((indexToEscape = findCharacterToEscape(string, index, escaper)) >= 0) {
-            appendable.append(string, index, indexToEscape);
-            appendable.append(escaper.escape(string.charAt(indexToEscape)));
+            writer.write(string, index, indexToEscape - index);
+            writer.write(Objects.requireNonNull(escaper.escape(string.charAt(indexToEscape))));
             index = indexToEscape + 1;
         }
         if (index < string.length()) {
-            appendable.append(string, index, string.length());
+            writer.write(string, index, string.length() - index);
         }
     }
 
     private void serializeAttributeName(final @NotNull String name) throws IOException {
-        appendable.append(' ');
-        appendable.append(name);
+        writer.write(' ');
+        writer.write(name);
     }
 
     private static int findCharacterToEscape(
@@ -124,7 +126,7 @@ public final class Serializer {
         return -1;
     }
 
-    private final @NotNull Appendable appendable;
+    private final @NotNull Writer writer;
 
     @FunctionalInterface
     interface ForElement {
