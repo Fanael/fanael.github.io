@@ -4,7 +4,6 @@ package greenspun.dom;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Objects;
 import greenspun.util.UnreachableCodeReachedError;
 import greenspun.util.collection.ImmutableList;
 import org.jetbrains.annotations.NotNull;
@@ -99,7 +98,9 @@ public final class Serializer {
         int indexToEscape;
         while ((indexToEscape = findCharacterToEscape(string, index, escaper)) >= 0) {
             writer.write(string, index, indexToEscape - index);
-            writer.write(Objects.requireNonNull(escaper.escape(string.charAt(indexToEscape))));
+            final var escaped = escaper.escape(string.charAt(indexToEscape));
+            assert escaped != null;
+            writer.write(escaped);
             index = indexToEscape + 1;
         }
         if (index < string.length()) {
