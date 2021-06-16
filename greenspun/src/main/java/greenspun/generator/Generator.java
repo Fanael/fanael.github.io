@@ -200,7 +200,6 @@ public final class Generator {
 
     private @NotNull LoadedArticle loadArticle(final @NotNull Path sourceRelativePath) throws Unwind {
         final var fullSourcePath = sourceDirectory.resolve(sourceRelativePath);
-        final var symbolTable = threadLocalSymbolTable.get();
         while (true) {
             final var article = ConditionContext.withRestart("reload-article-and-retry", restart -> {
                 try (final var trace = new Trace(() -> "Loading article from " + fullSourcePath)) {
@@ -349,13 +348,12 @@ public final class Generator {
     private static final URI rootUri = URI.create("/");
     private static final int frontPageArticleCount = 5;
     private static final int feedArticleCount = 10;
-    private static final @NotNull ThreadLocal<SymbolTable> threadLocalSymbolTable =
-        ThreadLocal.withInitial(SymbolTable::new);
 
     private final @NotNull Path sourceDirectory;
     private final @NotNull Path destinationDirectory;
     private final @NotNull CollectionExecutorService executor;
     private final @NotNull PygmentsCache pygmentsCache;
+    private final SymbolTable symbolTable = new SymbolTable();
 
     private static final class HeaderRenderImpl implements HeaderRenderMode {
         @Override

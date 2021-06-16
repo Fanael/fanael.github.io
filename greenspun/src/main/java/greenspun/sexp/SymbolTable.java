@@ -2,13 +2,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.sexp;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A table for interning Lisp symbols.
  * <p>
  * Interned symbols can be compared for equality using object identity, which is much faster than string comparison.
+ * <p>
+ * This class is thread-safe: multiple threads can safely intern symbols into the same symbol table at the same time
+ * with no external synchronization.
  */
 public final class SymbolTable {
     /**
@@ -26,5 +29,5 @@ public final class SymbolTable {
         return symbols.computeIfAbsent(symbolName, Sexp.RegularSymbol::new);
     }
 
-    private final HashMap<String, Sexp.RegularSymbol> symbols = new HashMap<>();
+    private final ConcurrentHashMap<String, Sexp.RegularSymbol> symbols = new ConcurrentHashMap<>();
 }
