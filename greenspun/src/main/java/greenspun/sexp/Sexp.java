@@ -3,13 +3,8 @@
 package greenspun.sexp;
 
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import greenspun.util.collection.ImmutableList;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Marker interface serving as the base type of S-expression objects.
@@ -103,10 +98,6 @@ public sealed interface Sexp {
             this.name = name;
         }
 
-        static @Nullable KnownSymbol byName(final @NotNull java.lang.String name) {
-            return symbolsByName.get(name);
-        }
-
         @Override
         public @NotNull java.lang.String symbolName() {
             return name;
@@ -116,9 +107,6 @@ public sealed interface Sexp {
         public @NotNull java.lang.String toString() {
             return name;
         }
-
-        private static final Map<java.lang.String, KnownSymbol> symbolsByName =
-            Arrays.stream(values()).collect(Collectors.toUnmodifiableMap(KnownSymbol::symbolName, Function.identity()));
 
         private final @NotNull java.lang.String name;
     }

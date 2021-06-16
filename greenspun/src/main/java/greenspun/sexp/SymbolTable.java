@@ -15,6 +15,16 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class SymbolTable {
     /**
+     * Initializes an empty symbol table.
+     */
+    public SymbolTable() {
+        // Populate the map with known symbols first so that trying to intern them returns the correct object.
+        for (final var knownSymbol : Sexp.KnownSymbol.values()) {
+            symbols.put(knownSymbol.symbolName(), knownSymbol);
+        }
+    }
+
+    /**
      * Produces a canonical representation of the given symbol in this table.
      * <p>
      * If the symbol name refers to a known symbol, or a symbol with that name already exists in the table, a reference
@@ -22,12 +32,14 @@ public final class SymbolTable {
      * representation of that symbol, that will be returned by future calls with the same symbol name.
      */
     public @NotNull Sexp.Symbol intern(final @NotNull String symbolName) {
-        final var knownSymbol = Sexp.KnownSymbol.byName(symbolName);
-        if (knownSymbol != null) {
-            return knownSymbol;
+        // Try retrieving the already-interned symbol first: retrievals are guaranteed to not entail any locking by CHM
+        // javadoc, and symbols almost always already exist.
+        final var symbol = symbols.get(symbolName);
+        if (symbol != null) {
+            return symbol;
         }
         return symbols.computeIfAbsent(symbolName, Sexp.RegularSymbol::new);
     }
 
-    private final ConcurrentHashMap<String, Sexp.RegularSymbol> symbols = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Sexp.Symbol> symbols = new ConcurrentHashMap<>();
 }
