@@ -50,7 +50,7 @@ public enum Tag {
             "name", Verifier.attributeIsString,
             "content", Verifier.attributeIsString
         ))
-        .setRequiredAttributes(Set.of("name", "content"))
+        .setRequiredAttributes(ImmutableList.of("name", "content"))
         .setElementSerializer((final @NotNull Serializer serializer, final @NotNull Node.Element element) -> {
             if (!(element.getAttribute("name") instanceof Attribute.String name)) {
                 // This should never happen, because there's no way this would pass DOM verification.
@@ -78,7 +78,7 @@ public enum Tag {
             "name", Verifier.attributeIsString,
             "content", Verifier.attributeIsString
         ))
-        .setRequiredAttributes(Set.of("name", "content"))
+        .setRequiredAttributes(ImmutableList.of("name", "content"))
         .setElementSerializer((final @NotNull Serializer serializer, final @NotNull Node.Element element) ->
             serializer.serializePseudoElement("meta", element.attributes(), element.children(), true))
     ),
@@ -90,7 +90,7 @@ public enum Tag {
             "title", Verifier.attributeIsString,
             "type", Verifier.attributeIsString
         ))
-        .setRequiredAttributes(Set.of("href", "rel"))
+        .setRequiredAttributes(ImmutableList.of("href", "rel"))
     ),
     TITLE(build(Context.METADATA, Context.TEXT_ONLY)),
     BODY(build(Context.HEAD_AND_BODY, Context.FLOW)),
@@ -127,7 +127,7 @@ public enum Tag {
             "href", Verifier.attributeIsString,
             "rel", new StringSetVerifier(Set.of("author", "license", "next", "prev"))
         ))
-        .setRequiredAttributes(Set.of("href"))
+        .setRequiredAttributes(ImmutableList.of("href"))
     ),
     EM(build(EnumSet.of(Context.FLOW, Context.PHRASING), Context.PHRASING)),
     STRONG(build(EnumSet.of(Context.FLOW, Context.PHRASING), Context.PHRASING)),
@@ -144,7 +144,7 @@ public enum Tag {
     DFN(build(EnumSet.of(Context.FLOW, Context.PHRASING), Context.PHRASING)),
     TIME(build(EnumSet.of(Context.FLOW, Context.PHRASING), Context.PHRASING)
         .setAllowedAttributes(Map.of("datetime", new DatetimeVerifier()))
-        .setRequiredAttributes(Set.of("datetime"))
+        .setRequiredAttributes(ImmutableList.of("datetime"))
     ),
     FIGURE(build(Context.FLOW, Context.FIGURE)),
     FIGCAPTION(build(Context.FIGURE, Context.FLOW)),
@@ -156,7 +156,7 @@ public enum Tag {
             "width", Verifier.attributeIsInteger,
             "height", Verifier.attributeIsInteger
         ))
-        .setRequiredAttributes(Set.of("src", "alt", "width", "height"))
+        .setRequiredAttributes(ImmutableList.of("src", "alt", "width", "height"))
     ),
     TABLE(build(Context.FIGURE, Context.TABLE_SECTION)),
     THEAD(build(Context.TABLE_SECTION, Context.TABLE_ROW)),
@@ -220,7 +220,7 @@ public enum Tag {
         return allowedAttributes;
     }
 
-    @NotNull Set<String> requiredAttributes() {
+    @NotNull ImmutableList<String> requiredAttributes() {
         return requiredAttributes;
     }
 
@@ -247,7 +247,7 @@ public enum Tag {
     private final boolean omitClosingTag;
     private final @Nullable Serializer.ForElement elementSerializer;
     private final @NotNull Map<String, Verifier.AttributeVerifier> allowedAttributes;
-    private final @NotNull Set<String> requiredAttributes;
+    private final @NotNull ImmutableList<String> requiredAttributes;
 
     private record StringSetVerifier(@NotNull Set<String> allowed) implements Verifier.AttributeVerifier {
         @Override
@@ -293,7 +293,7 @@ public enum Tag {
             return this;
         }
 
-        private Builder setRequiredAttributes(final @NotNull Set<String> requiredAttributes) {
+        private Builder setRequiredAttributes(final @NotNull ImmutableList<String> requiredAttributes) {
             this.requiredAttributes = requiredAttributes;
             return this;
         }
@@ -303,6 +303,6 @@ public enum Tag {
         private boolean omitClosingTag = false;
         private @Nullable Serializer.ForElement elementSerializer = null;
         private @NotNull Map<String, Verifier.AttributeVerifier> allowedAttributes = Collections.emptyMap();
-        private @NotNull Set<String> requiredAttributes = Collections.emptySet();
+        private @NotNull ImmutableList<String> requiredAttributes = ImmutableList.empty();
     }
 }
