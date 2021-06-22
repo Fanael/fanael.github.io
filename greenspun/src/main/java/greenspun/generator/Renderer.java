@@ -403,10 +403,6 @@ public final class Renderer {
                 meta.set("name", "viewport");
                 meta.set("content", "width=device-width, initial-scale=1");
             }),
-            Node.build(Tag.META_HTTP_EQUIV, meta -> {
-                meta.set("name", "Content-Security-Policy");
-                meta.set("content", "default-src 'self'; object-src 'none'");
-            }),
             Node.build(Tag.META_NAMED, meta -> {
                 meta.set("name", "generator");
                 meta.set("content", "Some custom Common Lisp");

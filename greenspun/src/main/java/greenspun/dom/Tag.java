@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import greenspun.util.UnreachableCodeReachedError;
 import greenspun.util.collection.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -37,37 +36,6 @@ public enum Tag {
                 element.children(),
                 true
             ))
-    ),
-    /**
-     * A pseudo-element representing {@code <meta http-equiv="…" content="…">}.
-     * <p>
-     * During serialization, the value of the {@code name} attribute is transformed into the value of
-     * {@code http-equiv}. The {@code content} attribute is passed through unchanged.
-     */
-    META_HTTP_EQUIV(build(Context.METADATA, ChildContext.none())
-        .setOmitClosingTag()
-        .setAllowedAttributes(Map.of(
-            "name", Verifier.attributeIsString,
-            "content", Verifier.attributeIsString
-        ))
-        .setRequiredAttributes(ImmutableList.of("name", "content"))
-        .setElementSerializer((final @NotNull Serializer serializer, final @NotNull Node.Element element) -> {
-            if (!(element.getAttribute("name") instanceof Attribute.String name)) {
-                // This should never happen, because there's no way this would pass DOM verification.
-                throw new UnreachableCodeReachedError("name attribute is not a string?");
-            }
-            final var content = element.getAttribute("content");
-            assert content != null;
-            serializer.serializePseudoElement(
-                "meta",
-                ImmutableList.of(
-                    new Attribute.String("http-equiv", name.value()),
-                    content
-                ),
-                element.children(),
-                true
-            );
-        })
     ),
     /**
      * A pseudo-element representing {@code <meta name="…" content="…">}.
