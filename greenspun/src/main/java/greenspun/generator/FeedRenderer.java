@@ -73,7 +73,7 @@ final class FeedRenderer {
 
     private void createItems(final @NotNull ElementBuilder parent, final @NotNull List<ArchivedArticle> articles) {
         for (final var article : articles) {
-            final var fullUrl = siteUri.resolve(article.uri());
+            final var fullUrl = siteUri.resolve(article.uri().toString());
             final var innerArticle = article.article();
             final var publicationDate = innerArticle.date().atStartOfDay(ZoneOffset.UTC);
             parent.appendBuild("item", item -> {

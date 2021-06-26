@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.generator;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -269,7 +268,7 @@ public final class Generator {
                         archivesSubdirectoryPath.resolve("topic-" + topicName + ".html");
                     final var domTree = makeArticleRenderer().renderTopicArchive(topicName, topicArticles);
                     serializeDomTree(destinationRelativePath, domTree);
-                    return new ArchivedTopic(topicName, makeDomainRelativeUri(destinationRelativePath));
+                    return new ArchivedTopic(topicName, new DomainRelativeUri(destinationRelativePath));
                 }
             });
             topics.sort(Comparator.comparing(ArchivedTopic::topic));
@@ -296,7 +295,7 @@ public final class Generator {
                         archivesSubdirectoryPath.resolve(quarter.year() + "-q" + quarter.quarter() + ".html");
                     final var domTree = makeArticleRenderer().renderQuarterlyArchive(quarter, quarterArticles);
                     serializeDomTree(destinationRelativePath, domTree);
-                    return new ArchivedQuarter(quarter, makeDomainRelativeUri(destinationRelativePath));
+                    return new ArchivedQuarter(quarter, new DomainRelativeUri(destinationRelativePath));
                 }
             });
             quarters.sort(Comparator.comparing(ArchivedQuarter::quarter).reversed());
@@ -327,11 +326,6 @@ public final class Generator {
                 throw ConditionContext.error(new IOExceptionCondition(e));
             }
         }
-    }
-
-    private static @NotNull URI makeDomainRelativeUri(final @NotNull Path path) {
-        assert !path.isAbsolute();
-        return rootUri.resolve(path.toString().replace(File.separatorChar, '/'));
     }
 
     private static @NotNull Renderer makeArticleRenderer() {
@@ -370,8 +364,8 @@ public final class Generator {
     }
 
     private static record LoadedArticle(@NotNull Article article, @NotNull Path sourceRelativePath) {
-        private @NotNull URI destinationUri() {
-            return makeDomainRelativeUri(PathUtils.changeExtension(sourceRelativePath, "html"));
+        private @NotNull DomainRelativeUri destinationUri() {
+            return new DomainRelativeUri(PathUtils.changeExtension(sourceRelativePath, "html"));
         }
 
         private @NotNull String identifier() {
@@ -390,8 +384,8 @@ public final class Generator {
     private static record OrderedArticle(
         @NotNull Article article,
         @NotNull Path sourceRelativePath,
-        @Nullable URI predecessorUri,
-        @Nullable URI successorUri
+        @Nullable DomainRelativeUri predecessorUri,
+        @Nullable DomainRelativeUri successorUri
     ) {
     }
 }

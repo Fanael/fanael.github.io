@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
 package greenspun.generator;
 
-import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -359,8 +358,8 @@ public final class Renderer {
     }
 
     private static @NotNull Node.Element renderBottomNav(
-        final @Nullable URI predecessorUri,
-        final @Nullable URI successorUri
+        final @Nullable DomainRelativeUri predecessorUri,
+        final @Nullable DomainRelativeUri successorUri
     ) {
         return Node.build(Tag.NAV, nav -> {
             nav.set("aria-label", "Chronological, secondary");

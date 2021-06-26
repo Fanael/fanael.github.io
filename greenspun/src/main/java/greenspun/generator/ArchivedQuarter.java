@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.generator;
 
-import java.net.URI;
 import org.jetbrains.annotations.NotNull;
 
-record ArchivedQuarter(@NotNull Quarter quarter, @NotNull URI uri) {
+record ArchivedQuarter(@NotNull Quarter quarter, @NotNull DomainRelativeUri uri) {
 }

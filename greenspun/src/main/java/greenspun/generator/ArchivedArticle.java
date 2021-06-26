@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.generator;
 
-import java.net.URI;
 import greenspun.article.Article;
 import org.jetbrains.annotations.NotNull;
 
-record ArchivedArticle(@NotNull Article article, @NotNull String identifier, @NotNull URI uri) {
+record ArchivedArticle(@NotNull Article article, @NotNull String identifier, @NotNull DomainRelativeUri uri) {
 }
