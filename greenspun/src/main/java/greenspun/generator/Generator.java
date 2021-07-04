@@ -3,7 +3,6 @@
 package greenspun.generator;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -339,7 +338,6 @@ public final class Generator {
     static final String pagesSubdirectoryName = "pages";
     static final String archivesSubdirectoryName = "archives";
     private static final Path archivesSubdirectoryPath = Path.of(archivesSubdirectoryName);
-    private static final URI rootUri = URI.create("/");
     private static final int frontPageArticleCount = 5;
     private static final int feedArticleCount = 10;
 
