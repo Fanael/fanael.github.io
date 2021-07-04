@@ -2,20 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package greenspun.pygments;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import greenspun.dom.Node;
 import greenspun.generator.Renderer;
 import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A concurrent cache of syntax-highlighted code snippets in DOM node form.
@@ -65,8 +57,8 @@ public final class PygmentsCache {
         final @NotNull String languageName,
         final @NotNull String prettyName
     ) throws Unwind {
-        final var digest = computeDigest(code, languageName, prettyName);
-        final var cachedNode = map.get(digest);
+        final var key = new CacheKey(code, languageName, prettyName);
+        final var cachedNode = map.get(key);
         if (cachedNode != null) {
             cachedNode.generation = currentGeneration.get();
             return cachedNode.node;
@@ -74,81 +66,24 @@ public final class PygmentsCache {
         final var node = Renderer.wrapHighlightedCode(server.highlightCode(code, languageName), prettyName);
         // If multiple threads try to add an entry with the same digest at the same time, just let the first one win
         // and use its DOM subtree, as DOM nodes are immutable anyway.
-        final var newCachedNode = map.putIfAbsent(digest, new CachedNode(node, currentGeneration.get()));
+        final var newCachedNode = map.putIfAbsent(key, new CacheValue(node, currentGeneration.get()));
         return (newCachedNode != null) ? newCachedNode.node : node;
     }
 
-    private static @NotNull Digest computeDigest(
-        final @NotNull String code,
-        final @NotNull String languageName,
-        final @NotNull String prettyName
-    ) {
-        final var digest = createSha256Digest();
-        updateDigest(digest, languageName);
-        updateDigest(digest, prettyName);
-        updateDigest(digest, code);
-        return new Digest(digest.digest());
-    }
-
-    private static @NotNull MessageDigest createSha256Digest() {
-        try {
-            return MessageDigest.getInstance("SHA-256");
-        } catch (final NoSuchAlgorithmException e) {
-            throw new AssertionError("SHA-256 not found despite being guaranteed by spec", e);
-        }
-    }
-
-    private static void updateDigest(final @NotNull MessageDigest digest, final @NotNull String string) {
-        final var bytes = string.getBytes(StandardCharsets.UTF_8);
-        digest.update(toByteArray(bytes.length));
-        digest.update(bytes);
-    }
-
-    private static byte[] toByteArray(final int integer) {
-        final var result = new byte[4];
-        asIntArray.set(result, 0, integer);
-        return result;
-    }
-
-    private static final VarHandle asIntArray =
-        MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
-
     private final @NotNull PygmentsServer server;
-    private final ConcurrentHashMap<Digest, CachedNode> map = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<CacheKey, CacheValue> map = new ConcurrentHashMap<>();
     private final AtomicInteger currentGeneration = new AtomicInteger(0);
 
-    private static final class CachedNode {
-        private CachedNode(final @NotNull Node node, final int generation) {
+    private static record CacheKey(@NotNull String code, @NotNull String languageName, @NotNull String prettyName) {
+    }
+
+    private static final class CacheValue {
+        private CacheValue(final @NotNull Node node, final int generation) {
             this.node = node;
             this.generation = generation;
         }
 
         private final @NotNull Node node;
         private volatile int generation;
-    }
-
-    // We only keep a cryptographic hash of the (code, languageName, prettyName) tuple to avoid holding a reference to
-    // the entire code string. Collisions are extremely unlikely: the probability of two digests colliding is about
-    // 2^-128.
-    private static final class Digest {
-        private Digest(final byte[] bytes) {
-            assert bytes.length == 32;
-            this.bytes = bytes;
-        }
-
-        @Override
-        public boolean equals(final @Nullable Object object) {
-            return object instanceof Digest other && Arrays.equals(bytes, other.bytes);
-        }
-
-        @Override
-        // VarHandle#get is a signature-polymorphic intrinsic, it doesn't actually allocate an array for varargs.
-        @SuppressWarnings("ObjectInstantiationInEqualsHashCode")
-        public int hashCode() {
-            // Since what we have is the output of a cryptographic hash function, just take any four bytes.
-            return (int) asIntArray.get(bytes, 0);
-        }
-
-        private final byte[] bytes;
     }
 }
