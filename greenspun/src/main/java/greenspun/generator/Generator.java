@@ -361,7 +361,7 @@ public final class Generator {
         private static final HeaderRenderImpl instance = new HeaderRenderImpl();
     }
 
-    private static record LoadedArticle(@NotNull Article article, @NotNull Path sourceRelativePath) {
+    private record LoadedArticle(@NotNull Article article, @NotNull Path sourceRelativePath) {
         private @NotNull DomainRelativeUri destinationUri() {
             return new DomainRelativeUri(PathUtils.changeExtension(sourceRelativePath, "html"));
         }
@@ -379,7 +379,7 @@ public final class Generator {
         }
     }
 
-    private static record OrderedArticle(
+    private record OrderedArticle(
         @NotNull Article article,
         @NotNull Path sourceRelativePath,
         @Nullable DomainRelativeUri predecessorUri,

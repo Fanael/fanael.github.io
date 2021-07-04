@@ -202,7 +202,7 @@ public final class Verifier {
         void verify(@NotNull AttributeVerificationContext context);
     }
 
-    static record AttributeVerificationContext(
+    record AttributeVerificationContext(
         @NotNull Verifier verifier,
         @NotNull Tag tag,
         @NotNull Attribute attribute

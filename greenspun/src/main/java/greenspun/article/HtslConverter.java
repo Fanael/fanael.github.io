@@ -193,6 +193,6 @@ public final class HtslConverter {
         ) throws Unwind;
     }
 
-    private static record TagHead(@NotNull Sexp.Symbol tagName, @NotNull ImmutableList<Sexp> attributes) {
+    private record TagHead(@NotNull Sexp.Symbol tagName, @NotNull ImmutableList<Sexp> attributes) {
     }
 }

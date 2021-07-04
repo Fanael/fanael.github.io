@@ -74,7 +74,7 @@ public final class PygmentsCache {
     private final ConcurrentHashMap<CacheKey, CacheValue> map = new ConcurrentHashMap<>();
     private final AtomicInteger currentGeneration = new AtomicInteger(0);
 
-    private static record CacheKey(@NotNull String code, @NotNull String languageName, @NotNull String prettyName) {
+    private record CacheKey(@NotNull String code, @NotNull String languageName, @NotNull String prettyName) {
     }
 
     private static final class CacheValue {

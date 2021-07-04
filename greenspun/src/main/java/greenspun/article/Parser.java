@@ -363,17 +363,17 @@ public final class Parser {
     private final @NotNull HtslConverter htslConverter;
     private final HashMap<Sexp.Symbol, PartialSection> sectionsById = new HashMap<>();
 
-    private static record ExtractedProperties(@NotNull Map<Sexp.Symbol, Sexp> properties, int remainderOffset) {
+    private record ExtractedProperties(@NotNull Map<Sexp.Symbol, Sexp> properties, int remainderOffset) {
         private @NotNull Sexp get(final @NotNull Sexp.Symbol symbol) {
             final var sexp = properties.get(symbol);
             return (sexp != null) ? sexp : Sexp.KnownSymbol.NIL;
         }
     }
 
-    private static record SectionParent(@NotNull Sexp.Symbol section, @Nullable Sexp.Symbol parent) {
+    private record SectionParent(@NotNull Sexp.Symbol section, @Nullable Sexp.Symbol parent) {
     }
 
-    private static record PartialArticle(
+    private record PartialArticle(
         @NotNull String title,
         @NotNull String description,
         @NotNull LocalDate date,
@@ -383,7 +383,7 @@ public final class Parser {
     ) {
     }
 
-    private static record PartialSection(
+    private record PartialSection(
         @NotNull Sexp.Symbol identifier,
         @NotNull String header,
         @NotNull ImmutableList<Sexp.Symbol> childIds,
