@@ -38,7 +38,7 @@ public final class Renderer {
         final @NotNull String prettyLanguageName
     ) {
         return Node.build(Tag.PRE, pre -> {
-            pre.set("class", "codeblock");
+            pre.set("class", "code-block");
             pre.set("data-code-language", prettyLanguageName);
             pre.appendBuild(Tag.CODE, code -> code.append(nodes));
         });
@@ -248,6 +248,7 @@ public final class Renderer {
     private @NotNull Node.Element renderArticleHeader(final @NotNull Article article) {
         return Node.build(Tag.HEADER, header -> {
             header.appendBuild(Tag.H1, h1 -> {
+                h1.set("class", "section-heading");
                 h1.appendText(article.title());
                 h1.append(Constants.rootSectionHeaderLink);
             });
@@ -336,6 +337,7 @@ public final class Renderer {
         final var headingTag = Tag.byHtmlName("h" + Math.min(nestingLevel, 6));
         assert headingTag != null;
         return Node.build(headingTag, heading -> {
+            heading.set("class", "section-heading");
             heading.appendText(section.header());
             heading.append(renderSectionHeaderLink(section.identifier().symbolName()));
         });
@@ -343,7 +345,6 @@ public final class Renderer {
 
     private static @NotNull Node.Element renderSectionHeaderLink(final @NotNull String targetId) {
         return Node.build(Tag.A, a -> {
-            a.set("class", "section-header-link");
             a.set("href", '#' + targetId);
             a.set("aria-label", "anchor");
             a.appendText("§");
@@ -364,7 +365,7 @@ public final class Renderer {
         return Node.build(Tag.NAV, nav -> {
             nav.set("aria-label", "Chronological, secondary");
             nav.appendBuild(Tag.UL, ul -> {
-                ul.set("id", "prevnext");
+                ul.set("id", "order-nav");
                 ul.append(Constants.topLink);
                 ul.appendBuild(Tag.LI, li -> {
                     li.set("class", "prev");
@@ -432,13 +433,13 @@ public final class Renderer {
                 a.appendText("Skip to main content");
             }),
             Node.build(Tag.HEADER, header -> {
-                header.set("id", "mainheader");
+                header.set("id", "top-header");
                 header.appendText(RenderConstants.siteTitle);
             }),
             Node.build(Tag.NAV, nav -> {
                 nav.set("aria-label", "Primary");
                 nav.appendBuild(Tag.UL, ul -> {
-                    ul.set("id", "navmenu");
+                    ul.set("id", "top-nav");
                     ul.appendBuild(Tag.LI, li -> li.append(renderSimpleLink("/", "Main page")));
                     ul.appendBuild(Tag.LI, li -> li.append(renderSimpleLink("/archives/", "Archives")));
                     ul.appendBuild(Tag.LI,
@@ -453,7 +454,7 @@ public final class Renderer {
         );
 
         private static final Node.Element footer = Node.build(Tag.FOOTER, footer -> footer.appendBuild(Tag.UL, ul -> {
-            ul.set("id", "footerstuff");
+            ul.set("id", "footer");
             ul.appendBuild(Tag.LI, li -> li.appendText("Powered by HTML & CSS"));
             ul.appendBuild(Tag.LI, li -> li.appendText(RenderConstants.copyrightLine));
             ul.appendBuild(Tag.LI, li -> {

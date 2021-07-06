@@ -17,7 +17,7 @@
      (em "actually")
      " work internally?")
   (p "To answer this question, let's analyze how different x86 processors, ranging from the first \"modern\" Intel microarchitecture, P6, to their current designs, handle the following simple loop (the code is 32-bit just to allow us to discuss very old x86 processors):")
-  ((pre :class "codeblock" :data-code-language "x86 assembly")
+  ((pre :class "code-block" :data-code-language "x86 assembly")
    (code ".loop:
     add [edx], eax
     add edx, 4
@@ -30,7 +30,7 @@
   (p "First things first, though: what would that code look like on a RISC architecture? We need this to establish a target to compare to. There are many different RISC architectures in the wild, so let's just arbitrarily choose "
      ((a :href "https://riscv.org/") "RISC-V")
      ", because it's free and open:")
-  ((pre :class "codeblock" :data-code-language "RISC-V assembly")
+  ((pre :class "code-block" :data-code-language "RISC-V assembly")
    (code ".loop:
     lw a2, 0(a0)
     add a2, a2, a1
