@@ -31,7 +31,6 @@ html {
 
 a:link {
     color: #149;
-    text-decoration: underline;
 }
 
 a:visited {
@@ -58,7 +57,7 @@ main li {
     text-align: center;
 }
 
-#mainheader {
+#top-header {
     font-size: 202.7%;
     font-variant: small-caps;
     padding: 1.25rem 0 1rem;
@@ -66,14 +65,14 @@ main li {
 }
 
 /* Navigation menu */
-#navmenu {
+#top-nav {
     line-height: 2;
     list-style: none;
     padding: 0 0 0.75em 0;
     text-align: center;
 }
 
-#navmenu li {
+#top-nav li {
     display: inline-block;
     font-size: 112.5%;
     padding: 0 0.75ch;
@@ -81,13 +80,13 @@ main li {
 }
 
 @supports (display: flex) and (min-width: max-content) {
-    #navmenu {
+    #top-nav {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
     }
 
-    #navmenu li {
+    #top-nav li {
         flex-basis: calc((40ch - 100%) * 1000);
         min-width: max-content;
     }
@@ -112,12 +111,9 @@ article header p {
 }
 
 h1, h2, h3, h4, h5, h6 {
+    font-weight: normal;
     padding: 0.5rem 0;
     page-break-after: avoid;
-}
-
-h1, h2, h3 {
-    font-weight: normal;
 }
 
 h4, h5, h6 {
@@ -158,11 +154,11 @@ article section {
     counter-increment: section;
 }
 
-article section h2::before, article section h3::before, article section h4::before, article section h5::before, article section h6::before {
+article section .section-heading::before {
     content: counters(section, ".") ". ";
 }
 
-a.section-header-link {
+.section-heading a {
     padding: 0 1ch;
     text-decoration: none;
 }
@@ -210,13 +206,13 @@ pre code, pre samp, pre kbd {
     font-size: 100%;
 }
 
-figure, pre.codeblock {
+figure, pre.code-block {
     margin: 0.625em 0;
     page-break-inside: avoid;
     text-indent: 0;
 }
 
-pre.codeblock {
+pre.code-block {
     padding: 0.5em 1ch;
 
     border: thin solid #aaa;
@@ -224,14 +220,13 @@ pre.codeblock {
 }
 
 @media screen {
-    pre.codeblock {
+    pre.code-block {
         overflow: auto;
     }
 }
 
-pre.codeblock::before {
+pre.code-block .language {
     border-bottom: thin solid #aaa;
-    content: attr(data-code-language);
     display: block;
     font-size: 93.75%;
 }
@@ -376,7 +371,7 @@ table.perf-stat td:nth-child(4) {
 }
 
 /* In-order post navigation */
-#prevnext {
+#order-nav {
     border-top: thin dotted #777;
     font-size: 112.5%;
     font-style: italic;
@@ -386,27 +381,27 @@ table.perf-stat td:nth-child(4) {
     text-align: center;
 }
 
-#prevnext li {
+#order-nav li {
     display: inline-block;
     width: 33.33333%;
 }
 
-#prevnext .top {
+#order-nav .top {
     display: block;
     padding-bottom: 0.375rem;
     width: 100%;
 }
 
-#prevnext .prev {
+#order-nav .prev {
     text-align: left;
 }
 
-#prevnext .next {
+#order-nav .next {
     text-align: right;
 }
 
 /* Footer */
-#footerstuff {
+#footer {
     border-top: thin dotted #777;
     color: #555;
     font-size: 75%;
@@ -455,7 +450,7 @@ article:not(:last-child) .read-full {
         color: #aec;
     }
 
-    figure, pre.codeblock, pre.codeblock::before {
+    figure, pre.code-block, pre.code-block .language {
         border-color: #555;
     }
 
@@ -499,14 +494,14 @@ article:not(:last-child) .read-full {
         background-color: #211;
     }
 
-    #footerstuff li {
+    #footer li {
         color: #aaa;
     }
 }
 
 /* Print-friendly overrides */
 @media print {
-    nav, #skip-nav, a.section-header-link {
+    nav, #skip-nav, .section-heading a {
         display: none;
     }
 
@@ -515,7 +510,7 @@ article:not(:last-child) .read-full {
         text-decoration: inherit;
     }
 
-    pre.codeblock {
+    pre.code-block {
         white-space: pre-wrap;
     }
 }
