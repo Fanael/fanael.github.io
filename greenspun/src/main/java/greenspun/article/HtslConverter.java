@@ -5,6 +5,7 @@ package greenspun.article;
 import java.util.Map;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
+import greenspun.generator.Renderer;
 import greenspun.pygments.PygmentsCache;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
@@ -127,6 +128,20 @@ public final class HtslConverter {
         return new TagHead(tagName, list.subList(1, list.size()));
     }
 
+    private @NotNull Node expandCodeBlock(
+        final @NotNull ImmutableList<Sexp> attributes,
+        final @NotNull ImmutableList<Sexp> children
+    ) throws Unwind {
+        if (attributes.size() != 2 || attributes.get(0) != Sexp.KnownSymbol.KW_LANGUAGE) {
+            throw signalError("code-block accepts exactly one attribute, :language");
+        }
+        final var languageNameForm = attributes.get(1);
+        if (!(languageNameForm instanceof Sexp.String languageName)) {
+            throw signalError("This doesn't appear to be a string: " + Sexps.prettyPrint(languageNameForm));
+        }
+        return Renderer.wrapCodeBlock(ImmutableList.map(children, this::convertForm), languageName.value());
+    }
+
     private @NotNull Node expandHighlightedCode(
         final @NotNull ImmutableList<Sexp> attributes,
         final @NotNull ImmutableList<Sexp> children
@@ -173,6 +188,7 @@ public final class HtslConverter {
     }
 
     private static final Map<Sexp.Symbol, TagMacroExpander> tagMacros = Map.of(
+        Sexp.KnownSymbol.CODE_BLOCK, HtslConverter::expandCodeBlock,
         Sexp.KnownSymbol.HIGHLIGHTED_CODE, HtslConverter::expandHighlightedCode,
         Sexp.KnownSymbol.IMAGE_FIGURE, HtslConverter::expandImageFigure
     );
@@ -185,6 +201,7 @@ public final class HtslConverter {
 
     private final @NotNull PygmentsCache pygmentsCache;
 
+    @FunctionalInterface
     private interface TagMacroExpander {
         @NotNull Node expand(
             @NotNull HtslConverter converter,

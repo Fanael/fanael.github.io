@@ -34,7 +34,7 @@
      ", due to its infamy for being "
      (em "extremely")
      " cache-hostile and already being available in the C++ standard library. In fact, if comparisons and swaps are cheap, heap sort's cache hostility can and does make up for its theoretical complexity advantage, making it not much faster than 3-smooth Shell sort. On my Core i5-4590 (Haswell) the difference between the two algorithms is indeed less than a factor of two:")
-  ((pre :class "code-block" :data-code-language "Shell (interactive)")
+  ((code-block :language "Shell (interactive)")
    (samp "$ g++ -O3 p3-prefetch-shell-sort.cc && time ./a.out # heap sort
 ./a.out  2,77s user 0,00s system 99% cpu 2,771 total
 $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sort

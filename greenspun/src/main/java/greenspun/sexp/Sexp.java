@@ -86,6 +86,7 @@ public sealed interface Sexp {
         KW_INHIBIT_TABLE_OF_CONTENTS(":inhibit-table-of-contents"),
         KW_TITLE(":title"),
         KW_TOPICS(":topics"),
+        CODE_BLOCK("code-block"),
         HIGHLIGHTED_CODE("highlighted-code"),
         IMAGE_FIGURE("image-figure"),
         KW_LANGUAGE(":language"),

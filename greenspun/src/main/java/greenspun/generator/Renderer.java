@@ -37,11 +37,19 @@ public final class Renderer {
         final @NotNull List<@NotNull Node> nodes,
         final @NotNull String prettyLanguageName
     ) {
-        return Node.build(Tag.PRE, pre -> {
-            pre.set("class", "code-block");
-            pre.set("data-code-language", prettyLanguageName);
-            pre.appendBuild(Tag.CODE, code -> code.append(nodes));
-        });
+        return wrapCodeBlockImpl(prettyLanguageName, pre -> pre.appendBuild(Tag.CODE, code -> code.append(nodes)));
+    }
+
+    /**
+     * Wraps the given list of DOM nodes representing a code block into a single node.
+     * <p>
+     * Exposed as public so that it's accessible to {@link greenspun.article.HtslConverter}.
+     */
+    public static @NotNull Node wrapCodeBlock(
+        final @NotNull List<@NotNull Node> nodes,
+        final @NotNull String prettyLanguageName
+    ) {
+        return wrapCodeBlockImpl(prettyLanguageName, pre -> pre.append(nodes));
     }
 
     static @NotNull Node.Element renderArchiveIndex(
@@ -100,6 +108,17 @@ public final class Renderer {
             renderBottomNav(article.predecessorUri(), article.successorUri()),
             main -> main.append(renderArticleBody(article.article()))
         );
+    }
+
+    private static @NotNull Node.Element wrapCodeBlockImpl(
+        final @NotNull String prettyLanguageName,
+        final @NotNull Node.BuildFunction<? extends RuntimeException> buildFunction
+    ) {
+        return Node.build(Tag.PRE, pre -> {
+            pre.set("class", "code-block");
+            pre.set("data-code-language", prettyLanguageName);
+            buildFunction.build(pre);
+        });
     }
 
     private static void renderArchiveIndexBody(

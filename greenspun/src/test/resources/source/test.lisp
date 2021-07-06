@@ -38,4 +38,6 @@
         System.out.println(\"Hello world!\");
     }
 }")
+  ((code-block :language "Yadda yadda yadda")
+   (code "blah blah blah"))
   (p "Sem et tortor consequat id porta nibh venenatis cras sed. Elit duis tristique sollicitudin nibh sit amet commodo. Diam sit amet nisl suscipit adipiscing bibendum est. Egestas quis ipsum suspendisse ultrices gravida dictum fusce ut placerat. Elit duis tristique sollicitudin nibh sit amet commodo. Platea dictumst quisque sagittis purus sit amet volutpat consequat. Placerat orci nulla pellentesque dignissim enim sit amet. Id nibh tortor id aliquet lectus. Faucibus purus in massa tempor nec feugiat nisl. Posuere lorem ipsum dolor sit. Libero volutpat sed cras ornare arcu dui. Egestas integer eget aliquet nibh praesent tristique. Habitasse platea dictumst vestibulum rhoncus est. Facilisis magna etiam tempor orci eu lobortis elementum. Id faucibus nisl tincidunt eget nullam. Donec adipiscing tristique risus nec feugiat."))
