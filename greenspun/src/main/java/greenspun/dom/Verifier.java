@@ -98,9 +98,6 @@ public final class Verifier {
         final @NotNull Tag tag
     ) {
         final var name = attribute.name();
-        if (name.startsWith("data-")) {
-            return attributeIsString;
-        }
         final var globalVerifier = globalAttributeTypes.get(name);
         if (globalVerifier != null) {
             return globalVerifier;

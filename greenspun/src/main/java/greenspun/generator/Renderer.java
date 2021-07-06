@@ -112,7 +112,10 @@ public final class Renderer {
     ) {
         return Node.build(Tag.PRE, pre -> {
             pre.set("class", "code-block");
-            pre.set("data-code-language", prettyLanguageName);
+            pre.appendBuild(Tag.SPAN, span -> {
+                span.set("class", "language");
+                span.appendText(prettyLanguageName);
+            });
             buildFunction.build(pre);
         });
     }

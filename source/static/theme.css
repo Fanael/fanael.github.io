@@ -225,9 +225,8 @@ pre.code-block {
     }
 }
 
-pre.code-block::before {
+pre.code-block .language {
     border-bottom: thin solid #aaa;
-    content: attr(data-code-language);
     display: block;
     font-size: 93.75%;
 }
@@ -451,7 +450,7 @@ article:not(:last-child) .read-full {
         color: #aec;
     }
 
-    figure, pre.code-block, pre.code-block::before {
+    figure, pre.code-block, pre.code-block .language {
         border-color: #555;
     }
 
