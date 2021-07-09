@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright © 2019-2021  Fanael Linithien
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 '''
 A simple pygments server, communicating over pipes, to reuse the same process
 for multiple highlightings instead of spawning a new pygmentize process for

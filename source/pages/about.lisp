@@ -1,5 +1,5 @@
 ;; Copyright © 2019  Fanael Linithien
-;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
+;; SPDX-License-Identifier: AGPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "About…"
   :description "I'm Fanael Linithien, a programmer with strong low-level interests. On this blog I will cover any programming/CS/SE topics that strike my fancy."
@@ -26,8 +26,8 @@
      " in general, all contents on this website are licensed under "
      ((a :href "https://creativecommons.org/licenses/by-sa/4.0/" :rel "license") "CC BY-SA 4.0")
      ". The source files from which the website is generated are dual-licensed under either CC BY-SA 4.0 or "
-     ((a :href "https://www.gnu.org/licenses/gpl-3.0.en.html") "GPL version 3.0")
-     " or later, due to their ambiguous nature as both code and data. The custom static web page generator used is also licensed under GPL version 3.0 or later. "
+     ((a :href "https://www.gnu.org/licenses/agpl-3.0.en.html") "AGPL version 3.0")
+     " or later, due to their ambiguous nature as both code and data. The custom static web page generator used is also licensed under AGPL version 3.0 or later. "
      ((a :href "https://github.com/Fanael/fanael.github.io") "The sources are available on GitHub")
      ".")
   (p "This blog is "

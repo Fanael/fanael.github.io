@@ -1,5 +1,5 @@
 ;; Copyright © 2019  Fanael Linithien
-;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
+;; SPDX-License-Identifier: AGPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "How to: accidentally break empty base optimization"
   :description "Empty base optimization in C++ is very brittle, how (not) to break it?"

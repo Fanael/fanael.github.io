@@ -1,5 +1,5 @@
 ;; Copyright © 2020  Fanael Linithien
-;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
+;; SPDX-License-Identifier: AGPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "Blue Ridge errata #1: root pointers during evacuation"
   :description "Explanation and solution of a serious Blue Ridge design problem involving root pointers during evacuation"

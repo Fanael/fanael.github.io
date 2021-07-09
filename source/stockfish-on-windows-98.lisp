@@ -1,5 +1,5 @@
 ;; Copyright © 2020  Fanael Linithien
-;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
+;; SPDX-License-Identifier: AGPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "Current Stockfish on Windows 98?!"
   :description "Porting current versions of Stockfish to Windows 98: is it possible, and how much tinkering does it require?"

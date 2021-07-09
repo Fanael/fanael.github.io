@@ -1,5 +1,5 @@
 ;; Copyright © 2019  Fanael Linithien
-;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
+;; SPDX-License-Identifier: AGPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "Blue Ridge status update: December 2019"
   :description "Status update on the implementation of the Blue Ridge garbage collector as of December 2019"

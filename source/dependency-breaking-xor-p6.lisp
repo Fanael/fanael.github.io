@@ -1,5 +1,5 @@
 ;; Copyright © 2021  Fanael Linithien
-;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
+;; SPDX-License-Identifier: AGPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "Dependency-breaking zeroing XOR in P6"
   :description "An attempt to discover if the zeroing XOR idiom is dependency-breaking in any P6 and Pentium M models"

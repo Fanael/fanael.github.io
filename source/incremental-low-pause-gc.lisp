@@ -1,5 +1,5 @@
 ;; Copyright © 2019  Fanael Linithien
-;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
+;; SPDX-License-Identifier: AGPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "A simple incremental low-pause GC design"
   :description "Notes on a mostly-concurrent single-threaded incremental regionalized mark-copy garbage collector design."

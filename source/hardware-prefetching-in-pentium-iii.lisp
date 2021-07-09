@@ -1,5 +1,5 @@
 ;; Copyright © 2019-2021  Fanael Linithien
-;; SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
+;; SPDX-License-Identifier: AGPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "Hardware prefetching in Pentium III"
   :description "Determining the existence and discovering the basic characteristics of the hardware prefetcher in Pentium III"
