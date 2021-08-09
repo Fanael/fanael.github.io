@@ -9,7 +9,6 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import greenspun.dom.Node;
@@ -227,8 +226,8 @@ public final class PygmentsServer implements AutoCloseable {
                     case ":done" -> {
                         break loop;
                     }
-                    case ":sr" -> accumulator.accumulate(null, receiveSimpleString());
-                    case ":mr" -> accumulator.accumulate(null, receiveMultilineString());
+                    case ":sr" -> accumulator.accumulate("", receiveSimpleString());
+                    case ":mr" -> accumulator.accumulate("", receiveMultilineString());
                     case ":sh" -> {
                         final var cssClass = receiveSimpleString();
                         accumulator.accumulate(cssClass, receiveSimpleString());
@@ -344,8 +343,8 @@ public final class PygmentsServer implements AutoCloseable {
     // use and make it easier on code that visits every DOM node, like the DOM verifier or serializer. Since we're
     // caching each highlighted snippet in DOM subtree form in the Pygments cache, this is worth it.
     private static final class NodeAccumulator {
-        private void accumulate(final @Nullable String cssClass, final @NotNull String string) {
-            if (!Objects.equals(lastClass, cssClass)) {
+        private void accumulate(final @NotNull String cssClass, final @NotNull String string) {
+            if (!lastClass.equals(cssClass)) {
                 flushBuilder();
                 lastClass = cssClass;
             }
@@ -368,7 +367,7 @@ public final class PygmentsServer implements AutoCloseable {
         private @NotNull Node makeNode() {
             final var textNode = new Node.Text(builder.toString());
             final var cssClass = lastClass;
-            return cssClass == null ? textNode : Node.build(Tag.SPAN, span -> {
+            return cssClass.isEmpty() ? textNode : Node.build(Tag.SPAN, span -> {
                 span.set("class", cssClass);
                 span.append(textNode);
             });
@@ -376,6 +375,6 @@ public final class PygmentsServer implements AutoCloseable {
 
         private final ArrayList<@NotNull Node> nodes = new ArrayList<>();
         private final StringBuilder builder = new StringBuilder();
-        private @Nullable String lastClass = null;
+        private @NotNull String lastClass = "";
     }
 }
