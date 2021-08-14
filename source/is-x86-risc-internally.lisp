@@ -40,13 +40,14 @@
     bnez a1, .loop
 "))
   (p "This is pretty much what we'd expect on any architecture that closely follows RISC principles: the \"complex\" operation of adding a register to a memory location is split into three instructions, namely a memory load to a temporary register, then integer addition that operates entirely on registers, and finally a memory store. The other three x86 instructions: addition of a constant to a register, subtraction of a constant, and a conditional branch are already simple enough and are therefore almost identical in RISC-V.")
-  (aside (p "There's a difference in the branch between RISC-V and x86 here: x86 provides conditional branches based on flag bits set by arithmetic operations, like "
-            (code "sub")
-            " in our example, whereas RISC-V's branches work by directly comparing the values of two registers, here "
-            (code "a1")
-            " and the always-zero "
-            (code "x0")
-            ". This difference doesn't matter much in this case, because we're comparing the result of an arithmetic operation against zero, so the difference comes out to needing to tell RISC-V what register to compare to zero, while on x86 what's tested against zero is implied to be the result of the preceding arithmetic operation.")))
+  (sidenote
+   (p "There's a difference in the branch between RISC-V and x86 here: x86 provides conditional branches based on flag bits set by arithmetic operations, like "
+      (code "sub")
+      " in our example, whereas RISC-V's branches work by directly comparing the values of two registers, here "
+      (code "a1")
+      " and the always-zero "
+      (code "x0")
+      ". This difference doesn't matter much in this case, because we're comparing the result of an arithmetic operation against zero, so the difference comes out to needing to tell RISC-V what register to compare to zero, while on x86 what's tested against zero is implied to be the result of the preceding arithmetic operation.")))
 
 (defsection p6-long-long-ago
   :header "P6: long, long ago"
@@ -165,13 +166,14 @@
       (li "Subtract 1 from "
           (code "eax")
           ", affecting flags, jumping back to the start of the loop if the result is not zero."))
-  (aside (p "In fact, on Sandy Bridge and newer "
-            (code "sub")
-            " with register destination can be fused with a following branch even if the second operand is a memory location, meaning the sequence "
-            (code "sub eax, [rdx]")
-            " followed by "
-            (code "jz .foo")
-            " can be fused into a single micro-operation!"))
+  (sidenote
+   (p "In fact, on Sandy Bridge and newer "
+      (code "sub")
+      " with register destination can be fused with a following branch even if the second operand is a memory location, meaning the sequence "
+      (code "sub eax, [rdx]")
+      " followed by "
+      (code "jz .foo")
+      " can be fused into a single micro-operation!"))
   (p "Verdict: on Sandy Bridge, and newer high-performance Intel processors, the correspondence between micro-operations and RISC instructions is completely lost. In fact, we have as many micro-operations as the \"complex\" x86 instructions we started with."))
 
 (defsection what-about-others

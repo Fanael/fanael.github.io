@@ -68,7 +68,9 @@ public enum Tag {
     NAV(build(Context.FLOW, Context.FLOW)),
     HEADER(build(Context.FLOW, Context.FLOW)),
     FOOTER(build(Context.FLOW, Context.FLOW)),
-    ASIDE(build(Context.FLOW, Context.FLOW)),
+    ASIDE(build(Context.FLOW, Context.FLOW)
+        .setAllowedAttributes(Map.of("role", new StringSetVerifier(Set.of("note"))))
+    ),
     H1(build(Context.FLOW, Context.FLOW)),
     H2(build(Context.FLOW, Context.FLOW)),
     H3(build(Context.FLOW, Context.FLOW)),

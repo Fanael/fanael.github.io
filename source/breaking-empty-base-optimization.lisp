@@ -20,7 +20,7 @@ protected:
     noncopyable() = default;
     ~noncopyable() = default;
 };")
-  (aside (p "I'm personally not a huge fan of the " (code "noncopyable") " name, because it describes " (em "how") " instead of " (em "why") ", but that's neither here nor there."))
+  (sidenote (p "I'm personally not a huge fan of the " (code "noncopyable") " name, because it describes " (em "how") " instead of " (em "why") ", but that's neither here nor there."))
   (p "The " (code "noncopyable") " class can be mixed in using inheritance, like so:")
   ((highlighted-code :language :c++)
    "class foo : private noncopyable {

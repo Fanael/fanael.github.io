@@ -89,6 +89,7 @@ public sealed interface Sexp {
         CODE_BLOCK("code-block"),
         HIGHLIGHTED_CODE("highlighted-code"),
         IMAGE_FIGURE("image-figure"),
+        SIDENOTE("sidenote"),
         KW_LANGUAGE(":language"),
         KW_CPLUSPLUS(":c++"),
         KW_COMMON_LISP(":common-lisp"),

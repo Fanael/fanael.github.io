@@ -7,7 +7,8 @@
   :children (omg-rss-feed new-generator)
   :topics ("meta")
   (p "In the past few days I've made some changes — some immediately noticeable, some less so — to the blog. Why not have a look at them?")
-  (aside (p "I've been writing another, more substantial and much larger article for quite some time. I initially wanted to publish it in December, then January, then March, but getting it into a shape I'm comfortable with takes much more time and effort than I anticipated. Sorry about that."))
+  (sidenote
+   (p "I've been writing another, more substantial and much larger article for quite some time. I initially wanted to publish it in December, then January, then March, but getting it into a shape I'm comfortable with takes much more time and effort than I anticipated. Sorry about that."))
   (p "The big, immediately noticeable change is that the "
      ((a :href "/") "main page")
      " is no longer a copy of the latest article. I've changed it to the tried and true format of using the introductory section of the last several articles, where \"several\" is defined here as five.")
@@ -18,7 +19,7 @@
 
 (defsection omg-rss-feed
   :header "Oh my god, it has an RSS feed!"
-  (aside
+  (sidenote
    (p "Originally the internal ID of this section was just "
       (code "rss-feed")
       ", which triggered a "

@@ -10,7 +10,7 @@
      " (code name "
      (dfn "Blue Ridge")
      "): it's progressing rather nicely, considering how little motivation my clinically depressed self is able to muster up most days.")
-  (aside (p "No points for guessing where the code name comes from."))
+  (sidenote (p "No points for guessing where the code name comes from."))
   (p "The garbage collector as currently implemented, in just above 2 thousand lines of code, is already "
      (em "working")
      ", that is, it correctly allocates memory and collects garbage, "

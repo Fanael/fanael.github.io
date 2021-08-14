@@ -10,7 +10,7 @@
      (em "will be")
      " present in some form.")
   (p "We weren't, however, always so lucky. The first mainstream x86 processor with hardware prefetching logic was the Pentium 4 Willamette, first released in November 2000, which used the highly contentious NetBurst microarchitecture. Due to Willamette's mediocrity, Intel didn't kill off their older P6 microarchitecture, and so the hardware prefetching was later supposedly added to the P6-based Pentium III Tualatin (released in June 2001), where its efficacy was disputed due to much lower CPU-chipset bandwidth compared to NetBurst.")
-  (aside
+  (sidenote
    (p "The P6 microarchitecture introduced in Pentium Pro, in 1995, and used with minor changes in Pentium II and III, is a direct ancestor of Intel's current high-performance x86 microarchitectures — at the time of writing, Ice Lake for mobile, Skylake for everything else. There were many improvements in the last 24 years, and most major bottlenecks were fixed, but the family resemblance is still there.")
    (p "P6's direct successor was Pentium M, created for mobile processors due to NetBurst's high power draw rendering it unsuitable for those applications. The Core microarchitecture powering the famous Core 2 series, that let Intel take the performance crown back from AMD after years of humiliation due to their marketing-driven, physics-ignoring bet on NetBurst, was a direct successor of Pentium M."))
   (p "But how effective was the hardware prefetching in Tualatin, really? And is it really true that Coppermine, the Pentium III revision preceding Tualatin, didn't feature automatic prefetching? Fortunately, by choosing an appropriate test case and using CPU performance counters, it is possible to perform a gray-box test that answers these questions."))
@@ -66,7 +66,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
      " is available under "
      ((a :href "https://creativecommons.org/publicdomain/zero/1.0/") "the CC0 license")
      ".")
-  (aside
+  (sidenote
    (p "In practice, neither algorithm is a very good choice for general-purpose sorting; instead, use something "
       (em "really")
       " cache-friendly "

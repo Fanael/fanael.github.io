@@ -79,9 +79,7 @@ public final class HtslConverter {
         }
         return Node.build(tag, builder -> {
             convertAttributes(builder, attributes);
-            for (final var childForm : children) {
-                builder.append(convertForm(childForm));
-            }
+            convertChildren(builder, children);
         });
     }
 
@@ -171,16 +169,32 @@ public final class HtslConverter {
         final @NotNull ImmutableList<Sexp> children
     ) throws Unwind {
         return Node.build(Tag.FIGURE, figure -> {
-            figure.appendBuild(Tag.FIGCAPTION, figcaption -> {
-                for (final var child : children) {
-                    figcaption.append(convertForm(child));
-                }
-            });
+            figure.appendBuild(Tag.FIGCAPTION, figcaption -> convertChildren(figcaption, children));
             figure.appendBuild(Tag.DIV, div -> {
                 div.set("class", "holder");
                 div.appendBuild(Tag.IMG, img -> convertAttributes(img, attributes));
             });
         });
+    }
+
+    private @NotNull Node expandSidenote(
+        final @NotNull ImmutableList<Sexp> attributes,
+        final @NotNull ImmutableList<Sexp> children
+    ) throws Unwind {
+        return Node.build(Tag.ASIDE, aside -> {
+            convertAttributes(aside, attributes);
+            aside.set("role", "note");
+            convertChildren(aside, children);
+        });
+    }
+
+    private void convertChildren(
+        final @NotNull Node.ElementBuilder builder,
+        final @NotNull ImmutableList<Sexp> children
+    ) throws Unwind {
+        for (final var child : children) {
+            builder.append(convertForm(child));
+        }
     }
 
     private static @NotNull UnhandledErrorError signalError(final @NotNull String message) throws Unwind {
@@ -190,7 +204,8 @@ public final class HtslConverter {
     private static final Map<Sexp.Symbol, TagMacroExpander> tagMacros = Map.of(
         Sexp.KnownSymbol.CODE_BLOCK, HtslConverter::expandCodeBlock,
         Sexp.KnownSymbol.HIGHLIGHTED_CODE, HtslConverter::expandHighlightedCode,
-        Sexp.KnownSymbol.IMAGE_FIGURE, HtslConverter::expandImageFigure
+        Sexp.KnownSymbol.IMAGE_FIGURE, HtslConverter::expandImageFigure,
+        Sexp.KnownSymbol.SIDENOTE, HtslConverter::expandSidenote
     );
     private static final Map<Sexp.Symbol, String> syntaxHighlightingLanguages = Map.of(
         Sexp.KnownSymbol.KW_CPLUSPLUS, "C++",

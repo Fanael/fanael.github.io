@@ -159,9 +159,10 @@ diff --git a/mingw-w64-libraries/winpthreads/src/thread.c b/mingw-w64-libraries/
      (code "TryEnterCriticalSection")
      " actually works as described: if the critical section is not currently locked, it expects the call to take ownership of the critical section and succeed, but on Windows 98, this will never happen.")
 
-  (aside (p "Critical sections are the Win32 name for regular user-mode "
-            ((a :href "https://en.wikipedia.org/wiki/Lock_(computer_science)") "mutexes")
-            ". Win32 also offers kernel-mode mutexes, which are heavy and slow, as they require system calls for every operation, so they're usually only used for inter-process communication."))
+  (sidenote
+   (p "Critical sections are the Win32 name for regular user-mode "
+      ((a :href "https://en.wikipedia.org/wiki/Lock_(computer_science)") "mutexes")
+      ". Win32 also offers kernel-mode mutexes, which are heavy and slow, as they require system calls for every operation, so they're usually only used for inter-process communication."))
 
   (p "It's not possible to work around that problem by patching away "
      (code "TryEnterCriticalSection")
