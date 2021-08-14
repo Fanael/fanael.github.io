@@ -5,7 +5,6 @@ package greenspun.generator;
 import java.time.LocalDate;
 import org.jetbrains.annotations.NotNull;
 
-@SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
 record Quarter(int year, byte quarter) implements Comparable<Quarter> {
     Quarter {
         assert quarter >= 1 && quarter <= 4 : "Quarter out of range";
