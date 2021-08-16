@@ -111,7 +111,7 @@ public final class Generator {
         final @NotNull List<Path> articleSourcePaths
     ) throws Unwind, InterruptedException {
         final var articles = executor.map(articleSourcePaths, this::loadArticle);
-        // Use the file name as a tie breaker to ensure we don't rely on the order the file system returned paths in.
+        // Use the file name as a tie-breaker to ensure we don't rely on the order the file system returned paths in.
         articles.sort(
             Comparator.comparing((final @NotNull LoadedArticle article) -> article.article.date())
                 .thenComparing(LoadedArticle::sourceRelativePath)

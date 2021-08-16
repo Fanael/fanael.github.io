@@ -11,8 +11,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A condition context keeps track of currently registered handlers and restart points.
  * <p>
- * Each thread has its own local condition context, independent from other threads' contexts. Instances are not
- * accessible directly, static methods operating on the current thread's context are provided instead.
+ * Each thread has its own local condition context, independent of other threads' contexts. Instances are not accessible
+ * directly, static methods operating on the current thread's context are provided instead.
  *
  * @see Handler
  * @see Restart

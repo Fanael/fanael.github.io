@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
  * Trace messages are intended to be <em>user-readable</em> messages that provide context for operations and place
  * a problem occurs; they're <em>not</em> meant to be a machine stack trace.
  * <p>
- * Trace objects should <em>never</em> be used outside of the thread they were created by.
+ * Trace objects should <em>never</em> be used outside the thread they were created by.
  */
 public final class Trace implements AutoCloseable {
     /**

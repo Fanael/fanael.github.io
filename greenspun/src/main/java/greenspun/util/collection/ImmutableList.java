@@ -164,7 +164,7 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
     public abstract @NotNull ImmutableList<T> subList(final int from, final int to);
 
     /**
-     * Returns {@code true} iff this list contains all of the elements of the given collection.
+     * Returns {@code true} iff this list contains all the elements of the given collection.
      * <p>
      * If the given collection is empty, {@code true} is returned.
      */

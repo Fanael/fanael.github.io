@@ -35,7 +35,7 @@ public final class CollectionExecutorService {
      * inherit the {@link ConditionContext} state from the calling thread. Unwinds that escape a task are propagated to
      * the calling thread.
      * <p>
-     * This methods waits for all of the submitted tasks to finish before returning.
+     * This method waits for all the submitted tasks to finish before returning.
      */
     public <T, R> @NotNull ArrayList<R> map(
         final @NotNull Collection<? extends T> collection,
@@ -51,7 +51,7 @@ public final class CollectionExecutorService {
      * inherit the {@link ConditionContext} state from the calling thread. Unwinds that escape a task are propagated to
      * the calling thread.
      * <p>
-     * This methods waits for all of the submitted tasks to finish before returning.
+     * This method waits for all the submitted tasks to finish before returning.
      */
     public <T> void forEach(
         final @NotNull Collection<? extends T> collection,
