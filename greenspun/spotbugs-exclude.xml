@@ -1,6 +1,13 @@
 <FindBugsFilter>
-    <!-- Reports many errors in javac-generated code for try-with-resource blocks -->
+    <!-- Sometimes reports errors in javac-generated code for try-with-resource blocks -->
     <Match>
-        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+    </Match>
+    <!-- These two love to complain about "mutable" types that are actually immutable -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
 </FindBugsFilter>
