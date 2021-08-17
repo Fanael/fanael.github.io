@@ -3,9 +3,7 @@
 package greenspun.dom;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import greenspun.util.collection.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,7 +19,8 @@ public abstract sealed class Node {
     /**
      * Builds a new DOM node representing the given HTML tag.
      * <p>
-     * The given build function is passed a new element builder, which it's expected to modify.
+     * The given build function is passed a new element builder, which it's expected to modify. The state of the builder
+     * is unspecified after this method returns.
      * <p>
      * Exceptions thrown by the build function are passed through.
      */
@@ -110,7 +109,7 @@ public abstract sealed class Node {
         }
 
         @Nullable Attribute getAttribute(final @NotNull String name) {
-            final var index = ElementBuilder.findAttributeIndex(attributes, name);
+            final var index = attributes.findFirst(attribute -> name.equals(attribute.name()));
             return (index == -1) ? null : attributes.get(index);
         }
 
@@ -187,11 +186,18 @@ public abstract sealed class Node {
          * bogus values. This is not checked here, but it can be detected by the DOM {@link Verifier}.
          */
         public void set(final @NotNull Attribute attribute) {
-            final var index = findAttributeIndex(attributes, attribute.name());
-            if (index == -1) {
-                attributes.add(attribute);
-            } else {
+            final var name = attribute.name();
+            final var size = attributes.size();
+            int index = 0;
+            for (; index < size; index += 1) {
+                if (name.equals(attributes.get(index).name())) {
+                    break;
+                }
+            }
+            if (index < size) {
                 attributes.set(index, attribute);
+            } else {
+                attributes.add(attribute);
             }
         }
 
@@ -224,20 +230,11 @@ public abstract sealed class Node {
         }
 
         private @NotNull Element toElement() {
-            return new Element(tag, ImmutableList.freeze(attributes), ImmutableList.freeze(children));
-        }
-
-        private static int findAttributeIndex(final @NotNull List<Attribute> attributes, final @NotNull String name) {
-            for (int i = 0; i < attributes.size(); i += 1) {
-                if (name.equals(attributes.get(i).name())) {
-                    return i;
-                }
-            }
-            return -1;
+            return new Element(tag, attributes.freeze(), children.freeze());
         }
 
         private final @NotNull Tag tag;
-        private final ArrayList<@NotNull Attribute> attributes = new ArrayList<>();
-        private final ArrayList<@NotNull Node> children = new ArrayList<>();
+        private final ImmutableList.Builder<@NotNull Attribute> attributes = new ImmutableList.Builder<>();
+        private final ImmutableList.Builder<@NotNull Node> children = new ImmutableList.Builder<>();
     }
 }

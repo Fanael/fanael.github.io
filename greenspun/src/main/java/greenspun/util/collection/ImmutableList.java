@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.collection;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -29,14 +28,20 @@ import org.jetbrains.annotations.Nullable;
  * type allows it. For this reason, it is recommended that {@code ImmutableList} only be used immutable element types
  * that are immutable themselves.
  * <p>
- * All methods that potentially modify the list throw {@link UnsupportedOperationException}.
+ * All methods that potentially modify the list throw {@link UnsupportedOperationException}. They're marked as
+ * deprecated, to allow accidental uses to be caught at compile time.
  * <p>
  * Immutable lists permit {@code null} elements.
+ * <p>
+ * This list is implemented using a single array, so its performance characteristics are very similar to
+ * {@link java.util.ArrayList}.
  *
  * @param <T> the type of elements in this list
  */
-public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
-    private ImmutableList() {
+public final class ImmutableList<T> implements List<T>, RandomAccess {
+    private ImmutableList(final T @NotNull [] items) {
+        assert items.getClass() == Object[].class;
+        this.items = items;
     }
 
     /**
@@ -53,43 +58,29 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
     /**
      * Returns a new immutable list containing only the given element.
      */
-    @SuppressWarnings("unchecked")
     public static <T> @NotNull ImmutableList<T> of(final T element) {
-        return new Simple<>((T[]) new Object[]{element});
+        return ofArgs(element);
     }
 
     /**
      * Returns a new immutable list containing only the given two elements, in order.
      */
-    @SuppressWarnings("unchecked")
     public static <T> @NotNull ImmutableList<T> of(final T e1, final T e2) {
-        return new Simple<>((T[]) new Object[]{e1, e2});
+        return ofArgs(e1, e2);
     }
 
     /**
      * Returns a new immutable list containing only the given three elements, in order.
      */
-    @SuppressWarnings("unchecked")
     public static <T> @NotNull ImmutableList<T> of(final T e1, final T e2, final T e3) {
-        return new Simple<>((T[]) new Object[]{e1, e2, e3});
+        return ofArgs(e1, e2, e3);
     }
 
     /**
      * Returns a new immutable list containing only the given four elements, in order.
      */
-    @SuppressWarnings("unchecked")
     public static <T> @NotNull ImmutableList<T> of(final T e1, final T e2, final T e3, final T e4) {
-        return new Simple<>((T[]) new Object[]{e1, e2, e3, e4});
-    }
-
-    /**
-     * Returns an immutable list containing all elements of the given {@link ArrayList} in the same order.
-     * <p>
-     * If the given {@link ArrayList} is empty, has the same effect as {@link #empty()}.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> @NotNull ImmutableList<T> freeze(final @NotNull ArrayList<? extends T> list) {
-        return list.isEmpty() ? empty() : new Simple<>((T[]) SafeArrayAccess.toSafeArray(list));
+        return ofArgs(e1, e2, e3, e4);
     }
 
     /**
@@ -103,35 +94,43 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      * <p>
      * Exceptions thrown by the given function are passed through.
      */
-    @SuppressWarnings("unchecked")
     public static <T, R, E extends Throwable> @NotNull ImmutableList<R> map(
         final @NotNull Collection<? extends T> collection,
         final @NotNull ThrowingFunction<? super T, ? extends R, E> function
     ) throws E {
-        final var array = SafeArrayAccess.toSafeArray(collection);
-        assert array.getClass().getComponentType() == Object.class;
-        final var size = array.length;
-        if (size == 0) {
-            return empty();
+        final var builder = new Builder<R>(collection.size());
+        for (final var item : collection) {
+            builder.add(function.apply(item));
         }
-        for (int index = 0; index < size; index += 1) {
-            array[index] = function.apply((T) array[index]);
-        }
-        return new Simple<>((R[]) array);
+        return builder.freeze();
     }
 
     /**
      * Returns the hash code of this list, following the algorithm specified by {@link List#hashCode()}.
      */
     @Override
-    public abstract int hashCode();
+    public int hashCode() {
+        int hash = 1;
+        for (final var item : items) {
+            hash = 31 * hash + Objects.hashCode(item);
+        }
+        return hash;
+    }
 
     /**
-     * Returns {@code true} iff the given object is a list of the same size containing equal elements in the same order.
-     * This follows the requirements of {@link List#equals(Object)}.
+     * Returns {@code true} iff the given object is a {@link List} of the same size containing equal elements in the
+     * same order.
      */
     @Override
-    public abstract boolean equals(final @Nullable Object object);
+    public boolean equals(final @Nullable Object object) {
+        if (object instanceof ImmutableList<?> list) {
+            return Arrays.equals(items, list.items);
+        }
+        if (object instanceof List<?> list) {
+            return equalsFallback(list);
+        }
+        return false;
+    }
 
     /**
      * Returns a string representation of this list.
@@ -139,7 +138,30 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      * The returned string follows the same format as {@link java.util.AbstractCollection#toString()}.
      */
     @Override
-    public abstract @NotNull String toString();
+    public @NotNull String toString() {
+        final var items = this.items;
+        if (items.length == 0) {
+            return "[]";
+        }
+
+        final var builder = new StringBuilder();
+        builder.append('[');
+        for (final T item : items) {
+            builder.append(item).append(", ");
+        }
+        // Need to remove the final comma and space.
+        builder.setLength(builder.length() - 2);
+        builder.append(']');
+        return builder.toString();
+    }
+
+    /**
+     * Returns a new iterator over the elements of this list, from the first element to the last.
+     */
+    @Override
+    public @NotNull Iterator<T> iterator() {
+        return new Iter<>(items, 0);
+    }
 
     /**
      * Returns a new {@link Spliterator} over the elements of this list.
@@ -148,28 +170,91 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
      * {@link Spliterator#IMMUTABLE} and {@link Spliterator#SUBSIZED} characteristics.
      */
     @Override
-    public abstract @NotNull Spliterator<T> spliterator();
+    public @NotNull Spliterator<T> spliterator() {
+        return Spliterators.spliterator(items, Spliterator.ORDERED | Spliterator.IMMUTABLE);
+    }
 
     /**
      * Performs the given action for each element of this list.
+     * <p>
+     * Exceptions thrown by the action are passed to the caller.
      */
     @Override
-    public abstract void forEach(final @NotNull Consumer<? super T> action);
+    public void forEach(final @NotNull Consumer<? super T> action) {
+        Objects.requireNonNull(action);
+        for (final var item : items) {
+            action.accept(item);
+        }
+    }
 
     /**
-     * Returns an immutable view of this list between the specified indices {@code from} (inclusive) and {@code to}
-     * (exclusive).
+     * Returns the number of elements in this list.
      */
     @Override
-    public abstract @NotNull ImmutableList<T> subList(final int from, final int to);
+    public int size() {
+        return items.length;
+    }
+
+    /**
+     * Returns {@code true} iff this list contains no elements.
+     */
+    @Override
+    public boolean isEmpty() {
+        return items.length == 0;
+    }
+
+    /**
+     * Returns {@code true} iff this list contains any elements equal to the given object.
+     * <p>
+     * Equality is determined using {@link Objects#equals(Object, Object)}.
+     */
+    @Override
+    public boolean contains(final @Nullable Object object) {
+        return anySatisfies(makeEqualityPredicate(object));
+    }
+
+    /**
+     * Returns a new array containing all elements of this list in the same order.
+     * <p>
+     * The runtime component type of the returned array is {@link Object}.
+     */
+    @Override
+    public Object @NotNull [] toArray() {
+        return items.clone();
+    }
+
+    /**
+     * Returns an array containing all the elements of this list in the same order.
+     * If the list fits in the given array, it is returned therein. Otherwise, a new array of the same size as this list
+     * is allocated and returned.
+     * <p>
+     * If the list fits with room to spare, the element immediately following the end of the sequence is set to
+     * {@code null}.
+     * <p>
+     * The runtime component type of the returned array is the same as that of the given array.
+     */
+    @SuppressWarnings({"unchecked", "SuspiciousSystemArraycopy"})
+    @Override
+    public <U> U @NotNull [] toArray(final U @NotNull [] array) {
+        final var size = items.length;
+        if (array.length < size) {
+            return (U[]) Arrays.copyOf(items, size, array.getClass());
+        }
+        System.arraycopy(items, 0, array, 0, size);
+        if (array.length > size) {
+            array[size] = null;
+        }
+        return array;
+    }
 
     /**
      * Returns {@code true} iff this list contains all the elements of the given collection.
-     * <p>
      * If the given collection is empty, {@code true} is returned.
+     * <p>
+     * Equality is determined using {@link Objects#equals(Object, Object)}.
      */
     @Override
-    public final boolean containsAll(final @NotNull Collection<?> collection) {
+    public boolean containsAll(final @NotNull Collection<?> collection) {
         for (final var item : collection) {
             if (!contains(item)) {
                 return false;
@@ -179,611 +264,480 @@ public abstract sealed class ImmutableList<T> implements List<T>, RandomAccess {
     }
 
     /**
-     * Returns {@code} true iff this list contains an element equal to the given object.
+     * Returns the element at the specified index in this list.
+     *
+     * @throws IndexOutOfBoundsException if the index is out of range
+     */
+    @Override
+    public T get(final int index) {
+        return items[Objects.checkIndex(index, items.length)];
+    }
+
+    /**
+     * Returns the index of the <em>first</em> element equal to the given object, or {@code -1} if no element is equal.
      * <p>
-     * Equality follows the semantics of {@link Objects#equals(Object, Object)}.
+     * Equality is determined using {@link Objects#equals(Object, Object)}.
      */
     @Override
-    public final boolean contains(final @Nullable Object object) {
-        return indexOf(object) != -1;
+    public int indexOf(final @Nullable Object object) {
+        return findFirst(makeEqualityPredicate(object));
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * Returns the index of the <em>last</em> element equal to the given object, or {@code -1} if no element is equal.
+     * <p>
+     * Equality is determined using {@link Objects#equals(Object, Object)}.
      */
     @Override
-    public final boolean add(final T element) {
+    public int lastIndexOf(final @Nullable Object object) {
+        return findLast(makeEqualityPredicate(object));
+    }
+
+    /**
+     * Returns a new list iterator over the elements of this list, from the first element to the last.
+     */
+    @Override
+    public @NotNull ListIterator<T> listIterator() {
+        return new Iter<>(items, 0);
+    }
+
+    /**
+     * Returns a new list iterator over the elements of this list, starting from the given index.
+     *
+     * @throws IndexOutOfBoundsException if the index is out of range
+     */
+    @Override
+    public @NotNull ListIterator<T> listIterator(final int index) {
+        return new Iter<>(items, Objects.checkIndex(index, items.length + 1));
+    }
+
+    /**
+     * Returns a copy of this list containing the elements in the given range.
+     *
+     * @throws IndexOutOfBoundsException if either endpoint is out of range
+     */
+    @Override
+    public @NotNull ImmutableList<T> subList(final int fromIndex, final int toIndex) {
+        Objects.checkFromToIndex(fromIndex, toIndex, items.length);
+        return fromIndex == toIndex ? empty() : new ImmutableList<>(Arrays.copyOfRange(items, fromIndex, toIndex));
+    }
+
+    /**
+     * Returns {@code true} iff this list contains any elements for which the given predicate returns {@code true}.
+     */
+    public boolean anySatisfies(final @NotNull Predicate<? super T> predicate) {
+        return findFirst(predicate) != -1;
+    }
+
+    /**
+     * Returns the index of the <em>first</em> element for which the given predicate returns {@code true}.
+     * <p>
+     * If no such element is found, {@code -1} is returned.
+     */
+    public int findFirst(final @NotNull Predicate<? super T> predicate) {
+        final var items = this.items;
+        final var length = items.length;
+        for (int i = 0; i < length; i += 1) {
+            if (predicate.test(items[i])) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Returns the index of the <em>last</em> element for which the given predicate returns {@code true}.
+     * <p>
+     * If no such element is found, {@code -1} is returned.
+     */
+    public int findLast(final @NotNull Predicate<? super T> predicate) {
+        final var items = this.items;
+        final var length = items.length;
+        for (int i = length - 1; i >= 0; i -= 1) {
+            if (predicate.test(items[i])) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
+     */
+    @Deprecated
+    @Override
+    public boolean add(final T element) {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final boolean remove(final @Nullable Object object) {
+    public boolean remove(final @Nullable Object object) {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final boolean addAll(final @NotNull Collection<? extends T> collection) {
+    public boolean addAll(final @NotNull Collection<? extends T> collection) {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final boolean addAll(final int index, final @NotNull Collection<? extends T> collection) {
+    public boolean addAll(final int index, final @NotNull Collection<? extends T> collection) {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final boolean removeAll(final @NotNull Collection<?> collection) {
+    public boolean removeAll(final @NotNull Collection<?> collection) {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final boolean retainAll(final @NotNull Collection<?> collection) {
+    public boolean retainAll(final @NotNull Collection<?> collection) {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final void clear() {
+    public void clear() {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final T set(final int index, final T element) {
+    public T set(final int index, final T element) {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final void add(final int index, final T element) {
+    public void add(final int index, final T element) {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final T remove(final int index) {
+    public T remove(final int index) {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final void replaceAll(final @NotNull UnaryOperator<T> operator) {
+    public void replaceAll(final @NotNull UnaryOperator<T> operator) {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final void sort(final @NotNull Comparator<? super T> comparator) {
+    public void sort(final @NotNull Comparator<? super T> comparator) {
         throw unsupportedModification();
     }
 
     /**
-     * Always throws {@link UnsupportedOperationException}, as immutable lists cannot be modified.
+     * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
+    @Deprecated
     @Override
-    public final boolean removeIf(final @NotNull Predicate<? super T> filter) {
+    public boolean removeIf(final @NotNull Predicate<? super T> filter) {
         throw unsupportedModification();
+    }
+
+    private boolean equalsFallback(final @NotNull List<?> list) {
+        final var items = this.items;
+        if (items.length != list.size()) {
+            return false;
+        }
+        // The other object is some other list type of the same size, need to iterate it.
+        final var iterator = list.iterator();
+        for (int index = 0; iterator.hasNext(); index += 1) {
+            final var thisItem = items[index];
+            final var otherItem = iterator.next();
+            if (!Objects.equals(thisItem, otherItem)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static @NotNull UnsupportedOperationException unsupportedModification() {
         throw new UnsupportedOperationException("Cannot modify an immutable list");
     }
 
-    private abstract static sealed class Iter<T> implements ListIterator<T> {
-        static @NotNull NoSuchElementException noMoreElements() {
-            throw new NoSuchElementException("No more elements left");
-        }
-
-        @Override
-        public final void remove() {
-            throw unsupportedModification();
-        }
-
-        @Override
-        public final void set(final T t) {
-            throw unsupportedModification();
-        }
-
-        @Override
-        public final void add(final T t) {
-            throw unsupportedModification();
-        }
+    private static @NotNull Predicate<Object> makeEqualityPredicate(final @Nullable Object object) {
+        return (object != null) ? object::equals : Objects::isNull;
     }
 
-    private static final class EmptyHolder {
-        private static final Simple<?> instance = new Simple<>(new Object[0]);
+    @SafeVarargs
+    @SuppressWarnings("varargs")
+    private static <T> @NotNull ImmutableList<T> ofArgs(final T... items) {
+        return new ImmutableList<>(items);
     }
 
-    private static final class Simple<T> extends ImmutableList<T> {
-        private Simple(final T @NotNull [] items) {
-            this.items = items;
+    private final T @NotNull [] items;
+
+    /**
+     * The builder for immutable lists.
+     * <p>
+     * Essentially just a stripped down {@link java.util.ArrayList} that can be {@link #freeze() frozen} to get an
+     * immutable list out of it.
+     * <p>
+     * The internal array employs geometric growth on reallocation, so the {@link #add(Object)} method runs in amortized
+     * constant time.
+     *
+     * @param <T> the type of elements the immutable list will hold
+     */
+    public static final class Builder<T> {
+        /**
+         * Initializes a new empty immutable list builder with initial capacity of 10.
+         */
+        public Builder() {
+            array = defaultCapacityMarker;
+            size = 0;
         }
 
-        @Override
-        public int hashCode() {
-            return RangeUtils.hashCode(items, 0, items.length);
+        /**
+         * Initializes a new empty immutable list builder with the given initial capacity.
+         */
+        public Builder(final int initialCapacity) {
+            array = (initialCapacity == 0) ? EmptyHolder.emptyArray : new Object[initialCapacity];
+            size = 0;
         }
 
-        @Override
-        public boolean equals(final @Nullable Object object) {
-            if (!(object instanceof List<?> list)) {
-                return false;
-            }
-            if (list instanceof Simple<?> simple) {
-                return Arrays.equals(items, simple.items);
-            }
-            if (list instanceof Sublist<?> sublist) {
-                return Arrays.equals(items, 0, items.length, sublist.items, sublist.fromIndex, sublist.toIndex());
-            }
-            return RangeUtils.equalsFallback(items, 0, items.length, list);
-        }
-
-        @Override
-        public @NotNull String toString() {
-            return RangeUtils.toString(items, 0, items.length);
-        }
-
-        @Override
-        public void forEach(final @NotNull Consumer<? super T> action) {
-            RangeUtils.forEach(items, 0, items.length, action);
-        }
-
-        @Override
-        public int size() {
-            return items.length;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return items.length == 0;
-        }
-
-        @Override
-        public @NotNull Iterator<T> iterator() {
-            return new Iter<>(items, 0);
-        }
-
-        @Override
-        public Object @NotNull [] toArray() {
-            return items.clone();
-        }
-
-        @Override
+        /**
+         * Freezes the contents of this builder, returning a new immutable list.
+         * The returned immutable list will represent the same array as this builder.
+         * <p>
+         * This method causes this builder to be cleared: all elements are removed and its capacity reverts to the
+         * default 10.
+         */
         @SuppressWarnings("unchecked")
-        public <U> U @NotNull [] toArray(final U @NotNull [] array) {
-            final var size = items.length;
-            return (array.length < size)
-                ? (U[]) Arrays.copyOf(items, size, array.getClass())
-                : RangeUtils.copyAndNullTerminate(items, 0, array, size);
-        }
-
-        @Override
-        public T get(final int index) {
-            Objects.checkIndex(index, items.length);
-            return items[index];
-        }
-
-        @Override
-        public int indexOf(final @Nullable Object object) {
-            return RangeUtils.indexOf(items, 0, items.length, object);
-        }
-
-        @Override
-        public int lastIndexOf(final @Nullable Object object) {
-            return RangeUtils.lastIndexOf(items, 0, items.length, object);
-        }
-
-        @Override
-        public @NotNull ListIterator<T> listIterator() {
-            return new Iter<>(items, 0);
-        }
-
-        @Override
-        public @NotNull ListIterator<T> listIterator(final int index) {
-            Objects.checkIndex(index, items.length + 1);
-            return new Iter<>(items, index);
-        }
-
-        @Override
-        public @NotNull ImmutableList<T> subList(final int from, final int to) {
-            Objects.checkFromToIndex(from, to, items.length);
-            return (from == to) ? ImmutableList.empty() : new Sublist<>(items, from, to - from);
-        }
-
-        @Override
-        public @NotNull Spliterator<T> spliterator() {
-            return Spliterators.spliterator(items, Spliterator.ORDERED | Spliterator.IMMUTABLE);
-        }
-
-        private final T @NotNull [] items;
-
-        private static final class Iter<T> extends ImmutableList.Iter<T> {
-            private Iter(final T @NotNull [] items, final int index) {
-                this.items = items;
-                this.index = index;
+        public @NotNull ImmutableList<T> freeze() {
+            if (size == 0) {
+                return empty();
             }
-
-            @Override
-            public boolean hasNext() {
-                return index < items.length;
-            }
-
-            @Override
-            public boolean hasPrevious() {
-                return index > 0;
-            }
-
-            @Override
-            @SuppressFBWarnings(value = "IT_NO_SUCH_ELEMENT", justification = "It actually can, SpotBugs is confused")
-            public T next() {
-                final var i = index;
-                if (i >= items.length) {
-                    throw noMoreElements();
-                }
-                final var item = items[i];
-                index = i + 1;
-                return item;
-            }
-
-            @Override
-            public T previous() {
-                final var i = index - 1;
-                if (i < 0) {
-                    throw noMoreElements();
-                }
-                final var item = items[i];
-                index = i;
-                return item;
-            }
-
-            @Override
-            public int nextIndex() {
-                return index;
-            }
-
-            @Override
-            public int previousIndex() {
-                return index - 1;
-            }
-
-            @Override
-            public void forEachRemaining(final @NotNull Consumer<? super T> action) {
-                Objects.requireNonNull(action);
-                for (int i = index, size = items.length; i < size; i += 1) {
-                    index = i + 1;
-                    action.accept(items[i]);
-                }
-            }
-
-            private final T @NotNull [] items;
-            private int index;
-        }
-    }
-
-    private static final class Sublist<T> extends ImmutableList<T> {
-        private Sublist(final T @NotNull [] items, final int fromIndex, final int size) {
-            // We assume that the array is never empty, the shared empty instance should be used instead for immutable
-            // sub-lists.
-            assert size > 0;
-            this.items = items;
-            this.fromIndex = fromIndex;
-            this.size = size;
+            final var result = (array.length == size)
+                ? new ImmutableList<>((T[]) array)
+                : new ImmutableList<>((T[]) Arrays.copyOf(array, size));
+            array = defaultCapacityMarker;
+            size = 0;
+            return result;
         }
 
-        @Override
-        public int hashCode() {
-            return RangeUtils.hashCode(items, fromIndex, toIndex());
-        }
-
-        @Override
-        public boolean equals(final @Nullable Object object) {
-            if (!(object instanceof List<?> list)) {
-                return false;
-            }
-            if (list instanceof Sublist<?> sublist) {
-                return Arrays.equals(items, fromIndex, toIndex(), sublist.items, sublist.fromIndex, sublist.toIndex());
-            }
-            if (list instanceof Simple<?> simple) {
-                return Arrays.equals(items, fromIndex, toIndex(), simple.items, 0, simple.items.length);
-            }
-            return RangeUtils.equalsFallback(items, fromIndex, toIndex(), list);
-        }
-
-        @Override
-        public @NotNull String toString() {
-            return RangeUtils.toString(items, fromIndex, toIndex());
-        }
-
-        @Override
-        public @NotNull Spliterator<T> spliterator() {
-            return Spliterators.spliterator(items, fromIndex, toIndex(), Spliterator.ORDERED | Spliterator.IMMUTABLE);
-        }
-
-        @Override
-        public void forEach(final @NotNull Consumer<? super T> action) {
-            RangeUtils.forEach(items, fromIndex, toIndex(), action);
-        }
-
-        @Override
-        public @NotNull ImmutableList<T> subList(final int from, final int to) {
-            Objects.checkFromToIndex(from, to, size);
-            return (from == to) ? ImmutableList.empty() : new Sublist<>(items, fromIndex + from, to - from);
-        }
-
-        @Override
+        /**
+         * Returns the number of elements this builder currently holds.
+         */
         public int size() {
             return size;
         }
 
-        @Override
+        /**
+         * Returns {@code true} iff this builder contains no elements.
+         */
         public boolean isEmpty() {
-            return false;
+            return size == 0;
         }
 
-        @Override
-        public @NotNull Iterator<T> iterator() {
-            return new Iter<>(items, fromIndex, fromIndex, toIndex());
-        }
-
-        @Override
-        public Object @NotNull [] toArray() {
-            return Arrays.copyOfRange(items, fromIndex, toIndex(), Object[].class);
-        }
-
-        @Override
+        /**
+         * Returns the element at the specified index in this builder.
+         *
+         * @throws IndexOutOfBoundsException if the index is out of range
+         */
         @SuppressWarnings("unchecked")
-        public <U> U @NotNull [] toArray(final U @NotNull [] array) {
-            return (array.length < size)
-                ? (U[]) Arrays.copyOfRange(items, fromIndex, toIndex(), array.getClass())
-                : RangeUtils.copyAndNullTerminate(items, fromIndex, array, size);
-        }
-
-        @Override
         public T get(final int index) {
-            Objects.checkIndex(index, size);
-            return items[fromIndex + index];
+            return (T) array[Objects.checkIndex(index, size)];
+        }
+
+        /**
+         * Changes the element at the specified index in this list to the given new value.
+         *
+         * @throws IndexOutOfBoundsException if the index is out of range
+         */
+        public void set(final int index, final T newValue) {
+            array[Objects.checkIndex(index, size)] = newValue;
+        }
+
+        /**
+         * Adds the given element to the end of this builder.
+         */
+        public void add(final T item) {
+            growIfNeeded(1);
+            final var index = size;
+            array[index] = item;
+            size = index + 1;
+        }
+
+        /**
+         * Adds all elements of the given collection to the end of this builder.
+         */
+        public void addAll(final @NotNull Collection<? extends T> collection) {
+            final var source = (collection instanceof ImmutableList<?> list) ? list.items : collection.toArray();
+            final var newItemCount = source.length;
+            growIfNeeded(newItemCount);
+            final var index = size;
+            System.arraycopy(source, 0, array, size, newItemCount);
+            size = index + newItemCount;
+        }
+
+        private void growIfNeeded(final int delta) {
+            final var capacity = array.length;
+            final var requiredCapacity = size + delta;
+            if (requiredCapacity <= capacity) {
+                return;
+            }
+            if (requiredCapacity < delta) {
+                // Capacity has overflown.
+                throw arrayTooBig();
+            }
+            grow(requiredCapacity);
+        }
+
+        @SuppressWarnings("ArrayEquality")
+        private void grow(final int requiredCapacity) {
+            final var oldCapacity = array.length;
+            var preferredCapacity = (array == defaultCapacityMarker)
+                ? defaultCapacity
+                : (oldCapacity + oldCapacity / 2);
+            if (preferredCapacity < oldCapacity) {
+                preferredCapacity = maxArraySize;
+            }
+            final var newCapacity = Math.max(preferredCapacity, requiredCapacity);
+            array = Arrays.copyOf(array, newCapacity);
+        }
+
+        private static @NotNull OutOfMemoryError arrayTooBig() {
+            throw new OutOfMemoryError("Array size too big");
+        }
+
+        // Some JVMs are unable to create arrays of exactly Integer.MAX_VALUE elements, so give them some slack.
+        private static final int maxArraySize = Integer.MAX_VALUE - 8;
+        private static final int defaultCapacity = 10;
+        private static final Object[] defaultCapacityMarker = new Object[0];
+
+        private Object @NotNull [] array;
+        private int size;
+    }
+
+    private static final class EmptyHolder {
+        private static final Object[] emptyArray = new Object[0];
+        private static final ImmutableList<?> instance = new ImmutableList<>(emptyArray);
+    }
+
+    private static final class Iter<T> implements ListIterator<T> {
+        private Iter(final T @NotNull [] items, final int index) {
+            this.items = items;
+            this.index = index;
         }
 
         @Override
-        public int indexOf(final @Nullable Object object) {
-            return RangeUtils.indexOf(items, fromIndex, toIndex(), object);
+        public boolean hasNext() {
+            return index < items.length;
         }
 
         @Override
-        public int lastIndexOf(final @Nullable Object object) {
-            return RangeUtils.lastIndexOf(items, fromIndex, toIndex(), object);
+        public boolean hasPrevious() {
+            return index > 0;
         }
 
-        @NotNull
         @Override
-        public ListIterator<T> listIterator() {
-            return new Iter<>(items, fromIndex, fromIndex, toIndex());
+        @SuppressFBWarnings(value = "IT_NO_SUCH_ELEMENT", justification = "It can, SpotBugs is confused")
+        public T next() {
+            final var index = this.index;
+            if (index >= items.length) {
+                throw noMoreElements();
+            }
+            final var item = items[index];
+            this.index = index + 1;
+            return item;
         }
 
-        @NotNull
         @Override
-        public ListIterator<T> listIterator(final int index) {
-            Objects.checkIndex(index, size + 1);
-            return new Iter<>(items, fromIndex, fromIndex + index, toIndex());
+        public T previous() {
+            final var index = this.index - 1;
+            if (index < 0) {
+                throw noMoreElements();
+            }
+            final var item = items[index];
+            this.index = index;
+            return item;
         }
 
-        private int toIndex() {
-            return fromIndex + size;
+        @Override
+        public int nextIndex() {
+            return index;
+        }
+
+        @Override
+        public int previousIndex() {
+            return index - 1;
+        }
+
+        @Override
+        public void forEachRemaining(final @NotNull Consumer<? super T> action) {
+            Objects.requireNonNull(action);
+            final var items = this.items;
+            final var length = items.length;
+            for (int i = index; i < length; i += 1) {
+                action.accept(items[i]);
+            }
+            index = length;
+        }
+
+        @Override
+        public void remove() {
+            throw unsupportedModification();
+        }
+
+        @Override
+        public void set(final T t) {
+            throw unsupportedModification();
+        }
+
+        @Override
+        public void add(final T t) {
+            throw unsupportedModification();
+        }
+
+        private static @NotNull NoSuchElementException noMoreElements() {
+            throw new NoSuchElementException("No more elements");
         }
 
         private final T @NotNull [] items;
-        private final int fromIndex;
-        private final int size;
-
-        private static final class Iter<T> extends ImmutableList.Iter<T> {
-            private Iter(final T @NotNull [] items, final int from, final int index, final int to) {
-                this.items = items;
-                fromIndex = from;
-                this.index = index;
-                toIndex = to;
-            }
-
-            @Override
-            public boolean hasNext() {
-                return index < toIndex;
-            }
-
-            @Override
-            public boolean hasPrevious() {
-                return index > fromIndex;
-            }
-
-            @Override
-            @SuppressFBWarnings(value = "IT_NO_SUCH_ELEMENT", justification = "It actually can, SpotBugs is confused")
-            public T next() {
-                final var i = index;
-                if (i >= toIndex) {
-                    throw noMoreElements();
-                }
-                final var item = items[i];
-                index = i + 1;
-                return item;
-            }
-
-            @Override
-            public T previous() {
-                final var i = index - 1;
-                if (i < fromIndex) {
-                    throw noMoreElements();
-                }
-                final var item = items[i];
-                index = i;
-                return item;
-            }
-
-            @Override
-            public int nextIndex() {
-                return index - fromIndex;
-            }
-
-            @Override
-            public int previousIndex() {
-                return index - fromIndex - 1;
-            }
-
-            @Override
-            public void forEachRemaining(final @NotNull Consumer<? super T> action) {
-                Objects.requireNonNull(action);
-                for (int i = index; i < toIndex; i += 1) {
-                    index = i + 1;
-                    action.accept(items[i]);
-                }
-            }
-
-            private final T @NotNull [] items;
-            private final int fromIndex;
-            private int index;
-            private final int toIndex;
-        }
-    }
-
-    private static final class RangeUtils {
-        private static <T> int hashCode(final T @NotNull [] items, final int from, final int to) {
-            int result = 1;
-            for (int i = from; i < to; i += 1) {
-                result = 31 * result + Objects.hashCode(items[i]);
-            }
-            return result;
-        }
-
-        private static <T> boolean equalsFallback(
-            final T @NotNull [] items,
-            final int from,
-            final int to,
-            final @NotNull List<?> list
-        ) {
-            final var size = to - from;
-            if (size != list.size()) {
-                return false;
-            }
-            // The other object is some other list type of the same size, need to iterate it.
-            final var iterator = list.iterator();
-            for (int index = from; iterator.hasNext(); index += 1) {
-                final var thisItem = items[index];
-                final var otherItem = iterator.next();
-                if (!Objects.equals(thisItem, otherItem)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private static <T> @NotNull String toString(final T @NotNull [] items, final int from, final int to) {
-            if (from >= to) {
-                return "[]";
-            }
-
-            final var builder = new StringBuilder();
-            builder.append('[');
-            for (int i = from; i < to; i += 1) {
-                builder.append(items[i]).append(", ");
-            }
-            // Need to remove the final comma and space.
-            builder.setLength(builder.length() - 2);
-            builder.append(']');
-            return builder.toString();
-        }
-
-        private static <T> void forEach(
-            final T @NotNull [] items,
-            final int from,
-            final int to,
-            final @NotNull Consumer<? super T> action
-        ) {
-            Objects.requireNonNull(action);
-            for (int i = from; i < to; i += 1) {
-                action.accept(items[i]);
-            }
-        }
-
-        private static <T> int indexOf(
-            final T @NotNull [] items,
-            final int from,
-            final int to,
-            final @Nullable Object object
-        ) {
-            if (object == null) {
-                for (int i = from; i < to; i += 1) {
-                    if (items[i] == null) {
-                        return i - from;
-                    }
-                }
-            } else {
-                for (int i = from; i < to; i += 1) {
-                    if (object.equals(items[i])) {
-                        return i - from;
-                    }
-                }
-            }
-            return -1;
-        }
-
-        private static <T> int lastIndexOf(
-            final T @NotNull [] items,
-            final int from,
-            final int to,
-            final @Nullable Object object
-        ) {
-            if (object == null) {
-                for (int i = to - 1; i >= from; i -= 1) {
-                    if (items[i] == null) {
-                        return i - from;
-                    }
-                }
-            } else {
-                for (int i = to - 1; i >= from; i -= 1) {
-                    if (object.equals(items[i])) {
-                        return i - from;
-                    }
-                }
-            }
-            return -1;
-        }
-
-        @SuppressWarnings("SuspiciousSystemArraycopy")
-        private static <T, U> U @NotNull [] copyAndNullTerminate(
-            final T @NotNull [] source,
-            final int sourceIndex,
-            final U @NotNull [] destination,
-            final int size
-        ) {
-            System.arraycopy(source, sourceIndex, destination, 0, size);
-            if (destination.length > size) {
-                destination[size] = null;
-            }
-            return destination;
-        }
+        private int index;
     }
 }

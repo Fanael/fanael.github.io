@@ -10,7 +10,6 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.SymbolTable;
@@ -108,7 +107,7 @@ public final class Reader {
     }
 
     private @NotNull Sexp.List readList() throws Unwind {
-        final var list = new ArrayList<@NotNull Sexp>(initialListCapacity);
+        final var builder = new ImmutableList.Builder<Sexp>(initialListCapacity);
         while (true) {
             if (skipSkippables().hitEof()) {
                 throw signalUnterminatedListError();
@@ -122,12 +121,12 @@ public final class Reader {
             }
             final var form = readForm();
             if (form != null) {
-                list.add(form);
+                builder.add(form);
             } else {
                 throw signalUnterminatedListError();
             }
         }
-        return new Sexp.List(ImmutableList.freeze(list));
+        return new Sexp.List(builder.freeze());
     }
 
     private @NotNull Sexp.String readString() throws Unwind {

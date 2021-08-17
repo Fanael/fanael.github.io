@@ -37,7 +37,7 @@ public final class Verifier {
     private void verifyRoot(final @NotNull Node rootNode) throws Unwind {
         verify(rootNode, Context.ROOT);
         if (!verificationErrors.isEmpty()) {
-            throw ConditionContext.error(new VerificationErrorCondition(ImmutableList.freeze(verificationErrors)));
+            throw ConditionContext.error(new VerificationErrorCondition(verificationErrors.freeze()));
         }
     }
 
@@ -191,7 +191,7 @@ public final class Verifier {
     private static final EnumSet<Context> rawTextContexts =
         EnumSet.of(Context.FLOW, Context.PHRASING, Context.TEXT_ONLY);
 
-    private final ArrayList<@NotNull VerificationError> verificationErrors = new ArrayList<>();
+    private final ImmutableList.Builder<@NotNull VerificationError> verificationErrors = new ImmutableList.Builder<>();
     private final ArrayList<Node.Element> ancestors = new ArrayList<>();
     private final HashSet<String> foundIds = new HashSet<>();
 
