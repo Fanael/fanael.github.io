@@ -107,7 +107,7 @@ public final class Reader {
     }
 
     private @NotNull Sexp.List readList() throws Unwind {
-        final var builder = new ImmutableList.Builder<Sexp>(initialListCapacity);
+        final var builder = new ImmutableList.Builder<@NotNull Sexp>(initialListCapacity);
         while (true) {
             if (skipSkippables().hitEof()) {
                 throw signalUnterminatedListError();
