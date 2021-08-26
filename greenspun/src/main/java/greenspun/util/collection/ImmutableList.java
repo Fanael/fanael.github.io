@@ -14,10 +14,10 @@ import java.util.RandomAccess;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import greenspun.util.function.ThrowingFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -94,10 +94,10 @@ public final class ImmutableList<T> implements List<T>, RandomAccess {
      * <p>
      * Exceptions thrown by the given function are passed through.
      */
-    public static <T, R, E extends Throwable> @NotNull ImmutableList<R> map(
+    public static <T, R> @NotNull ImmutableList<R> map(
         final @NotNull Collection<? extends T> collection,
-        final @NotNull ThrowingFunction<? super T, ? extends R, E> function
-    ) throws E {
+        final @NotNull Function<? super T, ? extends R> function
+    ) {
         final var builder = new Builder<R>(collection.size());
         for (final var item : collection) {
             builder.add(function.apply(item));

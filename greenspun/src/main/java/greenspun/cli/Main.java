@@ -10,29 +10,24 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import greenspun.pygments.PygmentsServer;
 import greenspun.pygments.ServerCodeTemporaryFile;
-import greenspun.util.UncheckedInterruptedException;
+import greenspun.util.SneakyThrow;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Handler;
-import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;
 
 final class Main {
     private Main() {
     }
 
-    public static void main(final @NotNull String[] args) throws Unwind, InterruptedException {
-        try {
-            System.exit(mainImpl(args).value);
-        } catch (final UncheckedInterruptedException e) {
-            throw e.getCause();
-        }
+    public static void main(final @NotNull String[] args) {
+        System.exit(mainImpl(args).value);
     }
 
     private static void enterRepl(
         final @NotNull ExecutorService executorService,
         final @NotNull Path sourceDirectory,
         final @NotNull Path destinationDirectory
-    ) throws Unwind {
+    ) {
         try (
             final var pygmentsServerCode = ServerCodeTemporaryFile.save();
             final var pygmentsServer = new PygmentsServer(pygmentsServerCode)
@@ -42,7 +37,7 @@ final class Main {
         }
     }
 
-    private static @NotNull ExitCode mainImpl(final @NotNull String[] args) throws InterruptedException, Unwind {
+    private static @NotNull ExitCode mainImpl(final @NotNull String[] args) {
         if (args.length != 2) {
             try (final var streams = Streams.acquire()) {
                 streams.err().println("Exactly two arguments <source directory> <destination directory> expected");
@@ -80,9 +75,13 @@ final class Main {
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private static void shutDownThreadPool(final @NotNull ThreadPoolExecutor threadPool) throws InterruptedException {
+    private static void shutDownThreadPool(final @NotNull ThreadPoolExecutor threadPool) {
         threadPool.shutdownNow();
-        threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        try {
+            threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (final InterruptedException e) {
+            throw SneakyThrow.doThrow(e);
+        }
     }
 
     private enum ExitCode {

@@ -10,5 +10,6 @@ import org.jetbrains.annotations.NotNull;
  */
 @FunctionalInterface
 public interface RestartCallback<T> {
+    @SuppressWarnings("RedundantThrows")
     @NotNull T call(@NotNull Restart restart) throws Unwind;
 }

@@ -27,7 +27,6 @@ import greenspun.util.PathUtils;
 import greenspun.util.Trace;
 import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
-import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -77,7 +76,7 @@ public final class Generator {
      * Since this method basically does everything, it can signal just about any
      * {@link greenspun.util.condition.Condition}.
      */
-    public void generate(final @NotNull Instant buildTime) throws Unwind, InterruptedException {
+    public void generate(final @NotNull Instant buildTime) {
         final var preparator = new DirectoryPreparator(sourceDirectory, destinationDirectory);
         final var articleSourcePaths = preparator.getArticleSourcePaths();
         final var pageSourcePaths = preparator.getPageSourcePaths();
@@ -89,15 +88,12 @@ public final class Generator {
         generateArchives(articles);
     }
 
-    private void generatePages(final @NotNull List<Path> pageSourcePaths) throws Unwind, InterruptedException {
+    private void generatePages(final @NotNull List<Path> pageSourcePaths) {
         final var renderer = makeNonArticleRenderer();
         executor.forEach(pageSourcePaths, sourceRelativePath -> generatePage(sourceRelativePath, renderer));
     }
 
-    private void generatePage(
-        final @NotNull Path sourceRelativePath,
-        final @NotNull Renderer renderer
-    ) throws Unwind {
+    private void generatePage(final @NotNull Path sourceRelativePath, final @NotNull Renderer renderer) {
         try (final var trace = new Trace("Generating non-article page from " + sourceRelativePath)) {
             trace.use();
             // Non-articles are similar enough to articles that we can use the article methods.
@@ -107,9 +103,7 @@ public final class Generator {
         }
     }
 
-    private @NotNull ArrayList<ArchivedArticle> generateArticles(
-        final @NotNull List<Path> articleSourcePaths
-    ) throws Unwind, InterruptedException {
+    private @NotNull ArrayList<ArchivedArticle> generateArticles(final @NotNull List<Path> articleSourcePaths) {
         final var articles = executor.map(articleSourcePaths, this::loadArticle);
         // Use the file name as a tie-breaker to ensure we don't rely on the order the file system returned paths in.
         articles.sort(
@@ -134,7 +128,7 @@ public final class Generator {
     private @NotNull ArchivedArticle generateArticle(
         final @NotNull OrderedArticle orderedArticle,
         final @NotNull Renderer renderer
-    ) throws Unwind {
+    ) {
         var outerArticle = orderedArticle;
         final var sourceRelativePath = orderedArticle.sourceRelativePath;
         final var destinationRelativePath = PathUtils.changeExtension(sourceRelativePath, "html");
@@ -156,7 +150,7 @@ public final class Generator {
         }
     }
 
-    private @NotNull OrderedArticle reloadWithSameDate(final @NotNull OrderedArticle originalArticle) throws Unwind {
+    private @NotNull OrderedArticle reloadWithSameDate(final @NotNull OrderedArticle originalArticle) {
         final var sourceRelativePath = originalArticle.sourceRelativePath;
         final var originalDate = originalArticle.article.date();
         try (final var trace = new Trace(() -> "Reloading article from " + sourceRelativePath)) {
@@ -179,10 +173,7 @@ public final class Generator {
         }
     }
 
-    private void serializeDomTree(
-        final @NotNull Path destinationRelativePath,
-        final @NotNull Node rootNode
-    ) throws Unwind {
+    private void serializeDomTree(final @NotNull Path destinationRelativePath, final @NotNull Node rootNode) {
         Verifier.verify(rootNode);
         final var destinationPath = destinationDirectory.resolve(destinationRelativePath);
         try (final var trace = new Trace(() -> "Saving HTML to " + destinationPath)) {
@@ -196,7 +187,7 @@ public final class Generator {
         }
     }
 
-    private @NotNull LoadedArticle loadArticle(final @NotNull Path sourceRelativePath) throws Unwind {
+    private @NotNull LoadedArticle loadArticle(final @NotNull Path sourceRelativePath) {
         final var fullSourcePath = sourceDirectory.resolve(sourceRelativePath);
         while (true) {
             final var article = ConditionContext.withRestart("reload-article-and-retry", restart -> {
@@ -233,7 +224,7 @@ public final class Generator {
         ).toArchivedArticle();
     }
 
-    private void generateArchives(final @NotNull List<ArchivedArticle> articles) throws Unwind, InterruptedException {
+    private void generateArchives(final @NotNull List<ArchivedArticle> articles) {
         try (final var outerTrace = new Trace("Generating blog archives")) {
             outerTrace.use();
             final var archivedQuarters = generateQuarterlyArchives(articles);
@@ -249,7 +240,7 @@ public final class Generator {
 
     private @NotNull ArrayList<ArchivedTopic> generateTopicArchives(
         final @NotNull List<ArchivedArticle> articles
-    ) throws Unwind, InterruptedException {
+    ) {
         try (final var outerTrace = new Trace("Generating per-topic blog archives")) {
             outerTrace.use();
             final var articlesByTopic = new HashMap<String, ArrayList<ArchivedArticle>>();
@@ -277,7 +268,7 @@ public final class Generator {
 
     private @NotNull ArrayList<ArchivedQuarter> generateQuarterlyArchives(
         final @NotNull List<ArchivedArticle> articles
-    ) throws Unwind, InterruptedException {
+    ) {
         try (final var outerTrace = new Trace("Generating per-quarter blog archives")) {
             outerTrace.use();
             final var articlesByQuarter = new HashMap<Quarter, ArrayList<ArchivedArticle>>();
@@ -302,7 +293,7 @@ public final class Generator {
         }
     }
 
-    private void generateFrontPage(final @NotNull List<ArchivedArticle> articles) throws Unwind {
+    private void generateFrontPage(final @NotNull List<ArchivedArticle> articles) {
         try (final var trace = new Trace("Generating the front page")) {
             trace.use();
             final var domTree = makeArticleRenderer().renderFrontPage(articles);
@@ -310,10 +301,7 @@ public final class Generator {
         }
     }
 
-    private void generateFeed(
-        final @NotNull List<ArchivedArticle> articles,
-        final @NotNull Instant buildTime
-    ) throws Unwind {
+    private void generateFeed(final @NotNull List<ArchivedArticle> articles, final @NotNull Instant buildTime) {
         try (final var trace = new Trace("Generating RSS feed")) {
             trace.use();
             final var feedRenderer = new FeedRenderer();

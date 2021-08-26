@@ -108,7 +108,7 @@ public final class Renderer {
 
     private static @NotNull Node.Element wrapCodeBlockImpl(
         final @NotNull String prettyLanguageName,
-        final @NotNull Node.BuildFunction<? extends RuntimeException> buildFunction
+        final @NotNull Node.BuildFunction buildFunction
     ) {
         return Node.build(Tag.PRE, pre -> {
             pre.set("class", "code-block");
@@ -173,7 +173,7 @@ public final class Renderer {
     private static @NotNull Node.Element renderDocument(
         final @NotNull Node.Element head,
         final @NotNull Node.Element bottomNav,
-        final @NotNull Node.BuildFunction<? extends RuntimeException> mainBuildFunction
+        final @NotNull Node.BuildFunction mainBuildFunction
     ) {
         return Node.build(Tag.HTML, html -> {
             html.set(Constants.htmlLang);

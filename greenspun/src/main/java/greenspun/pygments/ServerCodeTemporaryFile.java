@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import greenspun.util.Trace;
 import greenspun.util.condition.ConditionContext;
-import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
 import org.jetbrains.annotations.NotNull;
 
@@ -25,7 +24,7 @@ public final class ServerCodeTemporaryFile implements AutoCloseable {
      * <p>
      * If an I/O error of any kind occurs, {@link IOExceptionCondition} is signaled as a fatal condition.
      */
-    public static @NotNull ServerCodeTemporaryFile save() throws Unwind {
+    public static @NotNull ServerCodeTemporaryFile save() {
         try (final var trace = new Trace("Saving the pygments server code to a temporary file")) {
             trace.use();
             try (final var input = openInputStream()) {

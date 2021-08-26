@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.condition;
 
-import greenspun.util.function.ThrowingCallback;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -10,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * This condition should typically not be fatal, and handlers are discouraged from transferring control flow to
  * a restart as a response to it, as it is usually signaled by
- * {@link ConditionContext#withSuppressedExceptions(ThrowingCallback)} or
+ * {@link ConditionContext#withSuppressedExceptions(ConditionContext.ThrowingCallback)} or
  * {@link ConditionContext#signalSuppressedException(Exception)}, which disallow unwinding to a restart.
  */
 public final class SuppressedExceptionCondition extends Condition {

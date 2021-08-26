@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.condition;
 
+import greenspun.util.SneakyThrow;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,11 +31,11 @@ public final class Restart {
      * Transfers the control flow to this restart point.
      * <p>
      * This method never returns.
-     *
-     * @throws Unwind The exception used to perform non-local control flow transfer.
+     * <p>
+     * An object of the {@link Unwind} is thrown to perform the non-local control flow transfer.
      */
-    public void unwindTo() throws Unwind {
-        throw new Unwind(this);
+    public void unwindTo() {
+        throw SneakyThrow.doThrow(new Unwind(this));
     }
 
     // NB: since restarts are only created by the condition context and not user code, this can be a package-private

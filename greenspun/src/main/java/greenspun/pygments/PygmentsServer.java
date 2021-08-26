@@ -17,7 +17,6 @@ import greenspun.util.Trace;
 import greenspun.util.condition.Condition;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
-import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -92,7 +91,7 @@ public final class PygmentsServer implements AutoCloseable {
     public @NotNull ArrayList<@NotNull Node> highlightCode(
         final @NotNull String code,
         final @NotNull String languageName
-    ) throws Unwind {
+    ) {
         try (final var trace = new Trace(() -> "Highlighting code in language " + languageName)) {
             trace.use();
             final var connection = acquireConnection();
@@ -104,7 +103,7 @@ public final class PygmentsServer implements AutoCloseable {
         }
     }
 
-    private @NotNull Connection acquireConnection() throws Unwind {
+    private @NotNull Connection acquireConnection() {
         final var connection = popFreeConnection();
         if (connection != null) {
             assert connection.stillAlive;
@@ -135,7 +134,7 @@ public final class PygmentsServer implements AutoCloseable {
         }
     }
 
-    private @NotNull Connection openNewConnection() throws Unwind {
+    private @NotNull Connection openNewConnection() {
         try (final var trace = new Trace("Spawning a new pygments server process")) {
             trace.use();
             final var builder = new ProcessBuilder("python3", sourceCodePath.toString());
@@ -165,7 +164,7 @@ public final class PygmentsServer implements AutoCloseable {
         private @NotNull ArrayList<@NotNull Node> highlightCode(
             final @NotNull String code,
             final @NotNull String languageName
-        ) throws Unwind {
+        ) {
             try {
                 sendSimpleString(":highlight");
                 sendSimpleString(languageName);
@@ -214,7 +213,7 @@ public final class PygmentsServer implements AutoCloseable {
             }
         }
 
-        private @NotNull ArrayList<@NotNull Node> receiveNodeStream() throws IOException, Unwind {
+        private @NotNull ArrayList<@NotNull Node> receiveNodeStream() throws IOException {
             final var accumulator = new NodeAccumulator();
             loop:
             while (true) {
@@ -275,7 +274,7 @@ public final class PygmentsServer implements AutoCloseable {
             writer.write('\n');
         }
 
-        private @NotNull String receiveSimpleString() throws IOException, Unwind {
+        private @NotNull String receiveSimpleString() throws IOException {
             final var line = reader.readLine();
             // NB: ":error" is a perfectly cromulent simple string that can occur as a token value in regular code, so
             // do NOT check for it here.
@@ -285,7 +284,7 @@ public final class PygmentsServer implements AutoCloseable {
             return line;
         }
 
-        private @NotNull String receiveMultilineString() throws IOException, Unwind {
+        private @NotNull String receiveMultilineString() throws IOException {
             final var builder = new StringBuilder();
             while (true) {
                 final var line = reader.readLine();
@@ -305,7 +304,7 @@ public final class PygmentsServer implements AutoCloseable {
 
         private @NotNull UnhandledErrorError recoverFromServerError(
             final @Nullable String firstLineOfResponse
-        ) throws Unwind {
+        ) {
             try (final var trace = new Trace("Attempting to recover from pygments server error")) {
                 trace.use();
                 @NotNull Condition condition;

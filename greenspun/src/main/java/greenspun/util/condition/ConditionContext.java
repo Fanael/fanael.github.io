@@ -4,7 +4,7 @@ package greenspun.util.condition;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import greenspun.util.function.ThrowingCallback;
+import greenspun.util.SneakyThrow;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +32,7 @@ public final class ConditionContext {
      * <p>
      * Since handlers are allowed to unwind to a restart point, this method may throw {@link Unwind}.
      */
-    public static void signal(final @NotNull Condition condition) throws Unwind {
+    public static void signal(final @NotNull Condition condition) {
         localContext().signal(new SignaledCondition(condition, false));
     }
 
@@ -44,6 +44,7 @@ public final class ConditionContext {
      */
     public static void signalSuppressedException(final @NotNull Exception exception) {
         try {
+            SneakyThrow.<Unwind>pretendThrows();
             signal(new SuppressedExceptionCondition(exception));
         } catch (final Unwind u) {
             throw new AssertionError("A handler attempted to unwind a suppressed exception condition", u);
@@ -61,7 +62,7 @@ public final class ConditionContext {
      * Since this method never returns normally, it's declared to return {@link UnhandledErrorError} that can be
      * "thrown" at call sites to help the compiler's control flow analysis.
      */
-    public static @NotNull UnhandledErrorError error(final @NotNull Condition condition) throws Unwind {
+    public static @NotNull UnhandledErrorError error(final @NotNull Condition condition) {
         localContext().signal(new SignaledCondition(condition, true));
         throw new UnhandledErrorError(condition);
     }
@@ -75,9 +76,9 @@ public final class ConditionContext {
      * As this method is sometimes called as a part of cleanup process during stack unwinding, handlers are
      * <strong>not allowed</strong> to unwind to a restart point as a response to that condition.
      */
-    public static void withSuppressedExceptions(final @NotNull ThrowingCallback<? extends Exception> callback) {
+    public static <E extends Throwable> void withSuppressedExceptions(final @NotNull ThrowingCallback callback) {
         try {
-            callback.call();
+            callback.run();
         } catch (final Exception e) {
             signalSuppressedException(e);
         }
@@ -95,13 +96,13 @@ public final class ConditionContext {
     public static <T> @Nullable T withRestart(
         final @NotNull String restartName,
         final @NotNull RestartCallback<? extends T> callback
-    ) throws Unwind {
+    ) {
         final var restart = new Restart(restartName);
         try {
             return callback.call(restart);
         } catch (final Unwind unwind) {
             if (unwind.target() != restart) {
-                throw unwind;
+                throw SneakyThrow.doThrow(unwind);
             }
             return null;
         } finally {
@@ -159,7 +160,7 @@ public final class ConditionContext {
         return localContext.get();
     }
 
-    private void signal(final @NotNull SignaledCondition condition) throws Unwind {
+    private void signal(final @NotNull SignaledCondition condition) {
         final var currentThread = Thread.currentThread();
         for (var handler = findFirstHandler(); handler != null; handler = handler.next) {
             if (!handler.usableIn(currentThread)) {
@@ -187,6 +188,16 @@ public final class ConditionContext {
 
     private static final ThreadLocal<@NotNull ConditionContext> localContext =
         ThreadLocal.withInitial(ConditionContext::new);
+
+    /**
+     * A generic callback with no particular semantics declared to throw checked Exceptions.
+     * <p>
+     * Intended to be used with {@link #withSuppressedExceptions(ThrowingCallback)}.
+     */
+    @FunctionalInterface
+    public interface ThrowingCallback {
+        void run() throws Exception;
+    }
 
     /**
      * An opaque type representing saved inheritable state of a condition context.

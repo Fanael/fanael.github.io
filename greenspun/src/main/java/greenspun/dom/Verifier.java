@@ -9,7 +9,6 @@ import java.util.Map;
 import greenspun.util.UnreachableCodeReachedError;
 import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
-import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,12 +28,12 @@ public final class Verifier {
      * If the DOM tree is valid, this method simply returns. Otherwise, if any verification errors have been found,
      * a fatal condition of type {@link VerificationErrorCondition} is signaled.
      */
-    public static void verify(final @NotNull Node rootNode) throws Unwind {
+    public static void verify(final @NotNull Node rootNode) {
         final var verifier = new Verifier();
         verifier.verifyRoot(rootNode);
     }
 
-    private void verifyRoot(final @NotNull Node rootNode) throws Unwind {
+    private void verifyRoot(final @NotNull Node rootNode) {
         verify(rootNode, Context.ROOT);
         if (!verificationErrors.isEmpty()) {
             throw ConditionContext.error(new VerificationErrorCondition(verificationErrors.freeze()));

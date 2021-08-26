@@ -17,7 +17,6 @@ import greenspun.util.UnreachableCodeReachedError;
 import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
-import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +46,7 @@ public final class Reader {
      * {@link IOExceptionCondition}.
      * </ul>
      */
-    public @Nullable Sexp readTopLevelForm() throws Unwind {
+    public @Nullable Sexp readTopLevelForm() {
         if (skipSkippables().hitEof()) {
             return null;
         }
@@ -56,7 +55,7 @@ public final class Reader {
         return readForm();
     }
 
-    private @NotNull HitEof skipSkippables() throws Unwind {
+    private @NotNull HitEof skipSkippables() {
         while (true) {
             if (stream.reachedEnd()) {
                 return HitEof.YES;
@@ -77,7 +76,7 @@ public final class Reader {
         }
     }
 
-    private @Nullable Sexp readForm() throws Unwind {
+    private @Nullable Sexp readForm() {
         currentDepth += 1;
         try {
             if (currentDepth > maxDepth) {
@@ -106,7 +105,7 @@ public final class Reader {
         }
     }
 
-    private @NotNull Sexp.List readList() throws Unwind {
+    private @NotNull Sexp.List readList() {
         final var builder = new ImmutableList.Builder<@NotNull Sexp>(initialListCapacity);
         while (true) {
             if (skipSkippables().hitEof()) {
@@ -129,7 +128,7 @@ public final class Reader {
         return new Sexp.List(builder.freeze());
     }
 
-    private @NotNull Sexp.String readString() throws Unwind {
+    private @NotNull Sexp.String readString() {
         final var contentsBytes = new ByteArrayOutputStream(initialStringCapacity);
         var inEscapeSequence = false;
         outerLoop:
@@ -159,7 +158,7 @@ public final class Reader {
         return new Sexp.String(convertUtf8(contentsBytes.toByteArray()));
     }
 
-    private @NotNull Sexp readSymbol(final byte firstByte) throws Unwind {
+    private @NotNull Sexp readSymbol(final byte firstByte) {
         final var symbolNameBytes = new ByteArrayOutputStream(initialSymbolCapacity);
         symbolNameBytes.write(firstByte);
         while (true) {
@@ -194,7 +193,7 @@ public final class Reader {
         }
     }
 
-    private @NotNull String convertUtf8(final byte[] bytes) throws Unwind {
+    private @NotNull String convertUtf8(final byte[] bytes) {
         try {
             return utf8Decoder.decode(ByteBuffer.wrap(bytes)).toString();
         } catch (final CharacterCodingException e) {
@@ -202,18 +201,18 @@ public final class Reader {
         }
     }
 
-    private @NotNull UnhandledErrorError signalUnterminatedListError() throws Unwind {
+    private @NotNull UnhandledErrorError signalUnterminatedListError() {
         throw signalReadError("Expected closing ')' but found end of input instead");
     }
 
-    private @NotNull UnhandledErrorError signalReservedCharacterError(final byte b) throws Unwind {
+    private @NotNull UnhandledErrorError signalReservedCharacterError(final byte b) {
         final var message = (b <= lastControlByte)
             ? String.format("Reserved control character U+%04X found", b)
             : ("Reserved character '" + (char) b + "' found");
         throw signalReadError(message);
     }
 
-    private @NotNull UnhandledErrorError signalReadError(final @NotNull String message) throws Unwind {
+    private @NotNull UnhandledErrorError signalReadError(final @NotNull String message) {
         throw ConditionContext.error(new ReadErrorCondition(message, new SourceLocation(lineNumber, topLevelFormLine)));
     }
 

@@ -9,16 +9,21 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.concurrent.locks.ReentrantLock;
+import greenspun.util.SneakyThrow;
 import org.jetbrains.annotations.NotNull;
 
 final class Streams implements AutoCloseable {
     // The corresponding unlock is in close(), so this is fine.
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private Streams() throws InterruptedException {
-        Holder.lock.lockInterruptibly();
+    private Streams() {
+        try {
+            Holder.lock.lockInterruptibly();
+        } catch (final InterruptedException e) {
+            throw SneakyThrow.doThrow(e);
+        }
     }
 
-    static @NotNull Streams acquire() throws InterruptedException {
+    static @NotNull Streams acquire() {
         return new Streams();
     }
 

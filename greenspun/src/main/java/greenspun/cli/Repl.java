@@ -11,9 +11,7 @@ import greenspun.generator.Generator;
 import greenspun.pygments.PygmentsCache;
 import greenspun.pygments.PygmentsServer;
 import greenspun.util.Trace;
-import greenspun.util.UncheckedInterruptedException;
 import greenspun.util.condition.ConditionContext;
-import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,7 +26,7 @@ final class Repl {
         generator = new Generator(sourceDirectory, destinationDirectory, executorService, pygmentsCache);
     }
 
-    void run() throws Unwind {
+    void run() {
         while (true) {
             final var command = readCommand();
             switch (command) {
@@ -41,17 +39,13 @@ final class Repl {
         }
     }
 
-    private void build() throws Unwind {
+    private void build() {
         ConditionContext.withRestart("return-to-repl", restart -> {
             final var startTime = System.nanoTime();
-            try {
-                generator.generate(Instant.now());
-            } catch (final InterruptedException e) {
-                throw new UncheckedInterruptedException(e);
-            }
+            generator.generate(Instant.now());
             pygmentsCache.nextGeneration();
             final var endTime = System.nanoTime();
-            try (final var streams = acquireStreams()) {
+            try (final var streams = Streams.acquire()) {
                 streams.out().println("Build took " + TimeUnit.NANOSECONDS.toMillis(endTime - startTime) + " ms");
             }
             return this;
@@ -59,15 +53,15 @@ final class Repl {
     }
 
     private static void unknownCommand(final @NotNull String command) {
-        try (final var streams = acquireStreams()) {
+        try (final var streams = Streams.acquire()) {
             streams.out().println("Unknown command: " + command);
         }
     }
 
-    private static @NotNull String readCommand() throws Unwind {
+    private static @NotNull String readCommand() {
         try (final var trace = new Trace("Reading a command")) {
             trace.use();
-            try (final var streams = acquireStreams()) {
+            try (final var streams = Streams.acquire()) {
                 streams.out().print("> ");
                 try {
                     final var line = streams.in().readLine();
@@ -76,14 +70,6 @@ final class Repl {
                     throw ConditionContext.error(new IOExceptionCondition(e));
                 }
             }
-        }
-    }
-
-    private static @NotNull Streams acquireStreams() {
-        try {
-            return Streams.acquire();
-        } catch (final InterruptedException e) {
-            throw new UncheckedInterruptedException(e);
         }
     }
 

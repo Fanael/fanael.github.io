@@ -6,14 +6,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import greenspun.util.IterableUtils;
 import greenspun.util.Trace;
-import greenspun.util.UncheckedInterruptedException;
 import greenspun.util.condition.Condition;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.HandlerProcedure;
 import greenspun.util.condition.Restart;
 import greenspun.util.condition.SignaledCondition;
 import greenspun.util.condition.SuppressedExceptionCondition;
-import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;
 
 final class FallbackHandler implements HandlerProcedure.ThreadSafe {
@@ -25,7 +23,7 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
     }
 
     @Override
-    public void handle(final @NotNull SignaledCondition condition) throws Unwind {
+    public void handle(final @NotNull SignaledCondition condition) {
         if (!condition.isFatal()) {
             if (condition.condition() instanceof SuppressedExceptionCondition c) {
                 showSuppressedExceptionCondition(c);
@@ -33,14 +31,14 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
             return;
         }
         final var restarts = IterableUtils.toList(ConditionContext.restarts());
-        try (final var streams = acquireStreams()) {
+        try (final var streams = Streams.acquire()) {
             showCondition(streams, condition.condition(), "A fatal condition");
             chooseRestart(streams, restarts).unwindTo();
         }
     }
 
     private static void showSuppressedExceptionCondition(final @NotNull SuppressedExceptionCondition condition) {
-        try (final var streams = acquireStreams()) {
+        try (final var streams = Streams.acquire()) {
             showCondition(streams, condition, "A condition");
         }
     }
@@ -96,14 +94,6 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
                 err.println("Arbitrarily picking the last restart.");
                 return restarts.get(restarts.size() - 1);
             }
-        }
-    }
-
-    private static @NotNull Streams acquireStreams() {
-        try {
-            return Streams.acquire();
-        } catch (final InterruptedException e) {
-            throw new UncheckedInterruptedException(e);
         }
     }
 

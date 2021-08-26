@@ -44,7 +44,7 @@ public final class Handler implements AutoCloseable {
         context.firstHandler = next;
     }
 
-    void handle(final @NotNull SignaledCondition condition) throws Unwind {
+    void handle(final @NotNull SignaledCondition condition) {
         procedure.handle(condition);
     }
 

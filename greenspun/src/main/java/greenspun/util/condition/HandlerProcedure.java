@@ -16,7 +16,7 @@ public interface HandlerProcedure {
      * non-local control flow transfer, for example by transferring control to a restart point by using
      * {@link Restart#unwindTo()} or throwing an exception.
      */
-    void handle(@NotNull SignaledCondition condition) throws Unwind;
+    void handle(@NotNull SignaledCondition condition);
 
     /**
      * A functional interface representing a {@link Handler} procedure that is thread-safe.

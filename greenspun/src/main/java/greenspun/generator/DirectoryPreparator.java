@@ -13,7 +13,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import greenspun.util.Trace;
 import greenspun.util.condition.ConditionContext;
-import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,21 +23,21 @@ final class DirectoryPreparator {
         this.destinationDirectory = destinationDirectory;
     }
 
-    @NotNull ArrayList<Path> getArticleSourcePaths() throws Unwind {
+    @NotNull ArrayList<Path> getArticleSourcePaths() {
         try (final var trace = new Trace("Collecting source paths of articles")) {
             trace.use();
             return getSourceDirectoryRelativePaths(sourceDirectory);
         }
     }
 
-    @NotNull ArrayList<Path> getPageSourcePaths() throws Unwind {
+    @NotNull ArrayList<Path> getPageSourcePaths() {
         try (final var trace = new Trace("Collecting source paths of non-article pages")) {
             trace.use();
             return getSourceDirectoryRelativePaths(sourceDirectory.resolve(Generator.pagesSubdirectoryName));
         }
     }
 
-    void prepareDestinationDirectory() throws Unwind {
+    void prepareDestinationDirectory() {
         try (final var trace = new Trace(() -> "Preparing destination directory " + destinationDirectory)) {
             trace.use();
             createDestinationDirectory();
@@ -49,7 +48,7 @@ final class DirectoryPreparator {
         }
     }
 
-    private @NotNull ArrayList<Path> getSourceDirectoryRelativePaths(final @NotNull Path directoryPath) throws Unwind {
+    private @NotNull ArrayList<Path> getSourceDirectoryRelativePaths(final @NotNull Path directoryPath) {
         try (final var directory = Files.newDirectoryStream(directoryPath)) {
             final var paths = new ArrayList<@NotNull Path>();
             for (final var path : directory) {
@@ -66,14 +65,14 @@ final class DirectoryPreparator {
         }
     }
 
-    private void createDestinationDirectory() throws Unwind {
+    private void createDestinationDirectory() {
         try (final var trace = new Trace(() -> "Creating destination directory " + destinationDirectory)) {
             trace.use();
             createDirectory(destinationDirectory);
         }
     }
 
-    private void cleanUpDestinationDirectory() throws Unwind {
+    private void cleanUpDestinationDirectory() {
         try (final var trace = new Trace(() -> "Cleaning up destination directory " + destinationDirectory)) {
             trace.use();
             try {
@@ -85,7 +84,7 @@ final class DirectoryPreparator {
 
     }
 
-    private void copyStaticFilesToDestinationDirectory() throws Unwind {
+    private void copyStaticFilesToDestinationDirectory() {
         try (final var trace = new Trace(() ->
             "Copying static files to destination directory " + destinationDirectory)
         ) {
@@ -98,21 +97,21 @@ final class DirectoryPreparator {
         }
     }
 
-    private void createPageDirectory() throws Unwind {
+    private void createPageDirectory() {
         try (final var trace = new Trace(() -> "Creating pages directory in " + destinationDirectory)) {
             trace.use();
             createDirectory(destinationDirectory.resolve(Generator.pagesSubdirectoryName));
         }
     }
 
-    private void createArchiveDirectory() throws Unwind {
+    private void createArchiveDirectory() {
         try (final var trace = new Trace(() -> "Create archive directory in " + destinationDirectory)) {
             trace.use();
             createDirectory(destinationDirectory.resolve(Generator.archivesSubdirectoryName));
         }
     }
 
-    private static void createDirectory(final @NotNull Path path) throws Unwind {
+    private static void createDirectory(final @NotNull Path path) {
         try (final var trace = new Trace(() -> "Creating directory " + path)) {
             trace.use();
             try {

@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import greenspun.dom.Node;
 import greenspun.generator.Renderer;
-import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -56,7 +55,7 @@ public final class PygmentsCache {
         final @NotNull String code,
         final @NotNull String languageName,
         final @NotNull String prettyName
-    ) throws Unwind {
+    ) {
         final var key = new CacheKey(code, languageName, prettyName);
         final var cachedNode = map.get(key);
         if (cachedNode != null) {

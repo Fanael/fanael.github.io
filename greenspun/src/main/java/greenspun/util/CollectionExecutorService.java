@@ -9,11 +9,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
-import greenspun.util.function.ThrowingConsumer;
-import greenspun.util.function.ThrowingFunction;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -39,8 +38,8 @@ public final class CollectionExecutorService {
      */
     public <T, R> @NotNull ArrayList<R> map(
         final @NotNull Collection<? extends T> collection,
-        final @NotNull ThrowingFunction<? super T, ? extends R, Unwind> function
-    ) throws Unwind, InterruptedException {
+        final @NotNull Function<? super T, ? extends R> function
+    ) {
         return collectResults(submitTasks(collection, function));
     }
 
@@ -55,8 +54,8 @@ public final class CollectionExecutorService {
      */
     public <T> void forEach(
         final @NotNull Collection<? extends T> collection,
-        final @NotNull ThrowingConsumer<? super T, Unwind> consumer
-    ) throws Unwind, InterruptedException {
+        final @NotNull Consumer<? super T> consumer
+    ) {
         waitForResults(submitTasks(collection, value -> {
             consumer.accept(value);
             return null;
@@ -65,7 +64,7 @@ public final class CollectionExecutorService {
 
     private <T, R> @NotNull ImmutableList<@NotNull Future<R>> submitTasks(
         final @NotNull Collection<? extends T> collection,
-        final @NotNull ThrowingFunction<? super T, ? extends R, Unwind> function
+        final @NotNull Function<? super T, ? extends R> function
     ) {
         final var inheritedState = ConditionContext.saveInheritableState();
         return ImmutableList.map(collection, element -> executorService.submit(() -> {
@@ -73,26 +72,19 @@ public final class CollectionExecutorService {
             try (final var trace = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
                 trace.use();
                 return function.apply(element);
-            } catch (final Unwind u) {
-                // Need to repackage the unwind because it's checked and it's not an exception.
-                throw new UnwindException(u);
             } finally {
                 ConditionContext.restoreState(previousState);
             }
         }));
     }
 
-    private static <T> @NotNull ArrayList<T> collectResults(
-        final @NotNull ImmutableList<@NotNull Future<T>> futures
-    ) throws Unwind, InterruptedException {
+    private static <T> @NotNull ArrayList<T> collectResults(final @NotNull ImmutableList<@NotNull Future<T>> futures) {
         final var result = new ArrayList<T>(futures.size());
         new AwaitImpl<>(futures.iterator(), result::add).awaitAll();
         return result;
     }
 
-    private static void waitForResults(
-        final @NotNull ImmutableList<@NotNull Future<Object>> futures
-    ) throws Unwind, InterruptedException {
+    private static void waitForResults(final @NotNull ImmutableList<@NotNull Future<Object>> futures) {
         new AwaitImpl<>(futures.iterator(), value -> {
         }).awaitAll();
     }
@@ -105,7 +97,7 @@ public final class CollectionExecutorService {
             this.consumer = consumer;
         }
 
-        private void awaitAll() throws Unwind, InterruptedException {
+        private void awaitAll() {
             try {
                 iterate(this::awaitOne);
                 checkInterruptions();
@@ -120,33 +112,35 @@ public final class CollectionExecutorService {
             }
         }
 
-        private void cancelIfNeeded() throws Unwind, InterruptedException {
+        private void cancelIfNeeded() {
             if (needsCancellation) {
                 iterate(future -> future.cancel(true));
             }
         }
 
-        private void iterate(final @NotNull FutureConsumer<T> futureConsumer) throws Unwind, InterruptedException {
+        private void iterate(final @NotNull FutureConsumer<T> futureConsumer) {
             while (iterator.hasNext()) {
                 futureConsumer.accept(iterator.next());
             }
         }
 
-        private void awaitOne(final @NotNull Future<T> future) throws Unwind, InterruptedException {
+        private void awaitOne(final @NotNull Future<T> future) {
             try {
                 consumer.accept(future.get());
+            } catch (final InterruptedException e) {
+                throw SneakyThrow.doThrow(e);
             } catch (final ExecutionException e) {
                 recover(e);
             }
         }
 
-        private void recover(final @NotNull ExecutionException executionException) throws Unwind {
+        private void recover(final @NotNull ExecutionException executionException) {
             needsCancellation = true;
             final var cause = executionException.getCause();
-            if (cause instanceof UnwindException unwind) {
+            if (cause instanceof Unwind unwind) {
                 // Cross-thread unwind to a restart found, rethrow it to continue unwinding in the parent thread.
-                throw unwind.unwind;
-            } else if (cause instanceof InterruptedException || cause instanceof UncheckedInterruptedException) {
+                throw SneakyThrow.doThrow(unwind);
+            } else if (cause instanceof InterruptedException) {
                 // Continue looking, some other future will likely have a more concrete throwable.
                 foundInterrupt = true;
             } else if (cause instanceof Error error) {
@@ -164,15 +158,7 @@ public final class CollectionExecutorService {
 
         @FunctionalInterface
         private interface FutureConsumer<T> {
-            void accept(@NotNull Future<T> future) throws Unwind, InterruptedException;
+            void accept(@NotNull Future<T> future);
         }
-    }
-
-    private static final class UnwindException extends Exception {
-        private UnwindException(final @NotNull Unwind unwind) {
-            this.unwind = unwind;
-        }
-
-        private final @NotNull Unwind unwind;
     }
 }

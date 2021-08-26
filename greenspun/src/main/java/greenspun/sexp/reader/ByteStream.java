@@ -5,7 +5,6 @@ package greenspun.sexp.reader;
 import java.io.IOException;
 import java.io.InputStream;
 import greenspun.util.condition.ConditionContext;
-import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.IOExceptionCondition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,7 +38,7 @@ public final class ByteStream {
      * if the end of input has actually been reached. If an I/O error occurs, the {@link IOException} is caught
      * and signaled as a fatal {@link IOExceptionCondition}.
      */
-    public boolean reachedEnd() throws Unwind {
+    public boolean reachedEnd() {
         return position >= bufferSize && refill().hitEof();
     }
 
@@ -64,7 +63,7 @@ public final class ByteStream {
         position += 1;
     }
 
-    @NotNull HitEof skipToLineFeed() throws Unwind {
+    @NotNull HitEof skipToLineFeed() {
         while (true) {
             if (position < bufferSize) {
                 final var lineFeedPosition = findLineFeed();
@@ -89,7 +88,7 @@ public final class ByteStream {
     }
 
     @SuppressWarnings("ArrayEquality")
-    private @NotNull HitEof refill() throws Unwind {
+    private @NotNull HitEof refill() {
         // Don't try to refill if we've reached end of input already.
         if (buffer == endOfInputMarker) {
             return HitEof.YES;

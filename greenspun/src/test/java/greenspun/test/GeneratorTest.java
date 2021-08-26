@@ -13,7 +13,6 @@ import greenspun.generator.Generator;
 import greenspun.pygments.PygmentsCache;
 import greenspun.pygments.PygmentsServer;
 import greenspun.pygments.ServerCodeTemporaryFile;
-import greenspun.util.condition.Unwind;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -21,9 +20,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 final class GeneratorTest {
     @Test
-    void matchesReference(
-        @TempDir final @NotNull Path destinationDirectory
-    ) throws Unwind, InterruptedException, IOException {
+    void matchesReference(@TempDir final @NotNull Path destinationDirectory) throws IOException {
         runGenerator(destinationDirectory);
         final var referenceFiles = getFileList(referenceDirectoryPath);
         final var actualFiles = getFileList(destinationDirectory);
@@ -33,7 +30,7 @@ final class GeneratorTest {
         }
     }
 
-    private static void runGenerator(final @NotNull Path destinationDirectory) throws Unwind, InterruptedException {
+    private static void runGenerator(final @NotNull Path destinationDirectory) {
         final var executorService = Executors.newSingleThreadExecutor();
         try (
             final var serverCode = ServerCodeTemporaryFile.save();

@@ -13,7 +13,6 @@ import greenspun.util.Trace;
 import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
-import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -41,13 +40,11 @@ public final class HtslConverter {
      * occurs in syntax highlighting during the macro-expansion of {@code highlighted-code} tag macro.
      * </ul>
      */
-    public @NotNull ImmutableList<@NotNull Node> convert(
-        final @NotNull ImmutableList<@NotNull Sexp> forms
-    ) throws Unwind {
+    public @NotNull ImmutableList<@NotNull Node> convert(final @NotNull ImmutableList<@NotNull Sexp> forms) {
         return ImmutableList.map(forms, this::convertForm);
     }
 
-    private @NotNull Node convertForm(final @NotNull Sexp form) throws Unwind {
+    private @NotNull Node convertForm(final @NotNull Sexp form) {
         if (form instanceof Sexp.String string) {
             return new Node.Text(string.value());
         }
@@ -72,7 +69,7 @@ public final class HtslConverter {
         final @NotNull Sexp.Symbol tagName,
         final @NotNull ImmutableList<Sexp> attributes,
         final @NotNull ImmutableList<Sexp> children
-    ) throws Unwind {
+    ) {
         final var tag = Tag.byHtmlName(tagName.symbolName());
         if (tag == null) {
             throw signalError("Unknown tag name " + tagName);
@@ -86,7 +83,7 @@ public final class HtslConverter {
     private static void convertAttributes(
         final @NotNull Node.ElementBuilder builder,
         final @NotNull ImmutableList<Sexp> attributes
-    ) throws Unwind {
+    ) {
         for (int i = 0, size = attributes.size(); i < size; i += 2) {
             final var keyForm = attributes.get(i);
             final var key = Sexps.asKeyword(keyForm);
@@ -109,7 +106,7 @@ public final class HtslConverter {
         }
     }
 
-    private static @NotNull TagHead extractTagHead(final @NotNull Sexp form) throws Unwind {
+    private static @NotNull TagHead extractTagHead(final @NotNull Sexp form) {
         final var symbol = Sexps.asSymbol(form);
         if (symbol != null) {
             return new TagHead(symbol, ImmutableList.empty());
@@ -129,7 +126,7 @@ public final class HtslConverter {
     private @NotNull Node expandCodeBlock(
         final @NotNull ImmutableList<Sexp> attributes,
         final @NotNull ImmutableList<Sexp> children
-    ) throws Unwind {
+    ) {
         if (attributes.size() != 2 || attributes.get(0) != Sexp.KnownSymbol.KW_LANGUAGE) {
             throw signalError("code-block accepts exactly one attribute, :language");
         }
@@ -143,7 +140,7 @@ public final class HtslConverter {
     private @NotNull Node expandHighlightedCode(
         final @NotNull ImmutableList<Sexp> attributes,
         final @NotNull ImmutableList<Sexp> children
-    ) throws Unwind {
+    ) {
         if (children.size() != 1 || !(children.get(0) instanceof Sexp.String codeNode)) {
             throw signalError("highlighted-code accepts exactly one string child");
         }
@@ -167,7 +164,7 @@ public final class HtslConverter {
     private @NotNull Node expandImageFigure(
         final @NotNull ImmutableList<Sexp> attributes,
         final @NotNull ImmutableList<Sexp> children
-    ) throws Unwind {
+    ) {
         return Node.build(Tag.FIGURE, figure -> {
             figure.appendBuild(Tag.FIGCAPTION, figcaption -> convertChildren(figcaption, children));
             figure.appendBuild(Tag.DIV, div -> {
@@ -180,7 +177,7 @@ public final class HtslConverter {
     private @NotNull Node expandSidenote(
         final @NotNull ImmutableList<Sexp> attributes,
         final @NotNull ImmutableList<Sexp> children
-    ) throws Unwind {
+    ) {
         return Node.build(Tag.ASIDE, aside -> {
             convertAttributes(aside, attributes);
             aside.set("role", "note");
@@ -191,13 +188,13 @@ public final class HtslConverter {
     private void convertChildren(
         final @NotNull Node.ElementBuilder builder,
         final @NotNull ImmutableList<Sexp> children
-    ) throws Unwind {
+    ) {
         for (final var child : children) {
             builder.append(convertForm(child));
         }
     }
 
-    private static @NotNull UnhandledErrorError signalError(final @NotNull String message) throws Unwind {
+    private static @NotNull UnhandledErrorError signalError(final @NotNull String message) {
         return ConditionContext.error(new HtslConversionErrorCondition(message));
     }
 
@@ -222,7 +219,7 @@ public final class HtslConverter {
             @NotNull HtslConverter converter,
             @NotNull ImmutableList<Sexp> attributes,
             @NotNull ImmutableList<Sexp> children
-        ) throws Unwind;
+        );
     }
 
     private record TagHead(@NotNull Sexp.Symbol tagName, @NotNull ImmutableList<Sexp> attributes) {

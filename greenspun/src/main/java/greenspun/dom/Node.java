@@ -24,10 +24,7 @@ public abstract sealed class Node {
      * <p>
      * Exceptions thrown by the build function are passed through.
      */
-    public static <E extends Throwable> @NotNull Element build(
-        final @NotNull Tag tag,
-        final @NotNull BuildFunction<E> buildFunction
-    ) throws E {
+    public static @NotNull Element build(final @NotNull Tag tag, final @NotNull BuildFunction buildFunction) {
         final var builder = new ElementBuilder(tag);
         buildFunction.build(builder);
         return builder.toElement();
@@ -41,18 +38,16 @@ public abstract sealed class Node {
     }
 
     /**
-     * A functional interface for functions that operate on an element builder.
-     * <p>
-     * The {@code build} method is allowed to throw arbitrary exceptions of type {@code E}.
+     * A functional interface for functions that build a DOM element.
      *
      * @see Node#build(Tag, BuildFunction)
      */
     @FunctionalInterface
-    public interface BuildFunction<E extends Throwable> {
+    public interface BuildFunction {
         /**
          * Builds a DOM element by modifying the given element builder.
          */
-        void build(@NotNull ElementBuilder builder) throws E;
+        void build(@NotNull ElementBuilder builder);
     }
 
     /**
@@ -170,10 +165,7 @@ public abstract sealed class Node {
          * @see #append(Node)
          * @see Node#build(Tag, BuildFunction)
          */
-        public <E extends Throwable> void appendBuild(
-            final @NotNull Tag tag,
-            final @NotNull BuildFunction<E> buildFunction
-        ) throws E {
+        public void appendBuild(final @NotNull Tag tag, final @NotNull BuildFunction buildFunction) {
             append(build(tag, buildFunction));
         }
 

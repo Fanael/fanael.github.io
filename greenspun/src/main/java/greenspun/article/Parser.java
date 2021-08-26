@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import greenspun.dom.Node;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
@@ -19,8 +20,6 @@ import greenspun.util.Trace;
 import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
-import greenspun.util.condition.Unwind;
-import greenspun.util.function.ThrowingFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,25 +52,25 @@ public final class Parser {
     public static @NotNull Article parseArticleForms(
         final @NotNull Reader reader,
         final @NotNull HtslConverter htslConverter
-    ) throws Unwind {
+    ) {
         return new Parser(reader, htslConverter).parse();
     }
 
-    private @NotNull Article parse() throws Unwind {
+    private @NotNull Article parse() {
         final var article = parseDefarticle();
         parseDefsections();
         verifySectionGraph();
         return linkSections(article);
     }
 
-    private @NotNull PartialArticle parseDefarticle() throws Unwind {
+    private @NotNull PartialArticle parseDefarticle() {
         try (final var trace = new Trace("Parsing the defarticle form")) {
             trace.use();
             return parseDefarticleImpl();
         }
     }
 
-    private @NotNull PartialArticle parseDefarticleImpl() throws Unwind {
+    private @NotNull PartialArticle parseDefarticleImpl() {
         final var form = reader.readTopLevelForm();
         if (form == null) {
             throw signalError("Cannot magically turn empty input into an article");
@@ -100,7 +99,7 @@ public final class Parser {
         );
     }
 
-    private void parseDefsections() throws Unwind {
+    private void parseDefsections() {
         try (final var outerTrace = new Trace("Parsing defsection forms")) {
             outerTrace.use();
             int sectionCounter = 1; // Count sections for improved trace readability.
@@ -114,7 +113,7 @@ public final class Parser {
         }
     }
 
-    private void parseDefsection(final @NotNull Sexp form) throws Unwind {
+    private void parseDefsection(final @NotNull Sexp form) {
         final var list = Sexps.asList(form);
         if (list == null || list.isEmpty() || list.get(0) != Sexp.KnownSymbol.DEFSECTION) {
             throw signalError("This doesn't appear to be a valid defsection form: " + Sexps.prettyPrint(form));
@@ -138,14 +137,14 @@ public final class Parser {
         }
     }
 
-    private void verifySectionGraph() throws Unwind {
+    private void verifySectionGraph() {
         try (final var trace = new Trace("Verifying section graph")) {
             trace.use();
             verifySectionGraphImpl();
         }
     }
 
-    private void verifySectionGraphImpl() throws Unwind {
+    private void verifySectionGraphImpl() {
         final var references = new HashMap<Sexp.Symbol, Set<Sexp.Symbol>>();
         for (final var sectionId : sectionsById.keySet()) {
             references.put(sectionId, new HashSet<>());
@@ -212,7 +211,7 @@ public final class Parser {
         return new Section(section.identifier, section.header, linkedChildren, section.body);
     }
 
-    private static @NotNull LocalDate parseDate(final @NotNull ExtractedProperties properties) throws Unwind {
+    private static @NotNull LocalDate parseDate(final @NotNull ExtractedProperties properties) {
         final var value = properties.get(Sexp.KnownSymbol.KW_DATE);
         final var list = Sexps.asList(value);
         if (list == null || list.size() != 3) {
@@ -233,7 +232,7 @@ public final class Parser {
 
     private static @NotNull ImmutableList<String> parseTopics(
         final @NotNull ExtractedProperties properties
-    ) throws Unwind {
+    ) {
         return parseList(properties, Sexp.KnownSymbol.KW_TOPICS, (final @NotNull Sexp sexp) -> {
             final var topicName = Sexps.asString(sexp);
             if (topicName == null) {
@@ -245,7 +244,7 @@ public final class Parser {
 
     private static @NotNull ImmutableList<Sexp.Symbol> parseChildIds(
         final @NotNull ExtractedProperties properties
-    ) throws Unwind {
+    ) {
         return parseList(properties, Sexp.KnownSymbol.KW_CHILDREN, (final @NotNull Sexp sexp) -> {
             final var childId = Sexps.asSymbol(sexp);
             if (childId == null) {
@@ -258,8 +257,8 @@ public final class Parser {
     private static <T> @NotNull ImmutableList<T> parseList(
         final @NotNull ExtractedProperties properties,
         final @NotNull Sexp.KnownSymbol key,
-        final @NotNull ThrowingFunction<Sexp, T, Unwind> function
-    ) throws Unwind {
+        final @NotNull Function<Sexp, T> function
+    ) {
         final var value = properties.get(key);
         final var list = Sexps.asList(value);
         if (list == null) {
@@ -271,7 +270,7 @@ public final class Parser {
     private static @NotNull String parseString(
         final @NotNull ExtractedProperties properties,
         final @NotNull Sexp.KnownSymbol key
-    ) throws Unwind {
+    ) {
         final var value = properties.get(key);
         final var string = Sexps.asString(value);
         if (string == null) {
@@ -284,7 +283,7 @@ public final class Parser {
     private static boolean parseBoolean(
         final @NotNull ExtractedProperties properties,
         final @NotNull Sexp.KnownSymbol key
-    ) throws Unwind {
+    ) {
         final var value = properties.get(key);
         if (Sexps.isNil(value)) {
             return false;
@@ -295,10 +294,7 @@ public final class Parser {
         }
     }
 
-    private static @NotNull BigInteger parseInteger(
-        final @NotNull Sexp sexp,
-        final @NotNull String fieldName
-    ) throws Unwind {
+    private static @NotNull BigInteger parseInteger(final @NotNull Sexp sexp, final @NotNull String fieldName) {
         final var integer = Sexps.asInteger(sexp);
         if (integer == null) {
             throw signalError(fieldName + " doesn't appear to be an integer: " + Sexps.prettyPrint(sexp));
@@ -306,7 +302,7 @@ public final class Parser {
         return integer;
     }
 
-    private static int intValueExact(final @NotNull BigInteger integer, final @NotNull String fieldName) throws Unwind {
+    private static int intValueExact(final @NotNull BigInteger integer, final @NotNull String fieldName) {
         try {
             return integer.intValueExact();
         } catch (final ArithmeticException e) {
@@ -318,7 +314,7 @@ public final class Parser {
         final @NotNull ImmutableList<Sexp> list,
         final int startIndex,
         final @NotNull Set<? extends Sexp.Symbol> allowedKeys
-    ) throws Unwind {
+    ) {
         final var properties = new HashMap<Sexp.Symbol, @NotNull Sexp>();
         int i = startIndex;
         for (final var size = list.size(); i < size; i += 2) {
@@ -337,11 +333,11 @@ public final class Parser {
         return new ExtractedProperties(properties, i);
     }
 
-    private static @NotNull UnhandledErrorError signalError(final @NotNull String message) throws Unwind {
+    private static @NotNull UnhandledErrorError signalError(final @NotNull String message) {
         return ConditionContext.error(new ArticleParseErrorCondition(message));
     }
 
-    private static @NotNull UnhandledErrorError signalLinkingError(final @NotNull String message) throws Unwind {
+    private static @NotNull UnhandledErrorError signalLinkingError(final @NotNull String message) {
         return ConditionContext.error(new SectionLinkingErrorCondition(message));
     }
 

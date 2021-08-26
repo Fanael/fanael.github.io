@@ -16,7 +16,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import greenspun.util.condition.ConditionContext;
-import greenspun.util.condition.Unwind;
 import greenspun.util.condition.exception.ParserConfigurationExceptionCondition;
 import greenspun.util.condition.exception.TransformerExceptionCondition;
 import org.jetbrains.annotations.NotNull;
@@ -25,7 +24,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 final class FeedRenderer {
-    FeedRenderer() throws Unwind {
+    FeedRenderer() {
         try {
             document = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
         } catch (final ParserConfigurationException e) {
@@ -59,7 +58,7 @@ final class FeedRenderer {
         }));
     }
 
-    void serialize(final @NotNull Writer writer) throws Unwind {
+    void serialize(final @NotNull Writer writer) {
         try {
             final var transformer = TransformerFactory.newInstance().newTransformer();
             transformer.setOutputProperty(OutputKeys.METHOD, "xml");
