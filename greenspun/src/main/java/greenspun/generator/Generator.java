@@ -3,8 +3,10 @@
 package greenspun.generator;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,7 +25,6 @@ import greenspun.sexp.SymbolTable;
 import greenspun.sexp.reader.ByteStream;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.CollectionExecutorService;
-import greenspun.util.PathUtils;
 import greenspun.util.Trace;
 import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
@@ -77,38 +78,79 @@ public final class Generator {
      * {@link greenspun.util.condition.Condition}.
      */
     public void generate(final @NotNull Instant buildTime) {
-        final var preparator = new DirectoryPreparator(sourceDirectory, destinationDirectory);
-        final var articleSourcePaths = preparator.getArticleSourcePaths();
-        final var pageSourcePaths = preparator.getPageSourcePaths();
-        preparator.prepareDestinationDirectory();
-        generatePages(pageSourcePaths);
-        final var articles = generateArticles(articleSourcePaths);
+        initializeDestinationDirectory();
+        final var targets = new TargetDiscovery(sourceDirectory, destinationDirectory).discover();
+        // NB: IO is not parallelized here, because it happens to not be beneficial; directories cannot be processed in
+        // parallel anyway, because child directories have to be removed before parents, and parent directories have to
+        // be created before children; discovery returns the lists in proper order.
+        targets.filesToUnlink().forEach(this::unlinkFile);
+        targets.directoriesToUnlink().forEach(this::unlinkFile);
+        targets.directoriesToCreate().forEach(path -> ensureDirectoryExists(destinationDirectory.resolve(path)));
+        copyFiles(targets.staticTargets());
+        generatePages(targets.pageTargets());
+        final var articles = generateArticles(targets.articleTargets());
         generateFrontPage(articles.subList(0, Math.min(articles.size(), frontPageArticleCount)));
         generateFeed(articles.subList(0, Math.min(articles.size(), feedArticleCount)), buildTime);
         generateArchives(articles);
     }
 
-    private void generatePages(final @NotNull List<Path> pageSourcePaths) {
-        final var renderer = makeNonArticleRenderer();
-        executor.forEach(pageSourcePaths, sourceRelativePath -> generatePage(sourceRelativePath, renderer));
+    private void initializeDestinationDirectory() {
+        try (final var trace = new Trace(() -> "Initializing destination directory: " + destinationDirectory)) {
+            trace.use();
+            ensureDirectoryExists(destinationDirectory);
+            ensureDirectoryExists(destinationDirectory.resolve(staticSubdirectoryName));
+            ensureDirectoryExists(destinationDirectory.resolve(pagesSubdirectoryName));
+            ensureDirectoryExists(destinationDirectory.resolve(archivesSubdirectoryName));
+        }
     }
 
-    private void generatePage(final @NotNull Path sourceRelativePath, final @NotNull Renderer renderer) {
-        try (final var trace = new Trace("Generating non-article page from " + sourceRelativePath)) {
+    private void unlinkFile(final @NotNull Path destinationRelativePath) {
+        try (final var trace = new Trace(() -> "Unlinking unneeded file: " + destinationRelativePath)) {
+            trace.use();
+            Files.delete(destinationDirectory.resolve(destinationRelativePath));
+        } catch (final IOException e) {
+            throw ConditionContext.error(new IOExceptionCondition(e));
+        }
+    }
+
+    private void copyFiles(final @NotNull List<Target> targets) {
+        for (final var target : targets) {
+            final var sourcePath = target.sourcePath();
+            try (final var trace = new Trace(() -> "Copying static file: " + sourcePath)) {
+                trace.use();
+                Files.copy(
+                    sourceDirectory.resolve(sourcePath),
+                    destinationDirectory.resolve(target.destinationPath()),
+                    StandardCopyOption.REPLACE_EXISTING
+                );
+            } catch (final IOException e) {
+                throw ConditionContext.error(new IOExceptionCondition(e));
+            }
+        }
+    }
+
+    private void generatePages(final @NotNull List<Target> targets) {
+        final var renderer = makeNonArticleRenderer();
+        executor.forEach(targets, target -> generatePage(target, renderer));
+    }
+
+    private void generatePage(final @NotNull Target target, final @NotNull Renderer renderer) {
+        final var sourcePath = target.sourcePath();
+        try (final var trace = new Trace("Generating non-article page from " + sourcePath)) {
             trace.use();
             // Non-articles are similar enough to articles that we can use the article methods.
-            final var loadedPage = loadArticle(sourceRelativePath);
-            final var orderedPage = new OrderedArticle(loadedPage.article, sourceRelativePath, null, null);
+            final var loadedPage = loadArticle(target);
+            final var orderedPage = new OrderedArticle(loadedPage.article, target, null, null);
             generateArticle(orderedPage, renderer);
         }
     }
 
-    private @NotNull ArrayList<ArchivedArticle> generateArticles(final @NotNull List<Path> articleSourcePaths) {
-        final var articles = executor.map(articleSourcePaths, this::loadArticle);
+    private @NotNull ArrayList<ArchivedArticle> generateArticles(final @NotNull List<Target> targets) {
+        final var articles = executor.map(targets, this::loadArticle);
         // Use the file name as a tie-breaker to ensure we don't rely on the order the file system returned paths in.
         articles.sort(
             Comparator.comparing((final @NotNull LoadedArticle article) -> article.article.date())
-                .thenComparing(LoadedArticle::sourceRelativePath)
+                .thenComparing((final @NotNull LoadedArticle article) -> article.target().sourcePath())
                 .reversed()
         );
         final var articleCount = articles.size();
@@ -118,8 +160,8 @@ public final class Generator {
             final var predecessorUri = (i + 1 < articleCount) ? articles.get(i + 1).destinationUri() : null;
             final var successorUri = (i > 0) ? articles.get(i - 1).destinationUri() : null;
             final var innerArticle = article.article;
-            final var sourceRelativePath = article.sourceRelativePath;
-            orderedArticles.add(new OrderedArticle(innerArticle, sourceRelativePath, predecessorUri, successorUri));
+            final var target = article.target;
+            orderedArticles.add(new OrderedArticle(innerArticle, target, predecessorUri, successorUri));
         }
         final var renderer = makeArticleRenderer();
         return executor.map(orderedArticles, article -> generateArticle(article, renderer));
@@ -130,8 +172,6 @@ public final class Generator {
         final @NotNull Renderer renderer
     ) {
         var outerArticle = orderedArticle;
-        final var sourceRelativePath = orderedArticle.sourceRelativePath;
-        final var destinationRelativePath = PathUtils.changeExtension(sourceRelativePath, "html");
         while (true) {
             final var article = outerArticle;
             final var result = ConditionContext.withRestart("reload-article-and-retry", restart -> {
@@ -139,7 +179,7 @@ public final class Generator {
                     trace.use();
                     final var articleToRender =
                         new ArticleToRender(article.article, article.predecessorUri, article.successorUri);
-                    serializeDomTree(destinationRelativePath, renderer.renderArticle(articleToRender));
+                    serializeDomTree(article.target.destinationPath(), renderer.renderArticle(articleToRender));
                     return stripSections(article);
                 }
             });
@@ -151,17 +191,17 @@ public final class Generator {
     }
 
     private @NotNull OrderedArticle reloadWithSameDate(final @NotNull OrderedArticle originalArticle) {
-        final var sourceRelativePath = originalArticle.sourceRelativePath;
+        final var target = originalArticle.target;
         final var originalDate = originalArticle.article.date();
-        try (final var trace = new Trace(() -> "Reloading article from " + sourceRelativePath)) {
+        try (final var trace = new Trace(() -> "Reloading article from " + target.sourcePath())) {
             trace.use();
             while (true) {
-                final var article = loadArticle(sourceRelativePath);
+                final var article = loadArticle(target);
                 final var newDate = article.article().date();
                 if (newDate.equals(originalDate)) {
                     return new OrderedArticle(
                         article.article,
-                        sourceRelativePath,
+                        target,
                         originalArticle.predecessorUri,
                         originalArticle.successorUri
                     );
@@ -187,8 +227,8 @@ public final class Generator {
         }
     }
 
-    private @NotNull LoadedArticle loadArticle(final @NotNull Path sourceRelativePath) {
-        final var fullSourcePath = sourceDirectory.resolve(sourceRelativePath);
+    private @NotNull LoadedArticle loadArticle(final @NotNull Target target) {
+        final var fullSourcePath = sourceDirectory.resolve(target.sourcePath());
         while (true) {
             final var article = ConditionContext.withRestart("reload-article-and-retry", restart -> {
                 try (final var trace = new Trace(() -> "Loading article from " + fullSourcePath)) {
@@ -203,7 +243,7 @@ public final class Generator {
                 }
             });
             if (article != null) {
-                return new LoadedArticle(article, sourceRelativePath);
+                return new LoadedArticle(article, target);
             }
         }
     }
@@ -220,7 +260,7 @@ public final class Generator {
                 innerArticle.topics(),
                 new Section(rootSection.identifier(), rootSection.header(), ImmutableList.empty(), rootSection.body())
             ),
-            orderedArticle.sourceRelativePath
+            orderedArticle.target
         ).toArchivedArticle();
     }
 
@@ -315,6 +355,17 @@ public final class Generator {
         }
     }
 
+    private static void ensureDirectoryExists(final @NotNull Path path) {
+        try (final var trace = new Trace(() -> "Ensuring directory exists: " + path)) {
+            trace.use();
+            Files.createDirectory(path);
+        } catch (final FileAlreadyExistsException e) {
+            // No need to do anything if it already exists.
+        } catch (final IOException e) {
+            throw ConditionContext.error(new IOExceptionCondition(e));
+        }
+    }
+
     private static @NotNull Renderer makeArticleRenderer() {
         return new Renderer(HeaderRenderImpl.instance);
     }
@@ -323,6 +374,7 @@ public final class Generator {
         return new Renderer(HeaderRenderMode.Skip.instance());
     }
 
+    static final String staticSubdirectoryName = "static";
     static final String pagesSubdirectoryName = "pages";
     static final String archivesSubdirectoryName = "archives";
     private static final Path archivesSubdirectoryPath = Path.of(archivesSubdirectoryName);
@@ -349,13 +401,13 @@ public final class Generator {
         private static final HeaderRenderImpl instance = new HeaderRenderImpl();
     }
 
-    private record LoadedArticle(@NotNull Article article, @NotNull Path sourceRelativePath) {
+    private record LoadedArticle(@NotNull Article article, @NotNull Target target) {
         private @NotNull DomainRelativeUri destinationUri() {
-            return new DomainRelativeUri(PathUtils.changeExtension(sourceRelativePath, "html"));
+            return new DomainRelativeUri(target.destinationPath());
         }
 
         private @NotNull String identifier() {
-            final var fileName = sourceRelativePath.getFileName();
+            final var fileName = target.sourcePath().getFileName();
             assert fileName != null;
             final var string = fileName.toString();
             final var dotIndex = string.lastIndexOf('.');
@@ -369,7 +421,7 @@ public final class Generator {
 
     private record OrderedArticle(
         @NotNull Article article,
-        @NotNull Path sourceRelativePath,
+        @NotNull Target target,
         @Nullable DomainRelativeUri predecessorUri,
         @Nullable DomainRelativeUri successorUri
     ) {
