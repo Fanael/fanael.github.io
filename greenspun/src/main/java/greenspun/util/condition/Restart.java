@@ -16,8 +16,9 @@ public final class Restart {
     Restart(final @NotNull String name) {
         final var context = ConditionContext.localContext();
         next = context.firstRestart;
-        context.firstRestart = this;
         this.name = name;
+        ownerContext = context;
+        context.firstRestart = this;
     }
 
     /**
@@ -41,11 +42,16 @@ public final class Restart {
     // NB: since restarts are only created by the condition context and not user code, this can be a package-private
     // method instead of public close required by AutoCloseable.
     void unlink() {
-        final var context = ConditionContext.localContext();
-        assert context.firstRestart == this : "Restart chain corrupt";
-        context.firstRestart = next;
+        checkUnlinkInvariants();
+        ownerContext.firstRestart = next;
+    }
+
+    private void checkUnlinkInvariants() {
+        assert ownerContext == ConditionContext.localContext() : "Restart unlinked by a different thread";
+        assert ownerContext.firstRestart == this : "Restart chain corrupt";
     }
 
     final @Nullable Restart next;
     private final @NotNull String name;
+    private final @NotNull ConditionContext ownerContext;
 }

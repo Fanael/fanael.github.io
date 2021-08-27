@@ -21,9 +21,9 @@ public final class Handler implements AutoCloseable {
     public Handler(final @NotNull HandlerProcedure procedure) {
         final var context = ConditionContext.localContext();
         next = context.firstHandler;
-        context.firstHandler = this;
         this.procedure = procedure;
-        ownerThread = Thread.currentThread();
+        ownerContext = context;
+        context.firstHandler = this;
     }
 
     /**
@@ -38,21 +38,24 @@ public final class Handler implements AutoCloseable {
      */
     @Override
     public void close() {
-        assert ownerThread == Thread.currentThread() : "Handler closed by a different thread";
-        final var context = ConditionContext.localContext();
-        assert context.firstHandler == this : "Handler chain corrupt";
-        context.firstHandler = next;
+        checkUnlinkInvariants();
+        ownerContext.firstHandler = next;
     }
 
     void handle(final @NotNull SignaledCondition condition) {
         procedure.handle(condition);
     }
 
-    boolean usableIn(final @NotNull Thread thread) {
-        return ownerThread == thread || procedure instanceof HandlerProcedure.ThreadSafe;
+    boolean usableIn(final @NotNull ConditionContext context) {
+        return ownerContext == context || procedure instanceof HandlerProcedure.ThreadSafe;
+    }
+
+    private void checkUnlinkInvariants() {
+        assert ownerContext == ConditionContext.localContext() : "Handler closed by a different thread";
+        assert ownerContext.firstHandler == this : "Handler chain corrupt";
     }
 
     final @Nullable Handler next;
     private final @NotNull HandlerProcedure procedure;
-    private final @NotNull Thread ownerThread;
+    private final @NotNull ConditionContext ownerContext;
 }

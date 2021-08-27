@@ -36,9 +36,11 @@ public final class Trace implements AutoCloseable {
     }
 
     private Trace(final @NotNull Object object) {
-        next = firstTrace.get();
-        firstTrace.set(this);
+        final var context = localContext();
+        next = context.firstTrace;
         messageOrSupplier = object;
+        ownerContext = context;
+        context.firstTrace = this;
     }
 
     /**
@@ -63,13 +65,13 @@ public final class Trace implements AutoCloseable {
      */
     @Override
     public void close() {
-        assert firstTrace.get() == this : "Trace chain corrupt";
-        firstTrace.set(next);
+        checkUnlinkInvariants();
+        ownerContext.firstTrace = next;
     }
 
     @SuppressWarnings("MethodOnlyUsedFromInnerClass")
     private @NotNull String message() {
-        return (messageOrSupplier instanceof String s) ? s : runSupplier();
+        return (messageOrSupplier instanceof String string) ? string : runSupplier();
     }
 
     private @NotNull String runSupplier() {
@@ -80,16 +82,30 @@ public final class Trace implements AutoCloseable {
         return string;
     }
 
-    private static final ThreadLocal<@Nullable Trace> firstTrace = new ThreadLocal<>();
+    private void checkUnlinkInvariants() {
+        assert ownerContext == localContext() : "Trace closed by a different thread";
+        assert ownerContext.firstTrace == this : "Trace chain corrupt";
+    }
+
+    private static @NotNull Context localContext() {
+        return context.get();
+    }
+
+    private static final ThreadLocal<@NotNull Context> context = ThreadLocal.withInitial(Context::new);
 
     private final @Nullable Trace next;
     // If a String, it's a message, otherwise it's assumed to be a MessageSupplier.
     private @NotNull Object messageOrSupplier;
+    private final @NotNull Context ownerContext;
+
+    private static final class Context {
+        private @Nullable Trace firstTrace = null;
+    }
 
     private static final class IterableImpl implements Iterable<@NotNull String> {
         @Override
         public @NotNull Iterator<@NotNull String> iterator() {
-            return new IteratorImpl(firstTrace.get());
+            return new IteratorImpl(localContext().firstTrace);
         }
 
         private static final IterableImpl instance = new IterableImpl();

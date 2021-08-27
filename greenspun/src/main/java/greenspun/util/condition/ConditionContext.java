@@ -161,9 +161,8 @@ public final class ConditionContext {
     }
 
     private void signal(final @NotNull SignaledCondition condition) {
-        final var currentThread = Thread.currentThread();
         for (var handler = findFirstHandler(); handler != null; handler = handler.next) {
-            if (!handler.usableIn(currentThread)) {
+            if (!handler.usableIn(this)) {
                 continue;
             }
             final var currentSave = currentHandler;
