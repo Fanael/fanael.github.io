@@ -29,9 +29,6 @@ public final class PathUtils {
         final var newNameString = (dotIndex == -1)
             ? (nameString + '.' + newExtension)
             : (nameString.substring(0, dotIndex + 1) + newExtension);
-        final var parent = path.getParent();
-        return (parent == null)
-            ? path.getFileSystem().getPath(newNameString)
-            : parent.resolve(newNameString);
+        return path.resolveSibling(newNameString);
     }
 }
