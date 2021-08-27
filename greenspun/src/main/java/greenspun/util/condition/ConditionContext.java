@@ -76,7 +76,7 @@ public final class ConditionContext {
      * As this method is sometimes called as a part of cleanup process during stack unwinding, handlers are
      * <strong>not allowed</strong> to unwind to a restart point as a response to that condition.
      */
-    public static <E extends Throwable> void withSuppressedExceptions(final @NotNull ThrowingCallback callback) {
+    public static void withSuppressedExceptions(final @NotNull ThrowingCallback callback) {
         try {
             callback.run();
         } catch (final Exception e) {
