@@ -137,17 +137,14 @@ public final class CollectionExecutorService {
         private void recover(final @NotNull ExecutionException executionException) {
             needsCancellation = true;
             final var cause = executionException.getCause();
-            if (cause instanceof Unwind unwind) {
+            switch (cause) {
                 // Cross-thread unwind to a restart found, rethrow it to continue unwinding in the parent thread.
-                throw SneakyThrow.doThrow(unwind);
-            } else if (cause instanceof InterruptedException) {
+                case Unwind unwind -> throw SneakyThrow.doThrow(unwind);
                 // Continue looking, some other future will likely have a more concrete throwable.
-                foundInterrupt = true;
-            } else if (cause instanceof Error error) {
+                case InterruptedException ignored -> foundInterrupt = true;
                 // Errors should be passed through directly.
-                throw error;
-            } else {
-                throw new AssertionError("An exception escaped from a worker through a future", cause);
+                case Error error -> throw error;
+                default -> throw new AssertionError("An exception escaped from a worker through a future", cause);
             }
         }
 

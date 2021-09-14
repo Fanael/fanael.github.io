@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
-import greenspun.util.UnreachableCodeReachedError;
 import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import org.jetbrains.annotations.NotNull;
@@ -41,12 +40,9 @@ public final class Verifier {
     }
 
     private void verify(final @NotNull Node node, final @NotNull Context context) {
-        if (node instanceof Node.Text) {
-            verifyTextNode(context);
-        } else if (node instanceof Node.Element element) {
-            verifyElement(element, context);
-        } else {
-            throw new UnreachableCodeReachedError();
+        switch (node) {
+            case Node.Text ignored -> verifyTextNode(context);
+            case Node.Element element -> verifyElement(element, context);
         }
     }
 
@@ -161,16 +157,11 @@ public final class Verifier {
     }
 
     private static @Nullable Context getEffectiveChildContext(final @NotNull Tag tag, final @NotNull Context context) {
-        final var childContext = tag.childContext();
-        if (childContext instanceof Context c) {
-            return c;
-        } else if (childContext instanceof ChildContext.None) {
-            return null;
-        } else if (childContext instanceof ChildContext.Transparent) {
-            return context;
-        } else {
-            throw new UnreachableCodeReachedError();
-        }
+        return switch (tag.childContext()) {
+            case Context c -> c;
+            case ChildContext.None ignored -> null;
+            case ChildContext.Transparent ignored -> context;
+        };
     }
 
     static final AttributeVerifier attributeIsBoolean =

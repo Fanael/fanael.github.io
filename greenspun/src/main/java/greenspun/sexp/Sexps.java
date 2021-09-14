@@ -3,7 +3,6 @@
 package greenspun.sexp;
 
 import java.math.BigInteger;
-import greenspun.util.UnreachableCodeReachedError;
 import greenspun.util.collection.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -50,13 +49,11 @@ public final class Sexps {
      * Note that empty lists represent the known symbol {@code nil}.
      */
     public static @Nullable Sexp.Symbol asSymbol(final @NotNull Sexp sexp) {
-        if (sexp instanceof Sexp.Symbol symbol) {
-            return symbol;
-        } else if (sexp instanceof Sexp.List list) {
-            return list.value().isEmpty() ? Sexp.KnownSymbol.NIL : null;
-        } else {
-            return null;
-        }
+        return switch (sexp) {
+            case Sexp.Symbol symbol -> symbol;
+            case Sexp.List list && list.value().isEmpty() -> Sexp.KnownSymbol.NIL;
+            default -> null;
+        };
     }
 
     /**
@@ -92,16 +89,11 @@ public final class Sexps {
         }
 
         private void appendDispatch(final @NotNull Sexp sexp, final int level) {
-            if (sexp instanceof Sexp.Integer integer) {
-                append(integer.value());
-            } else if (sexp instanceof Sexp.String string) {
-                append(string.value());
-            } else if (sexp instanceof Sexp.List list) {
-                append(list.value(), level);
-            } else if (sexp instanceof Sexp.Symbol symbol) {
-                append(symbol);
-            } else {
-                throw new UnreachableCodeReachedError();
+            switch (sexp) {
+                case Sexp.Integer integer -> append(integer.value());
+                case Sexp.String string -> append(string.value());
+                case Sexp.List list -> append(list.value(), level);
+                case Sexp.Symbol symbol -> append(symbol);
             }
         }
 

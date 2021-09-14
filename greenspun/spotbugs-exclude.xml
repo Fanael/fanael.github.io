@@ -10,4 +10,14 @@
     <Match>
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
+    <!-- Temporarily disable these until SpotBugs starts recognizing pattern matching switch -->
+    <Match>
+        <Bug pattern="BC_UNCONFIRMED_CAST"/>
+    </Match>
+    <Match>
+        <Bug pattern="BC_UNCONFIRMED_CAST_OF_RETURN_VALUE"/>
+    </Match>
+    <Match>
+        <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
+    </Match>
 </FindBugsFilter>

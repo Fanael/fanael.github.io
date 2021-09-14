@@ -121,15 +121,15 @@ public final class ImmutableList<T> implements List<T>, RandomAccess {
      * Returns {@code true} iff the given object is a {@link List} of the same size containing equal elements in the
      * same order.
      */
+    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass") // It does, IDEA just doesn't recognize the switch.
+    @SuppressFBWarnings(value = "BC_EQUALS_METHOD_SHOULD_WORK_FOR_ALL_OBJECTS", justification = "It does")
     @Override
     public boolean equals(final @Nullable Object object) {
-        if (object instanceof ImmutableList<?> list) {
-            return Arrays.equals(items, list.items);
-        }
-        if (object instanceof List<?> list) {
-            return equalsFallback(list);
-        }
-        return false;
+        return switch (object) {
+            case ImmutableList<?> list -> Arrays.equals(items, list.items);
+            case List<?> list -> equalsFallback(list);
+            case null, default -> false;
+        };
     }
 
     /**

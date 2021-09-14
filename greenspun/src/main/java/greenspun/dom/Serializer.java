@@ -4,7 +4,6 @@ package greenspun.dom;
 
 import java.io.IOException;
 import java.io.Writer;
-import greenspun.util.UnreachableCodeReachedError;
 import greenspun.util.collection.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,18 +50,17 @@ public final class Serializer {
     }
 
     private void serializeNode(final @NotNull Node node) throws IOException {
-        if (node instanceof Node.Text text) {
-            serializeString(text.text(), TextEscaper.instance);
-        } else if (node instanceof Node.Element element) {
-            final var tag = element.tag();
-            final var tagSerializer = tag.elementSerializer();
-            if (tagSerializer == null) {
-                serializeDefault(element);
-            } else {
-                tagSerializer.serialize(this, element);
+        switch (node) {
+            case Node.Text text -> serializeString(text.text(), TextEscaper.instance);
+            case Node.Element element -> {
+                final var tag = element.tag();
+                final var tagSerializer = tag.elementSerializer();
+                if (tagSerializer == null) {
+                    serializeDefault(element);
+                } else {
+                    tagSerializer.serialize(this, element);
+                }
             }
-        } else {
-            throw new UnreachableCodeReachedError();
         }
     }
 
@@ -73,22 +71,24 @@ public final class Serializer {
 
     private void serializeAttributes(final @NotNull ImmutableList<@NotNull Attribute> attributes) throws IOException {
         for (final var attribute : attributes) {
-            if (attribute instanceof Attribute.Boolean booleanAttr) {
-                if (booleanAttr.value()) {
-                    serializeAttributeName(booleanAttr.name());
+            switch (attribute) {
+                case Attribute.Boolean booleanAttr -> {
+                    if (booleanAttr.value()) {
+                        serializeAttributeName(booleanAttr.name());
+                    }
                 }
-            } else if (attribute instanceof Attribute.Integer integerAttr) {
-                serializeAttributeName(integerAttr.name());
-                writer.write("=\"");
-                writer.write(integerAttr.value().toString());
-                writer.write('"');
-            } else if (attribute instanceof Attribute.String stringAttr) {
-                serializeAttributeName(stringAttr.name());
-                writer.write("=\"");
-                serializeString(stringAttr.value(), AttributeEscaper.instance);
-                writer.write('"');
-            } else {
-                throw new UnreachableCodeReachedError();
+                case Attribute.Integer integerAttr -> {
+                    serializeAttributeName(integerAttr.name());
+                    writer.write("=\"");
+                    writer.write(integerAttr.value().toString());
+                    writer.write('"');
+                }
+                case Attribute.String stringAttr -> {
+                    serializeAttributeName(stringAttr.name());
+                    writer.write("=\"");
+                    serializeString(stringAttr.value(), AttributeEscaper.instance);
+                    writer.write('"');
+                }
             }
         }
     }

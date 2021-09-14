@@ -92,16 +92,19 @@ public final class HtslConverter {
             }
             final var attributeName = key.symbolName().substring(1);
             final var value = (i + 1 < size) ? attributes.get(i + 1) : Sexp.KnownSymbol.NIL;
-            if (value instanceof Sexp.String string) {
-                builder.set(attributeName, string.value());
-            } else if (value instanceof Sexp.Integer integer) {
-                builder.set(attributeName, integer.value());
-            } else if (Sexps.isNil(value)) {
-                builder.set(attributeName, false);
-            } else if (value == Sexp.KnownSymbol.T) {
-                builder.set(attributeName, true);
-            } else {
-                throw signalError("Don't know what to do with this attribute value: " + Sexps.prettyPrint(value));
+            switch (value) {
+                case Sexp.String string -> builder.set(attributeName, string.value());
+                case Sexp.Integer integer -> builder.set(attributeName, integer.value());
+                default -> {
+                    if (Sexps.isNil(value)) {
+                        builder.set(attributeName, false);
+                    } else if (value == Sexp.KnownSymbol.T) {
+                        builder.set(attributeName, true);
+                    } else {
+                        throw signalError(
+                            "Don't know what to do with this attribute value: " + Sexps.prettyPrint(value));
+                    }
+                }
             }
         }
     }
