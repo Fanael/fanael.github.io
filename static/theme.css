@@ -7,6 +7,7 @@
 }
 
 html {
+    --box-shadow-color: #00000018;
     color-scheme: light dark;
     font-family: serif;
     line-height: 1.25;
@@ -14,8 +15,20 @@ html {
 
 @media screen {
     html {
-        background-color: #ddc;
-        color: #111;
+        background-color: #eee;
+        background-image: linear-gradient(to bottom,
+            #d52d000e 0%, #d52d000e 5.714%,
+            #ef76270e 15.714%, #ef76270e 21.429%,
+            #ff9a560e 31.429%, #ff9a560e 37.143%,
+            #ffffff0e 47.143%, #ffffff0e 52.857%,
+            #d162a40e 62.857%, #d162a40e 68.571%,
+            #b556900e 78.571%, #b556900e 84.286%,
+            #a302620e 94.286%);
+        color: #11091c;
+        min-height: 100%;
+    }
+
+    body {
         margin: 0 auto;
         max-width: 93.75%;
         width: 100ch;
@@ -30,7 +43,7 @@ html {
 }
 
 a:link {
-    color: #149;
+    color: #2431a9;
 }
 
 a:visited {
@@ -38,7 +51,7 @@ a:visited {
 }
 
 a:active {
-    color: #941;
+    color: #841;
 }
 
 ul, ol {
@@ -191,7 +204,7 @@ aside {
 }
 
 em, strong {
-    color: #701;
+    color: #98362a;
 }
 
 /* Figures, code blocks and syntax highlighting */
@@ -214,9 +227,14 @@ figure, pre.code-block {
 
 pre.code-block {
     padding: 0.5em 1ch;
+}
 
-    border: thin solid #aaa;
-    border-radius: 1.5ch;
+@media screen {
+    pre.code-block {
+        background-color: #ddc3;
+        border-radius: 1.5ch;
+        box-shadow: 0 0 1.5ch 1ch var(--box-shadow-color);
+    }
 }
 
 @media screen {
@@ -334,22 +352,23 @@ table.perf-stat td:nth-child(4) {
     }
 
     thead, tfoot {
-        background-color: #eed;
+        background-color: #e5d1d488;
     }
 
     tbody > tr:nth-child(2n) {
-        background-color: #ccb;
+        background-color: #ddc4;
     }
 
     table tr:hover {
-        background-color: #dcd;
+        background-color: #ece;
     }
 }
 
 /* Table of contents */
 .toc {
+    background-color: #e5d1d444;
     border-radius: 1.5ch;
-    border: thin dashed #777;
+    box-shadow: 0 0 1.5ch 1ch var(--box-shadow-color);
     padding: 1ch;
 }
 
@@ -426,76 +445,54 @@ article:not(:last-child) .read-full {
 /* Dark mode */
 @media only screen and (prefers-color-scheme: dark) {
     html {
-        background-color: #112;
-        color: #ddd;
+        --box-shadow-color: #0007;
+        background-color: #191919;
+        background-image: none;
+        color: #eee;
     }
 
     a:link {
-        color: #ad8;
+        color: #a1abda;
     }
 
     a:visited {
-        color: #a8d;
+        color: #7edca4;
     }
 
     a:active {
-        color: #da8;
+        color: #e28382;
     }
 
-    article header p {
-        color: #bbb;
+    .c-m, .c-gd {
+        color: #abf;
     }
 
-    em, strong {
-        color: #aec;
-    }
-
-    figure, pre.code-block, pre.code-block .language {
-        border-color: #555;
-    }
-
-    .c-k, .c-se {
-        color: #e77;
-    }
-
-    .c-s, .c-gi {
+    .c-s, .c-gi, em, strong {
         color: #7ea;
     }
 
-    .c-m {
-        color: #7ee;
-    }
-
-    .c-c {
-        color: #aaa;
-    }
-
-    .c-gh, .c-gu {
-        color: #eac;
-    }
-
-    .c-gd {
-        color: #aae;
-    }
-
-    td, th {
-        border-color: #999;
+    .c-k, .c-se, .c-gh, .c-gu {
+        color: #f88;
     }
 
     thead, tfoot {
-        background-color: #001;
+        background-color: #111;
     }
 
-    tbody > tr:nth-child(2n) {
-        background-color: #223;
+    figure, pre.code-block, pre.code-block .language, td, th {
+        border-color: #888;
+    }
+
+    pre.code-block, .toc, tbody > tr:nth-child(2n) {
+        background-color: #2b2b2b;
     }
 
     table tr:hover {
-        background-color: #211;
+        background-color: #223;
     }
 
-    #footer li {
-        color: #aaa;
+    .c-c, #footer li, article header p {
+        color: #999;
     }
 }
 
