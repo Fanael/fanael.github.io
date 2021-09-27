@@ -185,7 +185,7 @@ li > p {
     text-indent: 0;
 }
 
-aside, .note {
+aside, .info {
     border-radius: 1.5ch;
     margin: 0.5em 0;
     padding: 0.25em 1ch;
@@ -199,7 +199,7 @@ aside {
     border-width: thin thick;
 }
 
-.note {
+.info {
     border: medium solid #658;
 }
 

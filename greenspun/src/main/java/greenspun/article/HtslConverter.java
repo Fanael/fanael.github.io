@@ -202,7 +202,7 @@ public final class HtslConverter {
     ) {
         return Node.build(Tag.DIV, div -> {
             convertAttributes(div, attributes);
-            div.set("class", "note");
+            div.set("class", "info");
             convertChildren(div, children);
         });
     }
