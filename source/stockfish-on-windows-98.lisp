@@ -17,7 +17,7 @@
      ((a :href "https://stockfishchess.org/") "Stockfish")
      " run on Windows 98? There's an immediate problem with that: Stockfish is written in C++17, which is the still-current, at the time of writing, revision of the C++ language; surely there are no C++17 capable compilers that can still target something as old as Windows 98?")
 
-  ((div :class "note")
+  (info-box
    (p "Disclaimer: in this article, by \"Windows 98\" I mean Windows 98 second edition with the main files of the "
       ((a :href "https://www.techtalk.cc/viewtopic.php?t=65") "unofficial service pack")
       " installed, which is a convenient bundle of official and unofficial patches. I don't care about Windows 98 first edition, nor the second edition "

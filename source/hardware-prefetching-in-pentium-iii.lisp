@@ -100,7 +100,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
   :header "Coppermine"
   (figure
    (figcaption "Performance event counts for " (em "heap") " sort on Coppermine")
-   ((div :class "holder")
+   (figcontent
     ((table :class "perf-stat")
      (thead
       (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))
@@ -116,7 +116,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
       (tr (th "Elapsed time") (td "33.307") (td "seconds") (td) (td))))))
   (figure
    (figcaption "Performance event counts for " (em "shell") " sort on Coppermine")
-   ((div :class "holder")
+   (figcontent
     ((table :class "perf-stat")
      (thead
       (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))
@@ -140,7 +140,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
   :header "Tualatin"
   (figure
    (figcaption "Performance event counts for " (em "heap") " sort on Tualatin")
-   ((div :class "holder")
+   (figcontent
     ((table :class "perf-stat")
      (thead
       (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))
@@ -157,7 +157,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
       (tr (th "Elapsed time") (td "31.404") (td "seconds") (td) (td))))))
   (figure
    (figcaption "Performance event counts for " (em "shell") " sort on Tualatin")
-   ((div :class "holder")
+   (figcontent
     ((table :class "perf-stat")
      (thead
       (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))
@@ -188,7 +188,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
   (p "This is not a Pentium III. It's a Pentium M, it's not even the original P6 anymore, it contains many improvements compared to its predecessor, most of which survive to this day in modern P6 descendants. It also has significantly bigger cache and faster processor-chipset, and thus processor-memory, interface. But let's still see how it handles this test, because this is the CPU for which the performance events used are documented, and out of sheer curiosity.")
   (figure
    (figcaption "Performance event counts for " (em "heap") " sort on Dothan Pentium M")
-   ((div :class "holder")
+   (figcontent
     ((table :class "perf-stat")
      (thead
       (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))
@@ -205,7 +205,7 @@ $ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc && time ./a.out # Shell sor
       (tr (th "Elapsed time") (td "16.903") (td "seconds") (td) (td))))))
   (figure
    (figcaption "Performance event counts for " (em "shell") " sort on Dothan Pentium M")
-   ((div :class "holder")
+   (figcontent
     ((table :class "perf-stat")
      (thead
       (tr (th "Event") (th "Value") (th "Unit") (th "Comment") (th "Time active")))

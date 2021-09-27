@@ -170,10 +170,8 @@ public final class HtslConverter {
     ) {
         return Node.build(Tag.FIGURE, figure -> {
             figure.appendBuild(Tag.FIGCAPTION, figcaption -> convertChildren(figcaption, children));
-            figure.appendBuild(Tag.DIV, div -> {
-                div.set("class", "holder");
-                div.appendBuild(Tag.IMG, img -> convertAttributes(img, attributes));
-            });
+            figure.append(buildFigcontent(
+                figcontent -> figcontent.appendBuild(Tag.IMG, img -> convertAttributes(img, attributes))));
         });
     }
 
@@ -188,6 +186,27 @@ public final class HtslConverter {
         });
     }
 
+    private @NotNull Node expandFigcontent(
+        final @NotNull ImmutableList<Sexp> attributes,
+        final @NotNull ImmutableList<Sexp> children
+    ) {
+        return buildFigcontent(figcontent -> {
+            convertAttributes(figcontent, attributes);
+            convertChildren(figcontent, children);
+        });
+    }
+
+    private @NotNull Node expandInfoBox(
+        final @NotNull ImmutableList<Sexp> attributes,
+        final @NotNull ImmutableList<Sexp> children
+    ) {
+        return Node.build(Tag.DIV, div -> {
+            convertAttributes(div, attributes);
+            div.set("class", "note");
+            convertChildren(div, children);
+        });
+    }
+
     private void convertChildren(
         final @NotNull Node.ElementBuilder builder,
         final @NotNull ImmutableList<Sexp> children
@@ -195,6 +214,13 @@ public final class HtslConverter {
         for (final var child : children) {
             builder.append(convertForm(child));
         }
+    }
+
+    private static @NotNull Node.Element buildFigcontent(final @NotNull Node.BuildFunction function) {
+        return Node.build(Tag.DIV, div -> {
+            function.build(div);
+            div.set("class", "holder");
+        });
     }
 
     private static @NotNull UnhandledErrorError signalError(final @NotNull String message) {
@@ -205,7 +231,9 @@ public final class HtslConverter {
         Sexp.KnownSymbol.CODE_BLOCK, HtslConverter::expandCodeBlock,
         Sexp.KnownSymbol.HIGHLIGHTED_CODE, HtslConverter::expandHighlightedCode,
         Sexp.KnownSymbol.IMAGE_FIGURE, HtslConverter::expandImageFigure,
-        Sexp.KnownSymbol.SIDENOTE, HtslConverter::expandSidenote
+        Sexp.KnownSymbol.SIDENOTE, HtslConverter::expandSidenote,
+        Sexp.KnownSymbol.FIGCONTENT, HtslConverter::expandFigcontent,
+        Sexp.KnownSymbol.INFO_BOX, HtslConverter::expandInfoBox
     );
     private static final Map<Sexp.Symbol, String> syntaxHighlightingLanguages = Map.of(
         Sexp.KnownSymbol.KW_CPLUSPLUS, "C++",
