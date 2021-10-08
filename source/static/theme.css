@@ -234,11 +234,6 @@ pre.code-block {
         background-color: #ddc3;
         border-radius: 1.5ch;
         box-shadow: 0 0 1.5ch 1ch var(--box-shadow-color);
-    }
-}
-
-@media screen {
-    pre.code-block {
         overflow: auto;
     }
 }
