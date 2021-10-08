@@ -225,13 +225,11 @@ public final class PygmentsServer implements AutoCloseable {
                     case ":done" -> {
                         break loop;
                     }
-                    case ":sr" -> accumulator.accumulate("", receiveSimpleString());
-                    case ":mr" -> accumulator.accumulate("", receiveMultilineString());
-                    case ":sh" -> {
+                    case ":s" -> {
                         final var cssClass = receiveSimpleString();
                         accumulator.accumulate(cssClass, receiveSimpleString());
                     }
-                    case ":mh" -> {
+                    case ":m" -> {
                         final var cssClass = receiveSimpleString();
                         accumulator.accumulate(cssClass, receiveMultilineString());
                     }

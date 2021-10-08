@@ -31,15 +31,13 @@ List of known commands:
    Response: A stream of tokens.
    Each token consists of one or more strings. The first string is always a
    simple string indicating the type of the token and its format:
-    - ":sr": simple raw, non-highlighted, text. The text itself follows.
-    - ":mr": multiline raw, non-highlighted, text. The text itself follows
-      (multiline string).
-    - ":sh": simple highlighted text. Two values follow:
+    - ":s": simple text. Two values follow:
        - a name of a CSS class indicating the type of this token
        - the text of the token
-    - ":mh": multiline highlighted text. Two values follow:
+    - ":m": multiline text. Two values follow:
        - a name of a CSS class indicating the type of this token
        - the text of the token itself (multiline string)
+   In either case, empty CSS class indicates an unstyled token.
    The simple strings ":done" and ":error" can also occur in place of a token
    type, with their usual semantics.
 '''
@@ -77,7 +75,7 @@ def _get_effective_class_name(token_type):
         if needs_styling is not None:
             break
         known_type = known_type.parent
-    return 'c-' + tok.STANDARD_TYPES[known_type] if needs_styling else None
+    return 'c-' + tok.STANDARD_TYPES[known_type] if needs_styling else ''
 
 _TOKEN_TYPE_CLASSES = {t: _get_effective_class_name(t) for t in tok.STANDARD_TYPES}
 
@@ -97,19 +95,11 @@ class _TokenStreamFormatter(fmt.Formatter):
     def format_unencoded(token_source, out):
         for token_type, value in token_source:
             class_name = _TOKEN_TYPE_CLASSES[token_type]
-            is_simple = '\n' not in value
-            if class_name:
-                if is_simple:
-                    out.write(f':sh\n{class_name}\n{value}\n')
-                else:
-                    out.write(f':mh\n{class_name}\n')
-                    _print_multiline_string(value, out)
+            if '\n' not in value:
+                out.write(f':s\n{class_name}\n{value}\n')
             else:
-                if is_simple:
-                    out.write(f':sr\n{value}\n')
-                else:
-                    out.write(':mr\n')
-                    _print_multiline_string(value, out)
+                out.write(f':m\n{class_name}\n')
+                _print_multiline_string(value, out)
 
 def _read_multiline_string():
     source_lines = []
