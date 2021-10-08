@@ -71,7 +71,7 @@ main li {
 }
 
 #top-header {
-    font-size: 202.7%;
+    font-size: 207.4%;
     font-variant: small-caps;
     padding: 1.25rem 0 1rem;
     text-align: center;
@@ -134,29 +134,29 @@ h4, h5, h6 {
 }
 
 h1 {
-    font-size: 180.2%;
+    font-size: 207.4%;
     font-variant: small-caps;
     padding-bottom: 0;
 }
 
 h2 {
-    font-size: 160.2%;
+    font-size: 172.8%;
 }
 
 h3 {
-    font-size: 142.4%;
+    font-size: 144%;
 }
 
 h4 {
-    font-size: 126.6%;
+    font-size: 120%;
 }
 
 h5 {
-    font-size: 112.5%;
+    font-size: 100%;
 }
 
 h6 {
-    font-size: 100%;
+    font-size: 83.33%;
 }
 
 article section:first-of-type {
