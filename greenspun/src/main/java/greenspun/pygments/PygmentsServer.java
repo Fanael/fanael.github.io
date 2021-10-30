@@ -14,6 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
 import greenspun.util.Trace;
+import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.Condition;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
@@ -77,7 +78,7 @@ public final class PygmentsServer implements AutoCloseable {
     /**
      * Highlights the syntax of the given code using the given language name for determining syntactic rules.
      * <p>
-     * If successful, returns an {@link ArrayList} of DOM {@link Node}s representing the highlighted code.
+     * If successful, returns an {@link ImmutableList} of DOM {@link Node}s representing the highlighted code.
      * <p>
      * It is safe for multiple threads to call this method on the same {@code PygmentsServer} instance at the same time
      * without external synchronization.
@@ -88,7 +89,7 @@ public final class PygmentsServer implements AutoCloseable {
      * <li>{@link PygmentsServerErrorCondition} if the Pygments server process reported an error.
      * </ul>
      */
-    public @NotNull ArrayList<@NotNull Node> highlightCode(
+    public @NotNull ImmutableList<@NotNull Node> highlightCode(
         final @NotNull String code,
         final @NotNull String languageName
     ) {
@@ -161,7 +162,7 @@ public final class PygmentsServer implements AutoCloseable {
             reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
         }
 
-        private @NotNull ArrayList<@NotNull Node> highlightCode(
+        private @NotNull ImmutableList<@NotNull Node> highlightCode(
             final @NotNull String code,
             final @NotNull String languageName
         ) {
@@ -213,7 +214,7 @@ public final class PygmentsServer implements AutoCloseable {
             }
         }
 
-        private @NotNull ArrayList<@NotNull Node> receiveNodeStream() throws IOException {
+        private @NotNull ImmutableList<@NotNull Node> receiveNodeStream() throws IOException {
             final var accumulator = new NodeAccumulator();
             loop:
             while (true) {
@@ -345,9 +346,9 @@ public final class PygmentsServer implements AutoCloseable {
             builder.append(string);
         }
 
-        private @NotNull ArrayList<@NotNull Node> finish() {
+        private @NotNull ImmutableList<@NotNull Node> finish() {
             flushBuilder();
-            return nodes;
+            return nodes.freeze();
         }
 
         private void flushBuilder() {
@@ -367,7 +368,7 @@ public final class PygmentsServer implements AutoCloseable {
             });
         }
 
-        private final ArrayList<@NotNull Node> nodes = new ArrayList<>();
+        private final ImmutableList.Builder<@NotNull Node> nodes = new ImmutableList.Builder<>();
         private final StringBuilder builder = new StringBuilder();
         private @NotNull String lastClass = "";
     }
