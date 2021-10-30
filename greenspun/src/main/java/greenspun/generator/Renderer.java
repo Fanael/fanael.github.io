@@ -116,6 +116,7 @@ public final class Renderer {
                 span.set("class", "language");
                 span.appendText(prettyLanguageName);
             });
+            pre.appendText("\n");
             buildFunction.build(pre);
         });
     }
