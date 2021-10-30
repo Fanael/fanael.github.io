@@ -63,7 +63,7 @@ public final class PygmentsCache {
             return cachedNode.node;
         }
         final var node = Renderer.wrapHighlightedCode(server.highlightCode(code, languageName), prettyName);
-        // If multiple threads try to add an entry with the same digest at the same time, just let the first one win
+        // If multiple threads try to add an entry with the same key at the same time, just let the first one win
         // and use its DOM subtree, as DOM nodes are immutable anyway.
         final var newCachedNode = map.putIfAbsent(key, new CacheValue(node, currentGeneration.get()));
         return (newCachedNode != null) ? newCachedNode.node : node;
