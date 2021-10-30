@@ -223,14 +223,10 @@ public final class PygmentsServer implements AutoCloseable {
                     case ":done" -> {
                         break loop;
                     }
-                    case ":s" -> {
-                        final var cssClass = receiveSimpleString();
-                        accumulator.accumulate(cssClass, receiveSimpleString());
-                    }
-                    case ":m" -> {
-                        final var cssClass = receiveSimpleString();
-                        accumulator.accumulate(cssClass, receiveMultilineString());
-                    }
+                    case ":sc" -> accumulator.setClass(receiveSimpleString());
+                    case ":nl" -> accumulator.append("\n");
+                    case ":s" -> accumulator.append(receiveSimpleString());
+                    case ":m" -> accumulator.append(receiveMultilineString());
                     case null, default -> throw recoverFromServerError(response);
                 }
             }
@@ -338,12 +334,16 @@ public final class PygmentsServer implements AutoCloseable {
     // use and make it easier on code that visits every DOM node, like the DOM verifier or serializer. Since we're
     // caching each highlighted snippet in DOM subtree form in the Pygments cache, this is worth it.
     private static final class NodeAccumulator {
-        private void accumulate(final @NotNull String cssClass, final @NotNull String string) {
-            if (!lastClass.equals(cssClass)) {
-                flushBuilder();
-                lastClass = cssClass;
-            }
+        private void append(final @NotNull String string) {
             builder.append(string);
+        }
+
+        private void setClass(final @NotNull String cssClass) {
+            if (lastClass.equals(cssClass)) {
+                return;
+            }
+            flushBuilder();
+            lastClass = cssClass;
         }
 
         private @NotNull ImmutableList<@NotNull Node> finish() {

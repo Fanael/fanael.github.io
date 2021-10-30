@@ -31,13 +31,15 @@ List of known commands:
    Response: A stream of tokens.
    Each token consists of one or more strings. The first string is always a
    simple string indicating the type of the token and its format:
-    - ":s": simple text. Two values follow:
-       - a name of a CSS class indicating the type of this token
-       - the text of the token
-    - ":m": multiline text. Two values follow:
-       - a name of a CSS class indicating the type of this token
-       - the text of the token itself (multiline string)
-   In either case, empty CSS class indicates an unstyled token.
+    - ":sc": sets the CSS class of following tokens. One simple string follows,
+      indicating the name of the CSS class. Empty string indicates that the
+      following tokens require no special styling. The implied initial value is
+      the empty string.
+    - ":nl": the token is a single literal line feed. No values follow.
+    - ":s": simple text. One simple string follows, indicating the text of the
+      token.
+    - ":m": multiline text. One *multiline* string follows, indicating the text
+      of the token.
    The simple strings ":done" and ":error" can also occur in place of a token
    type, with their usual semantics.
 '''
@@ -93,12 +95,19 @@ def _print_multiline_string(string, out):
 class _TokenStreamFormatter(fmt.Formatter):
     @staticmethod
     def format_unencoded(token_source, out):
+        current_class = ''
         for token_type, value in token_source:
             class_name = _TOKEN_TYPE_CLASSES[token_type]
-            if '\n' not in value:
-                out.write(f':s\n{class_name}\n{value}\n')
+            if current_class != class_name:
+                current_class = class_name
+                out.write(f':sc\n{class_name}\n')
+
+            if value == '\n':
+                out.write(':nl\n')
+            elif '\n' not in value:
+                out.write(f':s\n{value}\n')
             else:
-                out.write(f':m\n{class_name}\n')
+                out.write(':m\n')
                 _print_multiline_string(value, out)
 
 def _read_multiline_string():
