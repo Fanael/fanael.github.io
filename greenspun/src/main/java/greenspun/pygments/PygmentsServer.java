@@ -218,9 +218,6 @@ public final class PygmentsServer implements AutoCloseable {
             loop:
             while (true) {
                 final var response = reader.readLine();
-                if (response == null) {
-                    throw recoverFromServerError(null);
-                }
                 switch (response) {
                     case ":done" -> {
                         break loop;
@@ -233,7 +230,7 @@ public final class PygmentsServer implements AutoCloseable {
                         final var cssClass = receiveSimpleString();
                         accumulator.accumulate(cssClass, receiveMultilineString());
                     }
-                    default -> throw recoverFromServerError(response);
+                    case null, default -> throw recoverFromServerError(response);
                 }
             }
             return accumulator.finish();
