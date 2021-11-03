@@ -6,6 +6,13 @@
     padding: 0;
 }
 
+:focus {
+    outline-offset: 0.125em;
+    outline-offset: max(0.125em, 2px);
+    outline: 0.125em dotted currentcolor;
+    outline-width: max(0.125em, 2px);
+}
+
 html {
     --box-shadow-color: #00000018;
     color-scheme: light dark;
