@@ -32,6 +32,7 @@ html {
             #b5569010 78.571%, #b5569010 84.286%,
             #a3026210 94.286%);
         color: #11091c;
+        font-size: calc(1em + 0.1vh + 0.1vw);
         min-height: 100%;
     }
 
@@ -39,13 +40,6 @@ html {
         margin: 0 auto;
         max-width: 93.75%;
         width: 100ch;
-    }
-}
-
-@media only screen and (min-height: 50em) and (min-width: 50em) {
-    html {
-        font-size: calc(1em + 0.3vmin);
-        font-size: min(1em + 0.3vmin, 2em);
     }
 }
 
