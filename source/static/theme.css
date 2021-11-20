@@ -55,6 +55,10 @@ a:active {
     color: #841;
 }
 
+a:focus {
+    text-decoration-thickness: max(2px, 0.1em);
+}
+
 ul, ol {
     padding-left: 3ch;
 }
