@@ -291,7 +291,6 @@ figcaption p {
 
 figure .holder > * {
     margin: 0.5em auto;
-    vertical-align: bottom;
 }
 
 @media screen {
@@ -312,6 +311,7 @@ figure .holder > * {
 }
 
 figure img {
+    display: block;
     height: auto;
     max-width: 100%;
     width: auto;
