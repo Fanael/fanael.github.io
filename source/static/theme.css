@@ -108,7 +108,7 @@ main li {
         min-width: max-content;
 
         flex-basis: calc((40ch - 100%) * 1000);
-        flex-basis: clamp(min((40ch - 100%) * 1000, 33.33333%), (25ch - 100%) * 1000, 100%);
+        flex-basis: clamp(min((40ch - 100%) * 1000, 35%), (25ch - 100%) * 1000, 100%);
     }
 }
 
