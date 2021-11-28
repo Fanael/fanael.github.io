@@ -108,7 +108,7 @@ main li {
         min-width: max-content;
 
         flex-basis: calc((40ch - 100%) * 1000);
-        flex-basis: clamp(min((40ch - 100%) * 1000, 33.33333%), (25ch - 100%) * 1000, 100%);
+        flex-basis: clamp(min((40ch - 100%) * 1000, 35%), (25ch - 100%) * 1000, 100%);
     }
 }
 
@@ -291,7 +291,6 @@ figcaption p {
 
 figure .holder > * {
     margin: 0.5em auto;
-    vertical-align: bottom;
 }
 
 @media screen {
@@ -312,6 +311,7 @@ figure .holder > * {
 }
 
 figure img {
+    display: block;
     height: auto;
     max-width: 100%;
     width: auto;
