@@ -9,7 +9,7 @@
 :focus {
     outline-offset: 0.125em;
     outline-offset: max(0.125em, 2px);
-    outline: 0.125em dotted currentcolor;
+    outline: 0.125em dotted;
     outline-width: max(0.125em, 2px);
 }
 
@@ -323,7 +323,7 @@ table {
 }
 
 td, th {
-    border: thin solid currentcolor;
+    border: thin solid;
     padding: 0.2em 0.5ch;
 }
 
@@ -358,7 +358,7 @@ table.perf-stat td:nth-child(4) {
     }
 
     tbody > tr:nth-child(2n) {
-        background-color: #ddc5;
+        background-color: #cca3;
     }
 
     table tr:hover {
