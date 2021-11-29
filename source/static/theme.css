@@ -15,6 +15,7 @@
 
 html {
     --box-shadow-color: #00000018;
+    --box-shadow-specs: 0 0 0.75ch 0.5ch var(--box-shadow-color), 0 0 1.5ch 1ch var(--box-shadow-color);
     color-scheme: light dark;
     font-family: serif;
     line-height: 1.25;
@@ -240,7 +241,7 @@ pre.code-block {
     pre.code-block {
         background-color: #ddc3;
         border-radius: 1.5ch;
-        box-shadow: 0 0 1.5ch 1ch var(--box-shadow-color);
+        box-shadow: var(--box-shadow-specs);
         overflow: auto;
     }
 }
@@ -370,7 +371,7 @@ table.perf-stat td:nth-child(4) {
 .toc {
     background-color: #e5d1d444;
     border-radius: 1.5ch;
-    box-shadow: 0 0 1.5ch 1ch var(--box-shadow-color);
+    box-shadow: var(--box-shadow-specs);
     padding: 1ch;
 }
 
