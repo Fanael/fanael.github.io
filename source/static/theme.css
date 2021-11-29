@@ -358,7 +358,7 @@ table.perf-stat td:nth-child(4) {
     }
 
     tbody > tr:nth-child(2n) {
-        background-color: #ddc5;
+        background-color: #cca3;
     }
 
     table tr:hover {
