@@ -5,7 +5,7 @@ import com.github.spotbugs.snom.Effort
 
 plugins {
     id "application"
-    id "com.github.spotbugs" version "4.7.9"
+    id "com.github.spotbugs" version "5.0.0-rc.1"
 }
 
 repositories {
@@ -13,21 +13,21 @@ repositories {
 }
 
 dependencies {
-    compileOnly group: "org.jetbrains", name: "annotations", version: "22.0.0"
-    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.4.2"
+    compileOnly group: "org.jetbrains", name: "annotations", version: "23.0.0"
+    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.5.0"
     compileOnly project(":auki")
     annotationProcessor project(":auki")
-    testCompileOnly group: "org.jetbrains", name: "annotations", version: "22.0.0"
-    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.4.2"
+    testCompileOnly group: "org.jetbrains", name: "annotations", version: "23.0.0"
+    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.5.0"
     testCompileOnly project(":auki")
     testAnnotationProcessor project(":auki")
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.8.1"
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.8.2"
     testImplementation group: "org.assertj", name: "assertj-core", version: "3.21.0"
-    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.8.1"
+    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.8.2"
 }
 
 spotbugs {
-    toolVersion.set "4.4.2"
+    toolVersion.set "4.5.0"
     showProgress.set true
     includeFilter.set file("spotbugs-include.xml")
     excludeFilter.set file("spotbugs-exclude.xml")
