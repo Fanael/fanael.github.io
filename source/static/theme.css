@@ -52,7 +52,8 @@ a:visited {
     color: #819;
 }
 
-a:active {
+/* counteract specificity of page-internal visited link selector above */
+a:active:active {
     color: #841;
 }
 
