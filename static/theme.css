@@ -16,6 +16,7 @@
 html {
     --box-shadow-color: #00000018;
     --box-shadow-specs: 0 0 0.75ch 0.5ch var(--box-shadow-color), 0 0 1.5ch 1ch var(--box-shadow-color);
+    --basic-link-color: #2431a9;
     color-scheme: light dark;
     font-family: serif;
     line-height: 1.25;
@@ -44,16 +45,15 @@ html {
     }
 }
 
-a:link, a:visited[href^="#"] {
-    color: #2431a9;
-}
-
 a:visited {
     color: #819;
 }
 
-/* counteract specificity of page-internal visited link selector above */
-a:active:active {
+a:link, a[href^="#"] {
+    color: #2431a9;
+}
+
+a:active {
     color: #841;
 }
 
@@ -96,7 +96,6 @@ main li {
     display: inline-block;
     font-size: 112.5%;
     padding: 0 0.75ch;
-    text-align: center;
 }
 
 @supports (display: flex) and (min-width: max-content) {
@@ -191,7 +190,7 @@ article section .section-link > :first-child::before {
     }
 
     .section-link:not(:hover):not(:focus):not(:active) {
-        --link-color: #2431a9;
+        --link-color: var(--basic-link-color);
         --text-decoration: none;
         color: inherit;
     }
@@ -471,17 +470,18 @@ article:not(:last-child) .read-full {
 @media only screen and (prefers-color-scheme: dark) {
     html {
         --box-shadow-color: #0007;
+        --basic-link-color: #a1abda;
         background-color: #191919;
         background-image: none;
         color: #eee;
     }
 
-    a:link {
-        color: #a1abda;
-    }
-
     a:visited {
         color: #7edca4;
+    }
+
+    a:link, a[href^="#"] {
+        color: #a1abda;
     }
 
     a:active {
@@ -523,7 +523,7 @@ article:not(:last-child) .read-full {
 
 /* Print-friendly overrides */
 @media print {
-    nav, #skip-nav, .section-heading a {
+    nav, #skip-nav, .section-link > [aria-hidden] {
         display: none;
     }
 
