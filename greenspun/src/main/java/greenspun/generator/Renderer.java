@@ -389,7 +389,8 @@ public final class Renderer {
                         li.appendBuild(Tag.A, a -> {
                             a.set("rel", "prev");
                             a.set("href", predecessorUri.toString());
-                            a.appendText("← Older");
+                            a.append(Constants.decorativeLeftArrow);
+                            a.appendText("Older");
                         });
                     }
                 });
@@ -400,7 +401,8 @@ public final class Renderer {
                         li.appendBuild(Tag.A, a -> {
                             a.set("rel", "next");
                             a.set("href", successorUri.toString());
-                            a.appendText("Newer →");
+                            a.appendText("Newer");
+                            a.append(Constants.decorativeRightArrow);
                         });
                     }
                 });
@@ -483,9 +485,32 @@ public final class Renderer {
             });
         }));
 
+        private static final Attribute.String ariaHidden = new Attribute.String("aria-hidden", "true");
+
         private static final Node.Element topLink = Node.build(Tag.LI, li -> {
             li.set("class", "top");
-            li.append(renderSimpleLink("#skip-nav", "↑ Top ↑"));
+            li.appendBuild(Tag.A, a -> {
+                a.set("href", "#skip-nav");
+                a.appendBuild(Tag.SPAN, span -> {
+                    span.set(ariaHidden);
+                    span.appendText("↑ ");
+                });
+                a.appendText("Top");
+                a.appendBuild(Tag.SPAN, span -> {
+                    span.set(ariaHidden);
+                    span.appendText(" ↑");
+                });
+            });
+        });
+
+        private static final Node.Element decorativeLeftArrow = Node.build(Tag.SPAN, span -> {
+            span.set(ariaHidden);
+            span.appendText("← ");
+        });
+
+        private static final Node.Element decorativeRightArrow = Node.build(Tag.SPAN, span -> {
+            span.set(ariaHidden);
+            span.appendText(" →");
         });
 
         private static final Node.Element archivesLink = Node.build(Tag.LI,
@@ -494,7 +519,7 @@ public final class Renderer {
         private static final Node.Element simpleBottomNav = renderBottomNav(null, null);
 
         private static final Node.Element sectionLinkMarker = Node.build(Tag.SPAN, span -> {
-            span.set("aria-hidden", "true");
+            span.set(ariaHidden);
             span.appendText(" §");
         });
 
