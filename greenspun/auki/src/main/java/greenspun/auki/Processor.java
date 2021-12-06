@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.auki;
 
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import javax.annotation.processing.AbstractProcessor;
@@ -56,8 +58,8 @@ public final class Processor extends AbstractProcessor {
             error("An abstract or @Open class cannot be final", type);
         }
 
-        if (typeModifiers.contains(Modifier.ABSTRACT) && isAnnotatedOpen(type)) {
-            warn("The @Open annotation is redundant for abstract classes and interfaces", type);
+        if (!Collections.disjoint(typeModifiers, implicitlyOpenModifiers) && isAnnotatedOpen(type)) {
+            warn("The @Open annotation is redundant for abstract, sealed and non-sealed classes and interfaces", type);
         }
 
         forAllMethods(type, this::verifyMethodFinalOrOpen);
@@ -140,10 +142,13 @@ public final class Processor extends AbstractProcessor {
     }
 
     private static boolean isOpen(final Element element) {
-        return element.getModifiers().contains(Modifier.ABSTRACT) || isAnnotatedOpen(element);
+        return !Collections.disjoint(element.getModifiers(), implicitlyOpenModifiers) || isAnnotatedOpen(element);
     }
 
     private static boolean isAnnotatedOpen(final Element element) {
         return element.getAnnotation(Open.class) != null;
     }
+
+    private static final EnumSet<Modifier> implicitlyOpenModifiers =
+        EnumSet.of(Modifier.ABSTRACT, Modifier.SEALED, Modifier.NON_SEALED);
 }
