@@ -44,7 +44,7 @@ html {
     }
 }
 
-a:link {
+a:link, a:visited[href^="#"] {
     color: #2431a9;
 }
 
