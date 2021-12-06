@@ -175,13 +175,34 @@ article section {
     counter-increment: section;
 }
 
-article section .section-heading::before {
+article section .section-link > :first-child::before {
     content: counters(section, ".") ". ";
 }
 
-.section-heading a {
-    padding: 0 1ch;
-    text-decoration: none;
+.section-link > [aria-hidden] {
+    padding-left: 0.5ch;
+}
+
+@supports (--x: 0) {
+    .section-link {
+        --text-decoration: underline;
+        text-decoration-line: none;
+    }
+
+    .section-link:not(:hover):not(:focus):not(:active) {
+        --link-color: #2431a9;
+        --text-decoration: none;
+        color: inherit;
+    }
+
+    .section-link > :first-child {
+        text-decoration: var(--text-decoration);
+        text-decoration-thickness: inherit;
+    }
+
+    .section-link > [aria-hidden] {
+        color: var(--link-color, inherit);
+    }
 }
 
 p {

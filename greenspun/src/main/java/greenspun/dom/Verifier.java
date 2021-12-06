@@ -172,6 +172,7 @@ public final class Verifier {
         new AttributeTypeVerifier(Attribute.String.class, "incorrect type, string expected");
 
     private static final Map<String, AttributeVerifier> globalAttributeTypes = Map.of(
+        "aria-hidden", new AriaHiddenVerifier(),
         "aria-label", attributeIsString,
         "aria-labelledby", attributeIsString,
         "class", attributeIsString,
@@ -207,6 +208,15 @@ public final class Verifier {
         public void verify(final @NotNull AttributeVerificationContext context) {
             if (!type.isInstance(context.attribute)) {
                 context.recordError(message);
+            }
+        }
+    }
+
+    private static final class AriaHiddenVerifier implements AttributeVerifier {
+        @Override
+        public void verify(@NotNull final AttributeVerificationContext context) {
+            if (!(context.attribute instanceof Attribute.String string) || !"true".equals(string.value())) {
+                context.recordError("aria-hidden only accepts value of \"true\"");
             }
         }
     }

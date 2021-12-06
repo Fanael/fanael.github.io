@@ -266,11 +266,7 @@ public final class Renderer {
 
     private @NotNull Node.Element renderArticleHeader(final @NotNull Article article) {
         return Node.build(Tag.HEADER, header -> {
-            header.appendBuild(Tag.H1, h1 -> {
-                h1.set("class", "section-heading");
-                h1.appendText(article.title());
-                h1.append(Constants.rootSectionHeaderLink);
-            });
+            header.append(renderHeading(Tag.H1, "#main", article.title()));
             if (headerRenderMode.shouldRender()) {
                 header.append(renderPublicationDate(article.date()));
                 final var topicsNode = renderArticleTopics(article.topics());
@@ -355,19 +351,20 @@ public final class Renderer {
     private static @NotNull Node.Element renderSectionHeader(final @NotNull Section section, final int nestingLevel) {
         final var headingTag = Tag.byHtmlName("h" + Math.min(nestingLevel, 6));
         assert headingTag != null;
-        return Node.build(headingTag, heading -> {
-            heading.set("class", "section-heading");
-            heading.appendText(section.header());
-            heading.append(renderSectionHeaderLink(section.identifier().symbolName()));
-        });
+        return renderHeading(headingTag, '#' + section.identifier().symbolName(), section.header());
     }
 
-    private static @NotNull Node.Element renderSectionHeaderLink(final @NotNull String targetId) {
-        return Node.build(Tag.A, a -> {
-            a.set("href", '#' + targetId);
-            a.set("aria-label", "anchor");
-            a.appendText("§");
-        });
+    private static @NotNull Node.Element renderHeading(
+        final @NotNull Tag tag,
+        final @NotNull String target,
+        final @NotNull String text
+    ) {
+        return Node.build(tag, heading -> heading.appendBuild(Tag.A, a -> {
+            a.set("class", "section-link");
+            a.set("href", target);
+            a.appendBuild(Tag.SPAN, span -> span.appendText(text));
+            a.append(Constants.sectionLinkMarker);
+        }));
     }
 
     private static @NotNull Node.Element renderSimpleLink(final @NotNull String href, final @NotNull String text) {
@@ -496,7 +493,10 @@ public final class Renderer {
 
         private static final Node.Element simpleBottomNav = renderBottomNav(null, null);
 
-        private static final Node.Element rootSectionHeaderLink = renderSectionHeaderLink("main");
+        private static final Node.Element sectionLinkMarker = Node.build(Tag.SPAN, span -> {
+            span.set("aria-hidden", "true");
+            span.appendText(" §");
+        });
 
         private static final Node.Element tocLabel = Node.build(Tag.SPAN, span -> {
             span.set("id", "toc-label");
