@@ -184,6 +184,23 @@ article section .section-link > :first-child::before {
     user-select: none;
 }
 
+@media (min-width: 118em),
+(min-width: 95em) and (min-aspect-ratio: 1/4),
+(min-width: 85em) and (min-aspect-ratio: 1/2),
+(min-width: 75em) and (min-aspect-ratio: 1/1) {
+    .section-link {
+        display: inline-block;
+        position: relative;
+    }
+
+    .section-link > [aria-hidden] {
+        left: -2.25ch;
+        padding-right: 2.25ch;
+        position: absolute;
+        top: 0;
+    }
+}
+
 @supports (--x: 0) {
     .section-link {
         --text-decoration: underline;
