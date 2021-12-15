@@ -181,6 +181,7 @@ article section .section-link > :first-child::before {
 
 .section-link > [aria-hidden] {
     padding-left: 0.5ch;
+    user-select: none;
 }
 
 @supports (--x: 0) {
