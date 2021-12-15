@@ -14,12 +14,13 @@
 }
 
 html {
+    --basic-link-color: #2431a9;
     --box-shadow-color: #00000018;
     --box-shadow-specs: 0 0 0.75ch 0.5ch var(--box-shadow-color), 0 0 1.5ch 1ch var(--box-shadow-color);
-    --basic-link-color: #2431a9;
     color-scheme: light dark;
     font-family: serif;
     line-height: 1.25;
+    scroll-padding: 1.5em 0;
 }
 
 @media screen {
