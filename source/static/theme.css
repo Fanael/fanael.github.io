@@ -134,12 +134,14 @@ article header p {
 
 h1, h2, h3, h4, h5, h6 {
     font-weight: normal;
+    line-height: 1.375;
     padding: 0.5rem 0;
     page-break-after: avoid;
 }
 
 h4, h5, h6 {
     font-weight: bold;
+    line-height: 1.5;
 }
 
 h1 {
