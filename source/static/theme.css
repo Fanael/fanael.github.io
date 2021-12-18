@@ -117,7 +117,13 @@ main li {
 /* Articles */
 main {
     border-top: thin dotted #777;
-    line-height: 1.625;
+    line-height: 1.5;
+}
+
+@media (min-width: 50em) {
+    main {
+        line-height: 1.625;
+    }
 }
 
 article header {
