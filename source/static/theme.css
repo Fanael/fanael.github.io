@@ -58,7 +58,7 @@ a:active {
     color: #841;
 }
 
-a:focus {
+a:focus, a:hover {
     text-decoration-thickness: max(2px, 0.1em);
 }
 
