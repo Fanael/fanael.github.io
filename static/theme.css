@@ -46,6 +46,13 @@ html {
     }
 }
 
+/* Rein in underline size in blink */
+@supports (-webkit-locale: "en") and (not (-webkit-hyphens: none)) {
+    a:any-link {
+        text-decoration-thickness: max(1px, 0.065em);
+    }
+}
+
 a:visited {
     color: #819;
 }
@@ -58,7 +65,7 @@ a:active {
     color: #841;
 }
 
-a:focus {
+a:focus, a:hover {
     text-decoration-thickness: max(2px, 0.1em);
 }
 
