@@ -84,7 +84,7 @@ main li {
     top: 0.25em;
 }
 
-#skip-nav:not(:focus) {
+#skip-nav:not(:focus):not(:active) {
     clip-path: inset(50%);
     clip: rect(1px, 1px, 1px, 1px);
     height: 1px;
