@@ -502,6 +502,7 @@ table.perf-stat td:nth-child(4) {
     font-style: italic;
     font-weight: bold;
     margin: 0.5em 0;
+    width: fit-content;
 }
 
 article:not(:last-child) .read-full {
