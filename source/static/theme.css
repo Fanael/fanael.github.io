@@ -191,15 +191,15 @@ h6 {
     font-size: 83.33%;
 }
 
-article section:first-of-type {
+section:first-of-type {
     counter-reset: section;
 }
 
-article section {
+section {
     counter-increment: section;
 }
 
-article section .section-link > :first-child::before {
+section .section-link > :first-child::before {
     content: counters(section, ".") ". ";
 }
 
