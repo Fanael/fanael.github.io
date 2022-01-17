@@ -318,6 +318,27 @@ figure, .code-block {
     white-space: normal;
 }
 
+@supports (display: grid) {
+    .code-block .numbered {
+        counter-reset: line-number;
+        display: grid;
+        grid-template-columns: max-content auto;
+    }
+
+    .code-block .numbered > .ln {
+        border-right: thin solid #aaa;
+        color: #555;
+        counter-increment: line-number;
+        margin-right: 0.5ch;
+        padding-right: 0.5ch;
+        text-align: right;
+    }
+
+    .code-block .numbered > .ln::before {
+        content: counter(line-number);
+    }
+}
+
 .c-k, .c-se {
     color: #811;
     font-weight: bold;
@@ -562,7 +583,7 @@ article:not(:last-child) .read-full {
         background-color: #223;
     }
 
-    .c-c, #footer li, article header p {
+    .c-c, #footer li, article header p, .code-block .numbered > .ln {
         color: #999;
     }
 }

@@ -86,6 +86,23 @@ public abstract sealed class Node {
         }
 
         /**
+         * Builds a new DOM node by creating a clone of this element.
+         * <p>
+         * The clone represents the same tag and has the same attributes as this element, but starts with no children.
+         * <p>
+         * The given build function is passed a new element builder, which it's expected to modify. The state of
+         * the builder is unspecified after this method returns.
+         * <p>
+         * Exceptions thrown by the build function are passed through.
+         */
+        public @NotNull Element buildClone(final @NotNull BuildFunction buildFunction) {
+            final var builder = new ElementBuilder(tag);
+            builder.attributes.addAll(attributes);
+            buildFunction.build(builder);
+            return builder.toElement();
+        }
+
+        /**
          * Retrieves the immutable list of all attributes of this element.
          */
         public @NotNull ImmutableList<@NotNull Attribute> attributes() {
@@ -99,13 +116,16 @@ public abstract sealed class Node {
             return children;
         }
 
-        @NotNull Tag tag() {
-            return tag;
-        }
-
-        @Nullable Attribute getAttribute(final @NotNull String name) {
+        /**
+         * Retrieves the value of the attribute with the give name, or {@code null} if no such attribute is present.
+         */
+        public @Nullable Attribute getAttribute(final @NotNull String name) {
             final var index = attributes.findFirst(attribute -> name.equals(attribute.name()));
             return (index == -1) ? null : attributes.get(index);
+        }
+
+        @NotNull Tag tag() {
+            return tag;
         }
 
         private final @NotNull Tag tag;

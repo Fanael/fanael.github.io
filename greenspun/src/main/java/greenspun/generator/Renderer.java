@@ -4,6 +4,8 @@ package greenspun.generator;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import greenspun.article.Article;
@@ -35,7 +37,7 @@ public final class Renderer {
         final @NotNull List<@NotNull Node> nodes,
         final @NotNull String prettyLanguageName
     ) {
-        return wrapCodeBlockImpl(prettyLanguageName, pre -> pre.appendBuild(Tag.CODE, code -> code.append(nodes)));
+        return wrapCodeBlock(ImmutableList.of(Node.build(Tag.CODE, code -> code.append(nodes))), prettyLanguageName);
     }
 
     /**
@@ -45,7 +47,15 @@ public final class Renderer {
         final @NotNull List<@NotNull Node> nodes,
         final @NotNull String prettyLanguageName
     ) {
-        return wrapCodeBlockImpl(prettyLanguageName, pre -> pre.append(nodes));
+        return Node.build(Tag.PRE, pre -> {
+            pre.set("class", "code-block");
+            pre.appendBuild(Tag.SPAN, span -> {
+                span.set("class", "language");
+                span.appendText(prettyLanguageName);
+            });
+            pre.appendText("\n");
+            pre.append(renderLineNumbers(nodes));
+        });
     }
 
     static @NotNull Node.Element renderArchiveIndex(
@@ -106,19 +116,10 @@ public final class Renderer {
         );
     }
 
-    private static @NotNull Node.Element wrapCodeBlockImpl(
-        final @NotNull String prettyLanguageName,
-        final @NotNull Node.BuildFunction buildFunction
-    ) {
-        return Node.build(Tag.PRE, pre -> {
-            pre.set("class", "code-block");
-            pre.appendBuild(Tag.SPAN, span -> {
-                span.set("class", "language");
-                span.appendText(prettyLanguageName);
-            });
-            pre.appendText("\n");
-            buildFunction.build(pre);
-        });
+    private static @NotNull List<@NotNull Node> renderLineNumbers(final @NotNull List<@NotNull Node> nodes) {
+        return (nodes.size() == 1 && nodes.get(0) instanceof Node.Element parent)
+            ? ImmutableList.of(parent.buildClone(clone -> new LineNumberRenderer(parent, clone).render()))
+            : nodes;
     }
 
     private static void renderArchiveIndexBody(
@@ -412,6 +413,108 @@ public final class Renderer {
 
     private final @NotNull HeaderRenderMode headerRenderMode;
 
+    private static final class LineNumberRenderer {
+        private LineNumberRenderer(
+            final @NotNull Node.Element parentNode,
+            final @NotNull Node.ElementBuilder destination
+        ) {
+            this.destination = destination;
+            ancestors.add(new Ancestor(null, parentNode.children().iterator()));
+            if (parentNode.getAttribute("class") instanceof Attribute.String oldClass) {
+                destination.set("class", oldClass.value() + ' ' + Constants.numberedClassName);
+            } else {
+                destination.set(Constants.classNumbered);
+            }
+        }
+
+        private void render() {
+            while (!ancestors.isEmpty()) {
+                final var lastIndex = ancestors.size() - 1;
+                final var element = ancestors.get(lastIndex);
+                final var iterator = element.childIterator;
+                if (!iterator.hasNext()) {
+                    endElement(element, lastIndex);
+                    ancestors.remove(lastIndex);
+                    continue;
+                }
+                switch (iterator.next()) {
+                    case Node.Text text -> renderText(text, element);
+                    case Node.Element el -> ancestors.add(new Ancestor(el, el.children().iterator()));
+                }
+            }
+        }
+
+        private void renderText(final @NotNull Node.Text textNode, final @NotNull Ancestor parent) {
+            final var string = textNode.text();
+            final var length = string.length();
+            final var firstLineFeedPosition = string.indexOf('\n');
+            if (firstLineFeedPosition == -1) {
+                parent.newChildren.add(textNode);
+            } else if (firstLineFeedPosition == length - 1) {
+                parent.newChildren.add(textNode);
+                endLine();
+            } else {
+                int position = 0;
+                int lineFeedPosition = firstLineFeedPosition;
+                do {
+                    final var nextLineStart = lineFeedPosition + 1;
+                    parent.newChildren.add(new Node.Text(string.substring(position, nextLineStart)));
+                    lineFeedPosition = string.indexOf('\n', nextLineStart);
+                    position = nextLineStart;
+                    endLine();
+                } while (lineFeedPosition != -1);
+                if (position < length) {
+                    parent.newChildren.add(new Node.Text(string.substring(position, length)));
+                }
+            }
+        }
+
+        private void endLine() {
+            for (int i = ancestors.size() - 1; i >= 0; i -= 1) {
+                endElement(ancestors.get(i), i);
+            }
+        }
+
+        private void endElement(final @NotNull Ancestor element, final int index) {
+            assert ancestors.get(index) == element;
+            if (element.originalElement == null) {
+                assert index == 0;
+                final var children = element.newChildren.freeze();
+                if (!children.isEmpty()) {
+                    destination.append(Constants.lineNumberMarker);
+                    destination.append(wrapLineContent(children));
+                }
+            } else {
+                final var children = element.newChildren.freeze();
+                if (!children.isEmpty() || element.originalElement.children().isEmpty()) {
+                    final var clone = element.originalElement.buildClone(el -> el.append(children));
+                    final var parent = ancestors.get(index - 1);
+                    parent.newChildren.add(clone);
+                }
+            }
+        }
+
+        private static @NotNull Node.Element wrapLineContent(final @NotNull List<@NotNull Node> nodes) {
+            return (nodes.size() == 1 && nodes.get(0) instanceof Node.Element element)
+                ? element
+                : Node.build(Tag.SPAN, span -> span.append(nodes));
+        }
+
+        private final @NotNull Node.ElementBuilder destination;
+        private final ArrayList<@NotNull Ancestor> ancestors = new ArrayList<>();
+
+        private static final class Ancestor {
+            private Ancestor(final @Nullable Node.Element element, final @NotNull Iterator<@NotNull Node> iterator) {
+                originalElement = element;
+                childIterator = iterator;
+            }
+
+            private final @Nullable Node.Element originalElement;
+            private final @NotNull Iterator<@NotNull Node> childIterator;
+            private final ImmutableList.Builder<@NotNull Node> newChildren = new ImmutableList.Builder<>();
+        }
+    }
+
     // Put constants in a separate class, so that they're created on first access rather than when the renderer class is
     // loaded.
     private static final class Constants {
@@ -503,6 +606,9 @@ public final class Renderer {
             });
         });
 
+        private static final Node.Element archivesLink = Node.build(Tag.LI,
+            li -> li.append(renderSimpleLink("/archives/", "Blog archives")));
+
         private static final Node.Element decorativeLeftArrow = Node.build(Tag.SPAN, span -> {
             span.set(ariaHidden);
             span.appendText("← ");
@@ -512,9 +618,6 @@ public final class Renderer {
             span.set(ariaHidden);
             span.appendText(" →");
         });
-
-        private static final Node.Element archivesLink = Node.build(Tag.LI,
-            li -> li.append(renderSimpleLink("/archives/", "Blog archives")));
 
         private static final Node.Element simpleBottomNav = renderBottomNav(null, null);
 
@@ -528,9 +631,14 @@ public final class Renderer {
             span.appendText("Table of contents");
         });
 
+        private static final Node.Element lineNumberMarker = Node.build(Tag.SPAN, span -> span.set("class", "ln"));
+
         private static final Attribute.String htmlLang = new Attribute.String("lang", "en");
 
         private static final Attribute.String idMain = new Attribute.String("id", "main");
+
+        private static final String numberedClassName = "numbered";
+        private static final Attribute.String classNumbered = new Attribute.String("class", numberedClassName);
 
         private static final String[] monthNames = {
             "January", "February", "March", "April", "May", "June",
