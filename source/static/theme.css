@@ -290,18 +290,18 @@ pre code, pre samp, pre kbd {
     font-size: 100%;
 }
 
-figure, pre.code-block {
+figure, .code-block {
     margin: 0.625em 0;
     page-break-inside: avoid;
     text-indent: 0;
 }
 
-pre.code-block {
+.code-block {
     padding: 0.5em 1ch;
 }
 
 @media screen {
-    pre.code-block {
+    .code-block {
         background-color: #ddc3;
         border-radius: 1.5ch;
         box-shadow: var(--box-shadow-specs);
@@ -309,7 +309,7 @@ pre.code-block {
     }
 }
 
-pre.code-block .language {
+.code-block .language {
     border-bottom: thin solid #aaa;
     display: block;
     left: 0;
@@ -550,11 +550,11 @@ article:not(:last-child) .read-full {
         background-color: #111;
     }
 
-    figure, pre.code-block, pre.code-block .language, td, th {
+    figure, .code-block, .code-block .language, td, th {
         border-color: #888;
     }
 
-    pre.code-block, .toc, tbody > tr:nth-child(2n) {
+    .code-block, .toc, tbody > tr:nth-child(2n) {
         background-color: #2b2b2b;
     }
 
@@ -578,7 +578,7 @@ article:not(:last-child) .read-full {
         text-decoration: inherit;
     }
 
-    pre.code-block {
+    .code-block {
         white-space: pre-wrap;
     }
 }
