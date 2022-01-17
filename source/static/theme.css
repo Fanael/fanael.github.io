@@ -584,7 +584,7 @@ article:not(:last-child) .read-full {
     }
 
     .c-c, #footer li, article header p, .code-block .numbered > .ln {
-        color: #999;
+        color: #a5a5a5;
     }
 }
 
