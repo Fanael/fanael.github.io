@@ -571,7 +571,7 @@ article:not(:last-child) .read-full {
         background-color: #111;
     }
 
-    figure, .code-block, .code-block .language, td, th {
+    figure, .code-block, .code-block .language, .code-block .numbered > .ln, td, th {
         border-color: #888;
     }
 
