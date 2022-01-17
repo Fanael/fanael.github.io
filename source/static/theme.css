@@ -312,7 +312,10 @@ pre.code-block {
 pre.code-block .language {
     border-bottom: thin solid #aaa;
     display: block;
+    left: 0;
     margin-bottom: -1.5em;
+    position: sticky;
+    white-space: normal;
 }
 
 .c-k, .c-se {
