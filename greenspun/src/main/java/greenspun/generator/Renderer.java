@@ -4,8 +4,6 @@ package greenspun.generator;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import greenspun.article.Article;
@@ -118,7 +116,7 @@ public final class Renderer {
 
     private static @NotNull List<@NotNull Node> renderLineNumbers(final @NotNull List<@NotNull Node> nodes) {
         return (nodes.size() == 1 && nodes.get(0) instanceof Node.Element parent)
-            ? ImmutableList.of(parent.buildClone(clone -> new LineNumberRenderer(parent, clone).render()))
+            ? ImmutableList.of(new LineNumberRenderer(parent).render())
             : nodes;
     }
 
@@ -414,37 +412,33 @@ public final class Renderer {
     private final @NotNull HeaderRenderMode headerRenderMode;
 
     private static final class LineNumberRenderer {
-        private LineNumberRenderer(
-            final @NotNull Node.Element parentNode,
-            final @NotNull Node.ElementBuilder destination
-        ) {
-            this.destination = destination;
-            ancestors.add(new Ancestor(null, parentNode.children().iterator()));
-            if (parentNode.getAttribute("class") instanceof Attribute.String oldClass) {
-                destination.set("class", oldClass.value() + ' ' + Constants.numberedClassName);
-            } else {
-                destination.set(Constants.classNumbered);
-            }
+        private LineNumberRenderer(final @NotNull Node.Element container) {
+            originalContainer = container;
         }
 
-        private void render() {
-            while (!ancestors.isEmpty()) {
-                final var lastIndex = ancestors.size() - 1;
-                final var element = ancestors.get(lastIndex);
-                final var iterator = element.childIterator;
-                if (!iterator.hasNext()) {
-                    endElement(element, lastIndex);
-                    ancestors.remove(lastIndex);
-                    continue;
+        private @NotNull Node.Element render() {
+            return originalContainer.buildClone(clone -> {
+                if (originalContainer.getAttribute("class") instanceof Attribute.String oldClass) {
+                    clone.set("class", oldClass.value() + ' ' + Constants.numberedClassName);
+                } else {
+                    clone.set(Constants.classNumbered);
                 }
-                switch (iterator.next()) {
-                    case Node.Text text -> renderText(text, element);
-                    case Node.Element el -> ancestors.add(new Ancestor(el, el.children().iterator()));
-                }
-            }
+                renderElement(new PendingElement(originalContainer, null));
+                clone.append(newRootChildren.freeze());
+            });
         }
 
-        private void renderText(final @NotNull Node.Text textNode, final @NotNull Ancestor parent) {
+        private void renderElement(final @NotNull PendingElement element) {
+            for (final var child : element.original.children()) {
+                switch (child) {
+                    case Node.Text node -> renderText(node, element);
+                    case Node.Element node -> renderElement(new PendingElement(node, element));
+                }
+            }
+            closeElement(element);
+        }
+
+        private void renderText(final @NotNull Node.Text textNode, final @NotNull PendingElement parent) {
             final var string = textNode.text();
             final var length = string.length();
             final var firstLineFeedPosition = string.indexOf('\n');
@@ -452,44 +446,39 @@ public final class Renderer {
                 parent.newChildren.add(textNode);
             } else if (firstLineFeedPosition == length - 1) {
                 parent.newChildren.add(textNode);
-                endLine();
+                closeLine(parent);
             } else {
                 int position = 0;
                 int lineFeedPosition = firstLineFeedPosition;
                 do {
                     final var nextLineStart = lineFeedPosition + 1;
                     parent.newChildren.add(new Node.Text(string.substring(position, nextLineStart)));
-                    lineFeedPosition = string.indexOf('\n', nextLineStart);
                     position = nextLineStart;
-                    endLine();
-                } while (lineFeedPosition != -1);
+                    closeLine(parent);
+                } while ((lineFeedPosition = string.indexOf('\n', position)) != -1);
                 if (position < length) {
                     parent.newChildren.add(new Node.Text(string.substring(position, length)));
                 }
             }
         }
 
-        private void endLine() {
-            for (int i = ancestors.size() - 1; i >= 0; i -= 1) {
-                endElement(ancestors.get(i), i);
+        private void closeLine(final @NotNull PendingElement parent) {
+            for (var it = parent; it != null; it = it.parent) {
+                closeElement(it);
             }
         }
 
-        private void endElement(final @NotNull Ancestor element, final int index) {
-            assert ancestors.get(index) == element;
-            if (element.originalElement == null) {
-                assert index == 0;
-                final var children = element.newChildren.freeze();
+        private void closeElement(final @NotNull PendingElement element) {
+            final var children = element.newChildren.freeze();
+            if (element.parent == null) {
                 if (!children.isEmpty()) {
-                    destination.append(Constants.lineNumberMarker);
-                    destination.append(wrapLineContent(children));
+                    newRootChildren.add(Constants.lineNumberMarker);
+                    newRootChildren.add(wrapLineContent(children));
                 }
             } else {
-                final var children = element.newChildren.freeze();
-                if (!children.isEmpty() || element.originalElement.children().isEmpty()) {
-                    final var clone = element.originalElement.buildClone(el -> el.append(children));
-                    final var parent = ancestors.get(index - 1);
-                    parent.newChildren.add(clone);
+                if (!children.isEmpty() || element.original.children().isEmpty()) {
+                    final var clone = element.original.buildClone(el -> el.append(children));
+                    element.parent.newChildren.add(clone);
                 }
             }
         }
@@ -500,17 +489,17 @@ public final class Renderer {
                 : Node.build(Tag.SPAN, span -> span.append(nodes));
         }
 
-        private final @NotNull Node.ElementBuilder destination;
-        private final ArrayList<@NotNull Ancestor> ancestors = new ArrayList<>();
+        private final @NotNull Node.Element originalContainer;
+        private final ImmutableList.Builder<@NotNull Node> newRootChildren = new ImmutableList.Builder<>();
 
-        private static final class Ancestor {
-            private Ancestor(final @Nullable Node.Element element, final @NotNull Iterator<@NotNull Node> iterator) {
-                originalElement = element;
-                childIterator = iterator;
+        private static final class PendingElement {
+            private PendingElement(final @NotNull Node.Element original, final @Nullable PendingElement parent) {
+                this.original = original;
+                this.parent = parent;
             }
 
-            private final @Nullable Node.Element originalElement;
-            private final @NotNull Iterator<@NotNull Node> childIterator;
+            private final @NotNull Node.Element original;
+            private final @Nullable PendingElement parent;
             private final ImmutableList.Builder<@NotNull Node> newChildren = new ImmutableList.Builder<>();
         }
     }
