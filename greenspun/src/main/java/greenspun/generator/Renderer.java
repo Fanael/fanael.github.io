@@ -539,6 +539,7 @@ public final class Renderer {
         private static final ImmutableList<Node.Element> header = ImmutableList.of(
             Node.build(Tag.A, a -> {
                 a.set("id", "skip-nav");
+                a.set("class", "at-only");
                 a.set("href", "#main");
                 a.appendText("Skip to main content");
             }),
@@ -620,7 +621,8 @@ public final class Renderer {
             span.appendText("Table of contents");
         });
 
-        private static final Node.Element lineNumberMarker = Node.build(Tag.SPAN, span -> span.set("class", "ln"));
+        private static final Node.Element lineNumberMarker = Node.build(Tag.SPAN,
+            span -> span.set("class", "ln at-only-b"));
 
         private static final Attribute.String htmlLang = new Attribute.String("lang", "en");
 
