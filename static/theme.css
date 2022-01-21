@@ -81,7 +81,7 @@ main li {
     clip-path: inset(50%);
     clip: rect(1px, 1px, 1px, 1px);
     height: 1px;
-    margin: -1px;
+    margin: -0.5px;
     overflow: hidden;
     position: absolute;
     white-space: nowrap;
@@ -299,6 +299,7 @@ figure, .code-block {
 }
 
 .code-block {
+    line-height: 1.5;
     padding: 0.5em 1ch;
 }
 
@@ -338,6 +339,8 @@ figure, .code-block {
 
     .code-block .numbered > .ln::before {
         content: "Line ";
+        display: inline-block;
+        position: static;
     }
 
     .code-block .numbered > .ln::after {
