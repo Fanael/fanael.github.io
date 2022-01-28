@@ -143,7 +143,7 @@ def quit_server() -> NoReturn:
 def highlight_code() -> None:
     lexer_name = read_line()
     source_code = read_multiline_string()
-    lexer = lxs.get_lexer_by_name(lexer_name)
+    lexer = lxs.get_lexer_by_name(lexer_name, stripnl=False, ensurenl=False)
     send_token_stream(source_code, lexer, sys.stdout)
     send_done(sys.stdout)
 
