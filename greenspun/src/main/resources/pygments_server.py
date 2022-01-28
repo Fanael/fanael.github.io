@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Copyright © 2019-2021  Fanael Linithien
 # SPDX-License-Identifier: AGPL-3.0-or-later
+# pylint: disable=missing-function-docstring disable=missing-class-docstring
 '''
 A simple pygments server, communicating over pipes, to reuse the same process
 for multiple highlightings instead of spawning a new pygmentize process for
@@ -51,7 +52,7 @@ import pygments.lexers as lex
 import pygments.token as tok
 
 # Dict of known token types and a boolean indicating if it should be styled
-_KNOWN_TOKENS = {
+KNOWN_TOKENS = {
     tok.Token: False,
     tok.Comment: True,
     tok.Keyword: True,
@@ -65,35 +66,35 @@ _KNOWN_TOKENS = {
     tok.Generic.Subheading: True,
 }
 
-def _get_effective_class_name(token_type):
+def get_effective_class_name(token_type):
     known_type = token_type
     while True:
-        needs_styling = _KNOWN_TOKENS.get(known_type)
+        needs_styling = KNOWN_TOKENS.get(known_type)
         if needs_styling is not None:
             break
         known_type = known_type.parent
     return 'c-' + tok.STANDARD_TYPES[known_type] if needs_styling else ''
 
-_TOKEN_TYPE_CLASSES = {t: _get_effective_class_name(t) for t in tok.STANDARD_TYPES}
+TOKEN_TYPE_CLASSES = {t: get_effective_class_name(t) for t in tok.STANDARD_TYPES}
 
-def _read_line():
+def read_line():
     return sys.stdin.readline().rstrip('\n')
 
-def _send_done(out):
+def send_done(out):
     out.write(':done\n')
 
-def _print_multiline_string(string, out):
+def print_multiline_string(string, out):
     for line in string.splitlines():
         out.write(f'>{line}\n')
-    _send_done(out)
+    send_done(out)
 
-class _TokenStreamFormatter(fmt.Formatter):
+class TokenStreamFormatter(fmt.Formatter):
     @staticmethod
     def format_unencoded(token_source, out):
         # pylint: disable=missing-function-docstring
         current_class = ''
         for token_type, value in token_source:
-            class_name = _TOKEN_TYPE_CLASSES[token_type]
+            class_name = TOKEN_TYPE_CLASSES[token_type]
             if current_class != class_name:
                 current_class = class_name
                 out.write(f':sc\n{class_name}\n')
@@ -104,12 +105,12 @@ class _TokenStreamFormatter(fmt.Formatter):
                 out.write(f':s\n{value}\n')
             else:
                 out.write(':m\n')
-                _print_multiline_string(value, out)
+                print_multiline_string(value, out)
 
-def _read_multiline_string():
+def read_multiline_string():
     source_lines = []
     while True:
-        line = _read_line()
+        line = read_line()
         if line.startswith('>'):
             source_lines.append(line[1:])
         elif line == ':done':
@@ -119,41 +120,41 @@ def _read_multiline_string():
     source_lines.append('')
     return '\n'.join(source_lines)
 
-def _print_exception(exception):
+def print_exception(exception):
     print(':error')
     trace = traceback.format_exception(type(exception), exception, exception.__traceback__)
-    _print_multiline_string(''.join(trace), sys.stdout)
+    print_multiline_string(''.join(trace), sys.stdout)
 
-_COMMAND_MAP = {}
+COMMAND_MAP = {}
 
-def _define_command(name):
+def define_command(name):
     def decorator(function):
-        _COMMAND_MAP[name] = function
+        COMMAND_MAP[name] = function
         return function
     return decorator
 
-@_define_command(':quit')
-def _quit_server():
-    _send_done(sys.stdout)
+@define_command(':quit')
+def quit_server():
+    send_done(sys.stdout)
     sys.stdout.flush()
     sys.exit(0)
 
-@_define_command(':highlight')
-def _highlight_code():
-    lexer_name = _read_line()
-    source_code = _read_multiline_string()
+@define_command(':highlight')
+def highlight_code():
+    lexer_name = read_line()
+    source_code = read_multiline_string()
     lexer = lex.get_lexer_by_name(lexer_name)
-    p.highlight(source_code, lexer, _TokenStreamFormatter(), outfile=sys.stdout)
-    _send_done(sys.stdout)
+    p.highlight(source_code, lexer, TokenStreamFormatter(), outfile=sys.stdout)
+    send_done(sys.stdout)
 
-def _main():
+def main():
     while True:
-        command = _read_line()
+        command = read_line()
         try:
-            _COMMAND_MAP[command]()
+            COMMAND_MAP[command]()
         except Exception as exception: # pylint: disable=broad-except
-            _print_exception(exception)
+            print_exception(exception)
         sys.stdout.flush()
 
 if __name__ == '__main__':
-    _main()
+    main()
