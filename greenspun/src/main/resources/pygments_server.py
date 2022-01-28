@@ -46,8 +46,6 @@ List of known commands:
 '''
 import sys
 import traceback
-import pygments as p
-import pygments.formatter as fmt
 import pygments.lexers as lex
 import pygments.token as tok
 
@@ -86,24 +84,21 @@ def print_multiline_string(string, out):
         out.write(f'>{line}\n')
     send_done(out)
 
-class TokenStreamFormatter(fmt.Formatter):
-    @staticmethod
-    def format_unencoded(token_source, out):
-        # pylint: disable=missing-function-docstring
-        current_class = ''
-        for token_type, value in token_source:
-            class_name = TOKEN_TYPE_CLASSES[token_type]
-            if current_class != class_name:
-                current_class = class_name
-                out.write(f':sc\n{class_name}\n')
+def send_token_stream(code, lexer, out):
+    current_class = ''
+    for token_type, value in lexer.get_tokens(code):
+        class_name = TOKEN_TYPE_CLASSES[token_type]
+        if current_class != class_name:
+            current_class = class_name
+            out.write(f':sc\n{class_name}\n')
 
-            if value == '\n':
-                out.write(':nl\n')
-            elif '\n' not in value:
-                out.write(f':s\n{value}\n')
-            else:
-                out.write(':m\n')
-                print_multiline_string(value, out)
+        if value == '\n':
+            out.write(':nl\n')
+        elif '\n' not in value:
+            out.write(f':s\n{value}\n')
+        else:
+            out.write(':m\n')
+            print_multiline_string(value, out)
 
 def read_multiline_string():
     source_lines = []
@@ -142,7 +137,7 @@ def highlight_code():
     lexer_name = read_line()
     source_code = read_multiline_string()
     lexer = lex.get_lexer_by_name(lexer_name)
-    p.highlight(source_code, lexer, TokenStreamFormatter(), outfile=sys.stdout)
+    send_token_stream(source_code, lexer, sys.stdout)
     send_done(sys.stdout)
 
 def main():
