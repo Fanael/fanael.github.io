@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright © 2019-2021  Fanael Linithien
+# Copyright © 2019-2022  Fanael Linithien
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # pylint: disable=missing-function-docstring
 '''
