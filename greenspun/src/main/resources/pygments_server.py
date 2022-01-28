@@ -90,6 +90,7 @@ def _print_multiline_string(string, out):
 class _TokenStreamFormatter(fmt.Formatter):
     @staticmethod
     def format_unencoded(token_source, out):
+        # pylint: disable=missing-function-docstring
         current_class = ''
         for token_type, value in token_source:
             class_name = _TOKEN_TYPE_CLASSES[token_type]
@@ -150,7 +151,7 @@ def _main():
         command = _read_line()
         try:
             _COMMAND_MAP[command]()
-        except Exception as exception:
+        except Exception as exception: # pylint: disable=broad-except
             _print_exception(exception)
         sys.stdout.flush()
 
