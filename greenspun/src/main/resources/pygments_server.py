@@ -51,29 +51,27 @@ import pygments.formatter as fmt
 import pygments.lexers as lex
 import pygments.token as tok
 
-# Dict of known token types and a boolean indicating if it should be styled
-KNOWN_TOKENS = {
-    tok.Token: False,
-    tok.Comment: True,
-    tok.Keyword: True,
-    tok.String: True,
-    tok.String.Escape: True,
-    tok.String.Interpol: True,
-    tok.Number: True,
-    tok.Generic.Deleted: True,
-    tok.Generic.Inserted: True,
-    tok.Generic.Heading: True,
-    tok.Generic.Subheading: True,
-}
+# Set of token types that we want to style.
+KNOWN_TOKENS = frozenset((
+    tok.Comment,
+    tok.Keyword,
+    tok.String,
+    tok.String.Escape,
+    tok.String.Interpol,
+    tok.Number,
+    tok.Generic.Deleted,
+    tok.Generic.Inserted,
+    tok.Generic.Heading,
+    tok.Generic.Subheading,
+))
 
 def get_effective_class_name(token_type):
-    known_type = token_type
-    while True:
-        needs_styling = KNOWN_TOKENS.get(known_type)
-        if needs_styling is not None:
-            break
-        known_type = known_type.parent
-    return 'c-' + tok.STANDARD_TYPES[known_type] if needs_styling else ''
+    current_type = token_type
+    while current_type is not None:
+        if current_type in KNOWN_TOKENS:
+            return 'c-' + tok.STANDARD_TYPES[current_type]
+        current_type = current_type.parent
+    return ''
 
 TOKEN_TYPE_CLASSES = {t: get_effective_class_name(t) for t in tok.STANDARD_TYPES}
 
