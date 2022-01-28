@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright © 2019-2021  Fanael Linithien
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# pylint: disable=missing-function-docstring disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 '''
 A simple pygments server, communicating over pipes, to reuse the same process
 for multiple highlightings instead of spawning a new pygmentize process for
@@ -44,13 +44,17 @@ List of known commands:
    The simple strings ":done" and ":error" can also occur in place of a token
    type, with their usual semantics.
 '''
+from typing import Callable, Dict, FrozenSet, NoReturn, Optional, TextIO
 import sys
 import traceback
-import pygments.lexers as lex
+import pygments.lexer as lex
+import pygments.lexers as lxs
 import pygments.token as tok
 
+TokenType = tok._TokenType # pylint: disable=protected-access
+
 # Set of token types that we want to style.
-KNOWN_TOKENS = frozenset((
+KNOWN_TOKENS: FrozenSet[TokenType] = frozenset((
     tok.Comment,
     tok.Keyword,
     tok.String,
@@ -63,28 +67,30 @@ KNOWN_TOKENS = frozenset((
     tok.Generic.Subheading,
 ))
 
-def get_effective_class_name(token_type):
-    current_type = token_type
+def get_effective_class_name(token_type: TokenType) -> str:
+    current_type: Optional[TokenType] = token_type
     while current_type is not None:
         if current_type in KNOWN_TOKENS:
             return 'c-' + tok.STANDARD_TYPES[current_type]
         current_type = current_type.parent
     return ''
 
-TOKEN_TYPE_CLASSES = {t: get_effective_class_name(t) for t in tok.STANDARD_TYPES}
+TOKEN_TYPE_CLASSES: Dict[TokenType, str] = {
+    t: get_effective_class_name(t) for t in tok.STANDARD_TYPES
+}
 
-def read_line():
+def read_line() -> str:
     return sys.stdin.readline().rstrip('\n')
 
-def send_done(out):
+def send_done(out: TextIO) -> None:
     out.write(':done\n')
 
-def print_multiline_string(string, out):
+def print_multiline_string(string: str, out: TextIO) -> None:
     for line in string.splitlines():
         out.write(f'>{line}\n')
     send_done(out)
 
-def send_token_stream(code, lexer, out):
+def send_token_stream(code: str, lexer: lex.Lexer, out: TextIO) -> None:
     current_class = ''
     for token_type, value in lexer.get_tokens(code):
         class_name = TOKEN_TYPE_CLASSES[token_type]
@@ -100,7 +106,7 @@ def send_token_stream(code, lexer, out):
             out.write(':m\n')
             print_multiline_string(value, out)
 
-def read_multiline_string():
+def read_multiline_string() -> str:
     source_lines = []
     while True:
         line = read_line()
@@ -113,34 +119,35 @@ def read_multiline_string():
     source_lines.append('')
     return '\n'.join(source_lines)
 
-def print_exception(exception):
+def print_exception(exception: Exception) -> None:
     print(':error')
     trace = traceback.format_exception(type(exception), exception, exception.__traceback__)
     print_multiline_string(''.join(trace), sys.stdout)
 
-COMMAND_MAP = {}
+Command = Callable[[], None]
+COMMAND_MAP: Dict[str, Command] = {}
 
-def define_command(name):
-    def decorator(function):
+def define_command(name: str) -> Callable[[Command], Command]:
+    def decorator(function: Command) -> Command:
         COMMAND_MAP[name] = function
         return function
     return decorator
 
 @define_command(':quit')
-def quit_server():
+def quit_server() -> NoReturn:
     send_done(sys.stdout)
     sys.stdout.flush()
     sys.exit(0)
 
 @define_command(':highlight')
-def highlight_code():
+def highlight_code() -> None:
     lexer_name = read_line()
     source_code = read_multiline_string()
-    lexer = lex.get_lexer_by_name(lexer_name)
+    lexer = lxs.get_lexer_by_name(lexer_name)
     send_token_stream(source_code, lexer, sys.stdout)
     send_done(sys.stdout)
 
-def main():
+def main() -> NoReturn:
     while True:
         command = read_line()
         try:
