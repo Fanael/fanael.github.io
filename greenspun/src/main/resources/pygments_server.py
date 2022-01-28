@@ -65,11 +65,6 @@ _KNOWN_TOKENS = {
     tok.Generic.Subheading: True,
 }
 
-_STRING_ESCAPES = {
-    ord('"'): '\\"',
-    ord('\\'): '\\\\',
-}
-
 def _get_effective_class_name(token_type):
     known_type = token_type
     while True:
