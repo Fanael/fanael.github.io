@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright © 2019-2022  Fanael Linithien
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring, missing-class-docstring
 '''
 A simple pygments server, communicating over pipes, to reuse the same process
 for multiple highlightings instead of spawning a new pygmentize process for
@@ -45,12 +45,20 @@ List of known commands:
    type, with their usual semantics.
 '''
 from __future__ import annotations
-from typing import Callable, NoReturn, Optional, TextIO
+from typing import Callable, NoReturn, Optional
 import sys
 import traceback
+from typing_extensions import Protocol
 import pygments.lexer as lex
 import pygments.lexers as lxs
 import pygments.token as tok
+
+class TextSource(Protocol): # pylint: disable=too-few-public-methods
+    def readline(self) -> str: ...
+
+class TextSink(Protocol):
+    def write(self, string: str) -> int: ...
+    def flush(self) -> None: ...
 
 TokenType = tok._TokenType # pylint: disable=protected-access
 
@@ -80,37 +88,37 @@ TOKEN_TYPE_CLASSES: dict[TokenType, str] = {
     t: get_effective_class_name(t) for t in tok.STANDARD_TYPES
 }
 
-def read_line() -> str:
-    return sys.stdin.readline().rstrip('\n')
+def read_line(source: TextSource) -> str:
+    return source.readline().rstrip('\n')
 
-def send_done(out: TextIO) -> None:
-    out.write(':done\n')
+def send_done(sink: TextSink) -> None:
+    sink.write(':done\n')
 
-def print_multiline_string(string: str, out: TextIO) -> None:
+def print_multiline_string(string: str, sink: TextSink) -> None:
     for line in string.splitlines():
-        out.write(f'>{line}\n')
-    send_done(out)
+        sink.write(f'>{line}\n')
+    send_done(sink)
 
-def send_token_stream(code: str, lexer: lex.Lexer, out: TextIO) -> None:
+def send_token_stream(code: str, lexer: lex.Lexer, sink: TextSink) -> None:
     current_class = ''
     for token_type, value in lexer.get_tokens(code):
         class_name = TOKEN_TYPE_CLASSES[token_type]
         if current_class != class_name:
             current_class = class_name
-            out.write(f':sc\n{class_name}\n')
+            sink.write(f':sc\n{class_name}\n')
 
         if value == '\n':
-            out.write(':nl\n')
+            sink.write(':nl\n')
         elif '\n' not in value:
-            out.write(f':s\n{value}\n')
+            sink.write(f':s\n{value}\n')
         else:
-            out.write(':m\n')
-            print_multiline_string(value, out)
+            sink.write(':m\n')
+            print_multiline_string(value, sink)
 
-def read_multiline_string() -> str:
+def read_multiline_string(source: TextSource) -> str:
     source_lines = []
     while True:
-        line = read_line()
+        line = read_line(source)
         if line.startswith('>'):
             source_lines.append(line[1:])
         elif line == ':done':
@@ -120,12 +128,12 @@ def read_multiline_string() -> str:
     source_lines.append('')
     return '\n'.join(source_lines)
 
-def print_exception(exception: Exception) -> None:
+def print_exception(exception: Exception, sink: TextSink) -> None:
     print(':error')
     trace = traceback.format_exception(type(exception), exception, exception.__traceback__)
-    print_multiline_string(''.join(trace), sys.stdout)
+    print_multiline_string(''.join(trace), sink)
 
-Command = Callable[[], None]
+Command = Callable[[TextSource, TextSink], None]
 COMMAND_MAP: dict[str, Command] = {}
 
 def define_command(name: str) -> Callable[[Command], Command]:
@@ -135,27 +143,27 @@ def define_command(name: str) -> Callable[[Command], Command]:
     return decorator
 
 @define_command(':quit')
-def quit_server() -> NoReturn:
-    send_done(sys.stdout)
-    sys.stdout.flush()
+def quit_server(_source: TextSource, sink: TextSink) -> NoReturn:
+    send_done(sink)
+    sink.flush()
     sys.exit(0)
 
 @define_command(':highlight')
-def highlight_code() -> None:
-    lexer_name = read_line()
-    source_code = read_multiline_string()
+def highlight_code(source: TextSource, sink: TextSink) -> None:
+    lexer_name = read_line(source)
+    source_code = read_multiline_string(source)
     lexer = lxs.get_lexer_by_name(lexer_name, stripnl=False, ensurenl=False)
-    send_token_stream(source_code, lexer, sys.stdout)
-    send_done(sys.stdout)
+    send_token_stream(source_code, lexer, sink)
+    send_done(sink)
 
-def main() -> NoReturn:
+def main(source: TextSource, sink: TextSink) -> NoReturn:
     while True:
-        command = read_line()
+        command = read_line(source)
         try:
-            COMMAND_MAP[command]()
+            COMMAND_MAP[command](source, sink)
         except Exception as exception: # pylint: disable=broad-except
-            print_exception(exception)
-        sys.stdout.flush()
+            print_exception(exception, sink)
+        sink.flush()
 
 if __name__ == '__main__':
-    main()
+    main(sys.stdin, sys.stdout)
