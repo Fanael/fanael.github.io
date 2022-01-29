@@ -44,7 +44,8 @@ List of known commands:
    The simple strings ":done" and ":error" can also occur in place of a token
    type, with their usual semantics.
 '''
-from typing import Callable, Dict, FrozenSet, NoReturn, Optional, TextIO
+from __future__ import annotations
+from typing import Callable, NoReturn, Optional, TextIO
 import sys
 import traceback
 import pygments.lexer as lex
@@ -54,7 +55,7 @@ import pygments.token as tok
 TokenType = tok._TokenType # pylint: disable=protected-access
 
 # Set of token types that we want to style.
-KNOWN_TOKENS: FrozenSet[TokenType] = frozenset((
+KNOWN_TOKENS: frozenset[TokenType] = frozenset((
     tok.Comment,
     tok.Keyword,
     tok.String,
@@ -75,7 +76,7 @@ def get_effective_class_name(token_type: TokenType) -> str:
         current_type = current_type.parent
     return ''
 
-TOKEN_TYPE_CLASSES: Dict[TokenType, str] = {
+TOKEN_TYPE_CLASSES: dict[TokenType, str] = {
     t: get_effective_class_name(t) for t in tok.STANDARD_TYPES
 }
 
@@ -125,7 +126,7 @@ def print_exception(exception: Exception) -> None:
     print_multiline_string(''.join(trace), sys.stdout)
 
 Command = Callable[[], None]
-COMMAND_MAP: Dict[str, Command] = {}
+COMMAND_MAP: dict[str, Command] = {}
 
 def define_command(name: str) -> Callable[[Command], Command]:
     def decorator(function: Command) -> Command:
