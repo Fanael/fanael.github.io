@@ -48,7 +48,7 @@ from __future__ import annotations
 from typing import Callable, NoReturn, Optional
 import sys
 import traceback
-from typing_extensions import Protocol
+from typing_extensions import Protocol, TypeAlias
 import pygments.lexer as lex
 import pygments.lexers as lxs
 import pygments.token as tok
@@ -60,7 +60,7 @@ class TextSink(Protocol):
     def write(self, string: str) -> int: ...
     def flush(self) -> None: ...
 
-TokenType = tok._TokenType # pylint: disable=protected-access
+TokenType: TypeAlias = tok._TokenType # pylint: disable=protected-access
 
 # Set of token types that we want to style.
 KNOWN_TOKENS: frozenset[TokenType] = frozenset((
@@ -133,7 +133,7 @@ def print_exception(exception: Exception, sink: TextSink) -> None:
     trace = traceback.format_exception(type(exception), exception, exception.__traceback__)
     print_multiline_string(''.join(trace), sink)
 
-Command = Callable[[TextSource, TextSink], None]
+Command: TypeAlias = Callable[[TextSource, TextSink], None]
 COMMAND_MAP: dict[str, Command] = {}
 
 def define_command(name: str) -> Callable[[Command], Command]:
