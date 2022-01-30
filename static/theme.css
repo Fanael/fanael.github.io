@@ -1,4 +1,4 @@
-/* Copyright © 2019-2021  Fanael Linithien */
+/* Copyright © 2019-2022  Fanael Linithien */
 /* SPDX-License-Identifier: AGPL-3.0-or-later OR CC-BY-SA-4.0 */
 /* Basics */
 * {
@@ -15,7 +15,7 @@
 
 html {
     --basic-link-color: #2431a9;
-    --box-shadow-color: #00000018;
+    --box-shadow-color: rgba(0, 0, 0, 0.094);
     --box-shadow-specs: 0 0 0.75ch 0.5ch var(--box-shadow-color), 0 0 1.5ch 1ch var(--box-shadow-color);
     color-scheme: light dark;
     font-family: serif;
@@ -25,15 +25,16 @@ html {
 
 @media screen {
     html {
-        background-color: #eee;
-        background-image: linear-gradient(to bottom,
-            #d52d0010 0%, #d52d0010 5.714%,
-            #ef762710 15.714%, #ef762710 21.429%,
-            #ff9a5610 31.429%, #ff9a5610 37.143%,
-            #ffffff10 47.143%, #ffffff10 52.857%,
-            #d162a410 62.857%, #d162a410 68.571%,
-            #b5569010 78.571%, #b5569010 84.286%,
-            #a3026210 94.286%);
+        background-color: #ece5e9;
+        background-image: linear-gradient(
+            to bottom,
+            #ece1de 0%, #ece1de 5.714%,
+            #eee6e1 15.714%, #eee6e1 21.429%,
+            #efe8e4 31.429%, #efe8e4 37.143%,
+            #efefef 47.143%, #efefef 52.857%,
+            #ece5e9 62.857%, #ece5e9 68.571%,
+            #eae4e8 78.571%, #eae4e8 84.286%,
+            #e9dee5 94.286%);
         color: #11091c;
         font-size: calc(1em + 0.1vh + 0.1vw);
         min-height: 100%;
@@ -305,7 +306,7 @@ figure, .code-block {
 
 @media screen {
     .code-block {
-        background-color: #ddc3;
+        background-color: rgba(221, 221, 204, 0.2);
         border-radius: 1.5ch;
         box-shadow: var(--box-shadow-specs);
         overflow: auto;
@@ -451,21 +452,21 @@ table.perf-stat td:nth-child(4) {
     }
 
     thead, tfoot {
-        background-color: #e5d1d488;
+        background-color: rgba(229, 209, 212, 0.533);
     }
 
     tbody > tr:nth-child(2n) {
-        background-color: #cca3;
+        background-color: rgba(204, 204, 170, 0.2);
     }
 
     table tr:hover {
-        background-color: #fae5;
+        background-color: rgba(255, 170, 238, 0.333);
     }
 }
 
 /* Table of contents */
 .toc {
-    background-color: #e5d1d444;
+    background-color: rgba(229, 209, 212, 0.266);
     border-radius: 1.5ch;
     box-shadow: var(--box-shadow-specs);
     padding: 1ch;
@@ -545,7 +546,7 @@ article:not(:last-child) .read-full {
 /* Dark mode */
 @media only screen and (prefers-color-scheme: dark) {
     html {
-        --box-shadow-color: #0007;
+        --box-shadow-color: rgba(0, 0, 0, 0.466);
         --basic-link-color: #a1abda;
         background-color: #191919;
         background-image: none;
