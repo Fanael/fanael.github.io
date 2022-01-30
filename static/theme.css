@@ -231,7 +231,7 @@ section .section-link > :first-child::before {
 @supports (--x: 0) {
     .section-link {
         --text-decoration: underline;
-        text-decoration-line: none;
+        text-decoration: none;
     }
 
     .section-link:not(:hover):not(:focus):not(:active) {
