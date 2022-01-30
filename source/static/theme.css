@@ -60,6 +60,7 @@ a:visited {
 
 a:link, a[href^="#"] {
     color: #2431a9;
+    color: var(--basic-link-color);
 }
 
 a:active {
@@ -555,10 +556,6 @@ article:not(:last-child) .read-full {
 
     a:visited {
         color: #7edca4;
-    }
-
-    a:link, a[href^="#"] {
-        color: #a1abda;
     }
 
     a:active {
