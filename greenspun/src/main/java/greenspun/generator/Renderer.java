@@ -48,7 +48,7 @@ public final class Renderer {
         return Node.build(Tag.PRE, pre -> {
             pre.set("class", "code-block");
             pre.appendBuild(Tag.SPAN, span -> {
-                span.set("class", "language");
+                span.set("class", "cx-language");
                 span.appendText(prettyLanguageName);
             });
             pre.appendText("\n");
@@ -627,7 +627,7 @@ public final class Renderer {
 
         private static final Attribute.String idMain = new Attribute.String("id", "main");
 
-        private static final String numberedClassName = "numbered";
+        private static final String numberedClassName = "cx-numbered";
         private static final Attribute.String classNumbered = new Attribute.String("class", numberedClassName);
 
         private static final String[] monthNames = {

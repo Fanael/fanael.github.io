@@ -316,7 +316,7 @@ figure, .code-block {
     }
 }
 
-.code-block .language {
+.cx-language {
     border-bottom: thin solid #aaa;
     display: block;
     left: 0;
@@ -326,7 +326,7 @@ figure, .code-block {
 }
 
 @supports (display: grid) {
-    .code-block .numbered {
+    .cx-numbered {
         counter-reset: line-number;
         display: grid;
         grid-template-columns: max-content auto;
@@ -582,7 +582,7 @@ article:not(:last-child) .read-full {
         background-color: #111;
     }
 
-    figure, .code-block, .code-block .language, .cx-ln, td, th {
+    figure, .code-block, .cx-language, .cx-ln, td, th {
         border-color: #888;
     }
 
