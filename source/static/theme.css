@@ -301,6 +301,8 @@ figure, .code-block {
 }
 
 .code-block {
+    border-radius: 1.5ch;
+    border: thin solid #aaa;
     line-height: 1.5;
     padding: 0.5em 1ch;
 }
@@ -308,7 +310,7 @@ figure, .code-block {
 @media screen {
     .code-block {
         background-color: rgba(221, 221, 204, 0.2);
-        border-radius: 1.5ch;
+        border: var(--kill);
         box-shadow: var(--box-shadow-specs);
         overflow: auto;
     }
@@ -468,6 +470,8 @@ table.perf-stat td:nth-child(4) {
 /* Table of contents */
 .toc {
     background-color: rgba(229, 209, 212, 0.266);
+    border: thin solid #aaa;
+    border: var(--kill);
     border-radius: 1.5ch;
     box-shadow: var(--box-shadow-specs);
     padding: 1ch;
