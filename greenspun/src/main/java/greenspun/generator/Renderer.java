@@ -621,8 +621,7 @@ public final class Renderer {
             span.appendText("Table of contents");
         });
 
-        private static final Node.Element lineNumberMarker = Node.build(Tag.SPAN,
-            span -> span.set("class", "ln at-only-b"));
+        private static final Node.Element lineNumberMarker = Node.build(Tag.SPAN, span -> span.set("class", "cx-ln"));
 
         private static final Attribute.String htmlLang = new Attribute.String("lang", "en");
 
