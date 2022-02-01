@@ -256,6 +256,4 @@ public final class HtslConverter {
 
     private record TagHead(@NotNull Sexp.Symbol tagName, @NotNull ImmutableList<Sexp> attributes) {
     }
-
-
 }
