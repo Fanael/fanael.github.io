@@ -9,7 +9,7 @@
 </span><span class="cx-ln"></span><span>    noncopyable() = <span class="c-k">default</span>;
 </span><span class="cx-ln"></span><span>    ~noncopyable() = <span class="c-k">default</span>;
 </span><span class="cx-ln"></span><span>};
-</span></code></pre><aside role="note"><p>I'm personally not a huge fan of the <code>noncopyable</code> name, because it describes <em>how</em> instead of <em>why</em>, but that's neither here nor there.</p></aside><p>The <code>noncopyable</code> class can be mixed in using inheritance, like so:</p><pre class="code-block"><span class="cx-language">C++</span>
+</span></code></pre><div class="sidenote" role="note"><p>I'm personally not a huge fan of the <code>noncopyable</code> name, because it describes <em>how</em> instead of <em>why</em>, but that's neither here nor there.</p></div><p>The <code>noncopyable</code> class can be mixed in using inheritance, like so:</p><pre class="code-block"><span class="cx-language">C++</span>
 <code class="cx-numbered"><span class="cx-ln"></span><span><span class="c-k">class</span> foo : <span class="c-k">private</span> noncopyable {
 </span><span class="cx-ln"></span><span>    <span class="c-c">// …
 </span></span><span class="cx-ln"></span><span>};
