@@ -68,9 +68,6 @@ public enum Tag {
     NAV(build(Context.FLOW, Context.FLOW)),
     HEADER(build(Context.FLOW, Context.FLOW)),
     FOOTER(build(Context.FLOW, Context.FLOW)),
-    ASIDE(build(Context.FLOW, Context.FLOW)
-        .setAllowedAttributes(Map.of("role", new StringSetVerifier(Set.of("note"))))
-    ),
     H1(build(Context.FLOW, Context.FLOW)),
     H2(build(Context.FLOW, Context.FLOW)),
     H3(build(Context.FLOW, Context.FLOW)),
@@ -78,7 +75,9 @@ public enum Tag {
     H5(build(Context.FLOW, Context.FLOW)),
     H6(build(Context.FLOW, Context.FLOW)),
     BLOCKQUOTE(build(Context.FLOW, Context.FLOW)),
-    DIV(build(EnumSet.of(Context.FLOW, Context.FIGURE), ChildContext.transparent())),
+    DIV(build(EnumSet.of(Context.FLOW, Context.FIGURE), ChildContext.transparent())
+        .setAllowedAttributes(Map.of("role", new StringSetVerifier(Set.of("note"))))
+    ),
     P(build(Context.FLOW, Context.PHRASING)),
     BR(build(EnumSet.of(Context.FLOW, Context.PHRASING), ChildContext.none())
         .setOmitClosingTag()

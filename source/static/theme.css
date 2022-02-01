@@ -260,14 +260,14 @@ li > p {
     text-indent: 0;
 }
 
-aside, .info {
+.sidenote, .info {
     border-radius: 1.5ch;
     margin: 0.5em 0;
     padding: 0.25em 1ch;
     page-break-inside: avoid;
 }
 
-aside {
+.sidenote {
     font-size: 87.5%;
 
     border: thin solid #777;

@@ -179,8 +179,9 @@ public final class HtslConverter {
         final @NotNull ImmutableList<Sexp> attributes,
         final @NotNull ImmutableList<Sexp> children
     ) {
-        return Node.build(Tag.ASIDE, aside -> {
+        return Node.build(Tag.DIV, aside -> {
             convertAttributes(aside, attributes);
+            aside.set("class", "sidenote");
             aside.set("role", "note");
             convertChildren(aside, children);
         });
@@ -255,4 +256,6 @@ public final class HtslConverter {
 
     private record TagHead(@NotNull Sexp.Symbol tagName, @NotNull ImmutableList<Sexp> attributes) {
     }
+
+
 }
