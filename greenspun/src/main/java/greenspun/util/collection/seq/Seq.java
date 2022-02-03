@@ -331,6 +331,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      *
      * @see #contains(Object)
      */
+    @Override
     public final boolean containsAll(final @NotNull Collection<?> collection) {
         for (final var element : collection) {
             if (!contains(element)) {
