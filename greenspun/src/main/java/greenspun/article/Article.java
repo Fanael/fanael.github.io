@@ -3,7 +3,7 @@
 package greenspun.article;
 
 import java.time.LocalDate;
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -21,7 +21,7 @@ public record Article(
     @NotNull String description,
     @NotNull LocalDate date,
     boolean inhibitTableOfContents,
-    @NotNull ImmutableList<@NotNull String> topics,
+    @NotNull Seq<@NotNull String> topics,
     @NotNull Section rootSection
 ) {
 }

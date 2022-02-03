@@ -11,7 +11,7 @@ import greenspun.article.Section;
 import greenspun.dom.Attribute;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,17 +32,17 @@ public final class Renderer {
      * Wraps the given list of DOM nodes representing highlighted code into a single node.
      */
     public static @NotNull Node wrapHighlightedCode(
-        final @NotNull List<@NotNull Node> nodes,
+        final @NotNull Seq<@NotNull Node> nodes,
         final @NotNull String prettyLanguageName
     ) {
-        return wrapCodeBlock(ImmutableList.of(Node.build(Tag.CODE, code -> code.append(nodes))), prettyLanguageName);
+        return wrapCodeBlock(Seq.of(Node.build(Tag.CODE, code -> code.append(nodes))), prettyLanguageName);
     }
 
     /**
      * Wraps the given list of DOM nodes representing a code block into a single node.
      */
     public static @NotNull Node wrapCodeBlock(
-        final @NotNull List<@NotNull Node> nodes,
+        final @NotNull Seq<@NotNull Node> nodes,
         final @NotNull String prettyLanguageName
     ) {
         return Node.build(Tag.PRE, pre -> {
@@ -114,9 +114,9 @@ public final class Renderer {
         );
     }
 
-    private static @NotNull List<@NotNull Node> renderLineNumbers(final @NotNull List<@NotNull Node> nodes) {
-        return (nodes.size() == 1 && nodes.get(0) instanceof Node.Element parent)
-            ? ImmutableList.of(new LineNumberRenderer(parent).render())
+    private static @NotNull Seq<@NotNull Node> renderLineNumbers(final @NotNull Seq<@NotNull Node> nodes) {
+        return (nodes.exactSize() == 1 && nodes.first() instanceof Node.Element parent)
+            ? Seq.of(new LineNumberRenderer(parent).render())
             : nodes;
     }
 
@@ -299,7 +299,7 @@ public final class Renderer {
         return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
     }
 
-    private @Nullable Node.Element renderArticleTopics(final @NotNull ImmutableList<String> topics) {
+    private @Nullable Node.Element renderArticleTopics(final @NotNull Seq<String> topics) {
         return topics.isEmpty() ? null : Node.build(Tag.P, p -> {
             p.appendText("Topics: ");
             boolean needsSeparator = false;
@@ -313,7 +313,7 @@ public final class Renderer {
         });
     }
 
-    private static @NotNull Node.Element renderTableOfContents(final @NotNull ImmutableList<Section> childrenOfRoot) {
+    private static @NotNull Node.Element renderTableOfContents(final @NotNull Seq<Section> childrenOfRoot) {
         return Node.build(Tag.NAV, nav -> {
             nav.set("class", "toc");
             nav.set("aria-labelledby", "toc-label");
@@ -322,7 +322,7 @@ public final class Renderer {
         });
     }
 
-    private static @NotNull Node.Element renderTableOfContentsList(final @NotNull ImmutableList<Section> children) {
+    private static @NotNull Node.Element renderTableOfContentsList(final @NotNull Seq<Section> children) {
         return Node.build(Tag.OL, ol -> {
             for (final var child : children) {
                 ol.appendBuild(Tag.LI, li -> {
@@ -424,7 +424,8 @@ public final class Renderer {
                     clone.set(Constants.classNumbered);
                 }
                 renderElement(new PendingElement(originalContainer, null));
-                clone.append(newRootChildren.freeze());
+                clone.append(newRootChildren);
+                newRootChildren = Seq.empty();
             });
         }
 
@@ -443,21 +444,21 @@ public final class Renderer {
             final var length = string.length();
             final var firstLineFeedPosition = string.indexOf('\n');
             if (firstLineFeedPosition == -1) {
-                parent.newChildren.add(textNode);
+                parent.appendChild(textNode);
             } else if (firstLineFeedPosition == length - 1) {
-                parent.newChildren.add(textNode);
+                parent.appendChild(textNode);
                 closeLine(parent);
             } else {
                 int position = 0;
                 int lineFeedPosition = firstLineFeedPosition;
                 do {
                     final var nextLineStart = lineFeedPosition + 1;
-                    parent.newChildren.add(new Node.Text(string.substring(position, nextLineStart)));
+                    parent.appendChild(new Node.Text(string.substring(position, nextLineStart)));
                     position = nextLineStart;
                     closeLine(parent);
                 } while ((lineFeedPosition = string.indexOf('\n', position)) != -1);
                 if (position < length) {
-                    parent.newChildren.add(new Node.Text(string.substring(position, length)));
+                    parent.appendChild(new Node.Text(string.substring(position, length)));
                 }
             }
         }
@@ -469,28 +470,32 @@ public final class Renderer {
         }
 
         private void closeElement(final @NotNull PendingElement element) {
-            final var children = element.newChildren.freeze();
+            final var children = element.newChildren;
+            element.newChildren = Seq.empty();
             if (element.parent == null) {
                 if (!children.isEmpty()) {
-                    newRootChildren.add(Constants.lineNumberMarker);
-                    newRootChildren.add(wrapLineContent(children));
+                    appendLine(children);
                 }
             } else {
                 if (!children.isEmpty() || element.original.children().isEmpty()) {
                     final var clone = element.original.buildClone(el -> el.append(children));
-                    element.parent.newChildren.add(clone);
+                    element.parent.appendChild(clone);
                 }
             }
         }
 
-        private static @NotNull Node.Element wrapLineContent(final @NotNull List<@NotNull Node> nodes) {
-            return (nodes.size() == 1 && nodes.get(0) instanceof Node.Element element)
+        private void appendLine(final @NotNull Seq<@NotNull Node> nodes) {
+            newRootChildren = newRootChildren.appended(Constants.lineNumberMarker).appended(wrapLineContent(nodes));
+        }
+
+        private static @NotNull Node.Element wrapLineContent(final @NotNull Seq<@NotNull Node> nodes) {
+            return (nodes.exactSize() == 1 && nodes.first() instanceof Node.Element element)
                 ? element
                 : Node.build(Tag.SPAN, span -> span.append(nodes));
         }
 
         private final @NotNull Node.Element originalContainer;
-        private final ImmutableList.Builder<@NotNull Node> newRootChildren = new ImmutableList.Builder<>();
+        private @NotNull Seq<@NotNull Node> newRootChildren = Seq.empty();
 
         private static final class PendingElement {
             private PendingElement(final @NotNull Node.Element original, final @Nullable PendingElement parent) {
@@ -498,16 +503,20 @@ public final class Renderer {
                 this.parent = parent;
             }
 
+            void appendChild(final @NotNull Node node) {
+                newChildren = newChildren.appended(node);
+            }
+
             private final @NotNull Node.Element original;
             private final @Nullable PendingElement parent;
-            private final ImmutableList.Builder<@NotNull Node> newChildren = new ImmutableList.Builder<>();
+            private @NotNull Seq<@NotNull Node> newChildren = Seq.empty();
         }
     }
 
     // Put constants in a separate class, so that they're created on first access rather than when the renderer class is
     // loaded.
     private static final class Constants {
-        private static final ImmutableList<Node.Element> headPrefix = ImmutableList.of(
+        private static final Seq<Node.Element> headPrefix = Seq.of(
             Node.makeEmptyElement(Tag.META_CHARSET_UTF8),
             Node.build(Tag.META_NAMED, meta -> {
                 meta.set("name", "viewport");
@@ -519,7 +528,7 @@ public final class Renderer {
             })
         );
 
-        private static final ImmutableList<Node.Element> headSuffix = ImmutableList.of(
+        private static final Seq<Node.Element> headSuffix = Seq.of(
             Node.build(Tag.LINK, link -> {
                 link.set("rel", "alternate");
                 link.set("href", '/' + RenderConstants.feedFileName);
@@ -536,7 +545,7 @@ public final class Renderer {
             })
         );
 
-        private static final ImmutableList<Node.Element> header = ImmutableList.of(
+        private static final Seq<Node.Element> header = Seq.of(
             Node.build(Tag.A, a -> {
                 a.set("id", "skip-nav");
                 a.set("class", "at-only");

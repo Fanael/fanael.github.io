@@ -17,7 +17,7 @@ import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.Trace;
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import org.jetbrains.annotations.NotNull;
@@ -76,17 +76,17 @@ public final class Parser {
             throw signalError("Cannot magically turn empty input into an article");
         }
         final var list = Sexps.asList(form);
-        if (list == null || list.isEmpty() || list.get(0) != Sexp.KnownSymbol.DEFARTICLE) {
+        if (list == null || list.isEmpty() || list.first() != Sexp.KnownSymbol.DEFARTICLE) {
             throw signalError("This doesn't appear to be a valid defarticle form: " + Sexps.prettyPrint(form));
         }
-        final var properties = extractProperties(list, 1, allowedDefarticleKeys);
+        final var properties = extractProperties(list.withoutFirst(), allowedDefarticleKeys);
         final var title = parseString(properties, Sexp.KnownSymbol.KW_TITLE);
         final var description = parseString(properties, Sexp.KnownSymbol.KW_DESCRIPTION);
         final var date = parseDate(properties);
         final var childIds = parseChildIds(properties);
         final var topics = parseTopics(properties);
         final var inhibitTableOfContents = parseBoolean(properties, Sexp.KnownSymbol.KW_INHIBIT_TABLE_OF_CONTENTS);
-        final var rootSectionDom = htslConverter.convert(list.subList(properties.remainderOffset, list.size()));
+        final var rootSectionDom = htslConverter.convert(properties.tail);
         final var rootSection = new PartialSection(rootSectionId, "", childIds, rootSectionDom);
         sectionsById.put(rootSection.identifier, rootSection);
         return new PartialArticle(
@@ -115,10 +115,11 @@ public final class Parser {
 
     private void parseDefsection(final @NotNull Sexp form) {
         final var list = Sexps.asList(form);
-        if (list == null || list.isEmpty() || list.get(0) != Sexp.KnownSymbol.DEFSECTION) {
+        if (list == null || list.exactSize() < 2 || list.first() != Sexp.KnownSymbol.DEFSECTION) {
             throw signalError("This doesn't appear to be a valid defsection form: " + Sexps.prettyPrint(form));
         }
-        final var sectionIdSexp = list.get(1);
+        final var tail = list.withoutFirst();
+        final var sectionIdSexp = tail.first();
         final var sectionId = Sexps.asSymbol(sectionIdSexp);
         if (sectionId == null) {
             throw signalError(
@@ -126,10 +127,10 @@ public final class Parser {
         }
         try (final var trace = new Trace(() -> "Parsing article section " + sectionId)) {
             trace.use();
-            final var properties = extractProperties(list, 2, allowedDefsectionKeys);
+            final var properties = extractProperties(tail.withoutFirst(), allowedDefsectionKeys);
             final var header = parseString(properties, Sexp.KnownSymbol.KW_HEADER);
             final var childIds = parseChildIds(properties);
-            final var bodyDom = htslConverter.convert(list.subList(properties.remainderOffset, list.size()));
+            final var bodyDom = htslConverter.convert(properties.tail);
             final var section = new PartialSection(sectionId, header, childIds, bodyDom);
             if (sectionsById.put(sectionId, section) != null) {
                 throw signalLinkingError("Duplicate section identifier found: " + sectionId);
@@ -203,7 +204,7 @@ public final class Parser {
     }
 
     private @NotNull Section linkSection(final @NotNull PartialSection section) {
-        final var linkedChildren = ImmutableList.map(section.childIds, childId -> {
+        final var linkedChildren = section.childIds.map(childId -> {
             final var child = sectionsById.get(childId);
             assert child != null : "Reference to unknown section not found by graph verification?";
             return linkSection(child);
@@ -214,10 +215,10 @@ public final class Parser {
     private static @NotNull LocalDate parseDate(final @NotNull ExtractedProperties properties) {
         final var value = properties.get(Sexp.KnownSymbol.KW_DATE);
         final var list = Sexps.asList(value);
-        if (list == null || list.size() != 3) {
+        if (list == null || list.exactSize() != 3) {
             throw signalError("Property :date doesn't appear to be a 3-element list: " + Sexps.prettyPrint(value));
         }
-        final var bigYear = parseInteger(list.get(0), "Year");
+        final var bigYear = parseInteger(list.first(), "Year");
         final var bigMonth = parseInteger(list.get(1), "Month");
         final var bigDay = parseInteger(list.get(2), "Day");
         final var year = intValueExact(bigYear, "Year");
@@ -230,7 +231,7 @@ public final class Parser {
         }
     }
 
-    private static @NotNull ImmutableList<String> parseTopics(
+    private static @NotNull Seq<String> parseTopics(
         final @NotNull ExtractedProperties properties
     ) {
         return parseList(properties, Sexp.KnownSymbol.KW_TOPICS, (final @NotNull Sexp sexp) -> {
@@ -242,7 +243,7 @@ public final class Parser {
         });
     }
 
-    private static @NotNull ImmutableList<Sexp.Symbol> parseChildIds(
+    private static @NotNull Seq<Sexp.Symbol> parseChildIds(
         final @NotNull ExtractedProperties properties
     ) {
         return parseList(properties, Sexp.KnownSymbol.KW_CHILDREN, (final @NotNull Sexp sexp) -> {
@@ -254,7 +255,7 @@ public final class Parser {
         });
     }
 
-    private static <T> @NotNull ImmutableList<T> parseList(
+    private static <T> @NotNull Seq<T> parseList(
         final @NotNull ExtractedProperties properties,
         final @NotNull Sexp.KnownSymbol key,
         final @NotNull Function<Sexp, T> function
@@ -264,7 +265,7 @@ public final class Parser {
         if (list == null) {
             throw signalError("Property " + key + " doesn't appear to be a list: " + Sexps.prettyPrint(value));
         }
-        return ImmutableList.map(list, function);
+        return list.map(function);
     }
 
     private static @NotNull String parseString(
@@ -311,26 +312,29 @@ public final class Parser {
     }
 
     private static @NotNull ExtractedProperties extractProperties(
-        final @NotNull ImmutableList<Sexp> list,
-        final int startIndex,
+        final @NotNull Seq<Sexp> list,
         final @NotNull Set<? extends Sexp.Symbol> allowedKeys
     ) {
         final var properties = new HashMap<Sexp.Symbol, @NotNull Sexp>();
-        int i = startIndex;
-        for (final var size = list.size(); i < size; i += 2) {
-            final var keyword = Sexps.asKeyword(list.get(i));
+        var it = list;
+        while (!it.isEmpty()) {
+            final var keyword = Sexps.asKeyword(it.first());
             if (keyword == null) {
                 break;
             }
+            it = it.withoutFirst();
             if (!allowedKeys.contains(keyword)) {
                 throw signalError("Property key " + keyword + " not allowed in this context");
             }
-            final var value = (i + 1 < size) ? list.get(i + 1) : Sexp.KnownSymbol.NIL;
+            final var value = it.isEmpty() ? Sexp.KnownSymbol.NIL : it.first();
+            if (!it.isEmpty()) {
+                it = it.withoutFirst();
+            }
             if (properties.put(keyword, value) != null) {
                 throw signalError("Duplicate value for property " + keyword);
             }
         }
-        return new ExtractedProperties(properties, i);
+        return new ExtractedProperties(properties, it);
     }
 
     private static @NotNull UnhandledErrorError signalError(final @NotNull String message) {
@@ -359,7 +363,7 @@ public final class Parser {
     private final @NotNull HtslConverter htslConverter;
     private final HashMap<Sexp.Symbol, PartialSection> sectionsById = new HashMap<>();
 
-    private record ExtractedProperties(@NotNull Map<Sexp.Symbol, Sexp> properties, int remainderOffset) {
+    private record ExtractedProperties(@NotNull Map<Sexp.Symbol, Sexp> properties, @NotNull Seq<@NotNull Sexp> tail) {
         private @NotNull Sexp get(final @NotNull Sexp.Symbol symbol) {
             final var sexp = properties.get(symbol);
             return (sexp != null) ? sexp : Sexp.KnownSymbol.NIL;
@@ -374,7 +378,7 @@ public final class Parser {
         @NotNull String description,
         @NotNull LocalDate date,
         boolean inhibitTableOfContents,
-        @NotNull ImmutableList<String> topics,
+        @NotNull Seq<String> topics,
         @NotNull PartialSection rootSection
     ) {
     }
@@ -382,8 +386,8 @@ public final class Parser {
     private record PartialSection(
         @NotNull Sexp.Symbol identifier,
         @NotNull String header,
-        @NotNull ImmutableList<Sexp.Symbol> childIds,
-        @NotNull ImmutableList<Node> body
+        @NotNull Seq<Sexp.Symbol> childIds,
+        @NotNull Seq<Node> body
     ) {
     }
 }

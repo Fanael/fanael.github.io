@@ -3,7 +3,7 @@
 package greenspun.sexp;
 
 import java.math.BigInteger;
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -35,7 +35,7 @@ public sealed interface Sexp {
      * <p>
      * Dotted lists are unsupported.
      */
-    record List(@NotNull ImmutableList<@NotNull Sexp> value) implements Sexp {
+    record List(@NotNull Seq<@NotNull Sexp> value) implements Sexp {
     }
 
     /**

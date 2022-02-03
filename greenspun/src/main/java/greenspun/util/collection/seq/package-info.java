@@ -2,6 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * Additional collection types.
+ * A persistent sequence type.
  */
-package greenspun.util.collection;
+package greenspun.util.collection.seq;

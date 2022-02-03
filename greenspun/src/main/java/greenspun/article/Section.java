@@ -4,7 +4,7 @@ package greenspun.article;
 
 import greenspun.dom.Node;
 import greenspun.sexp.Sexp;
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 public record Section(
     @NotNull Sexp.Symbol identifier,
     @NotNull String header,
-    @NotNull ImmutableList<@NotNull Section> children,
-    @NotNull ImmutableList<@NotNull Node> body
+    @NotNull Seq<@NotNull Section> children,
+    @NotNull Seq<@NotNull Node> body
 ) {
 }

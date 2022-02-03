@@ -10,7 +10,7 @@ import greenspun.pygments.PygmentsCache;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
 import greenspun.util.Trace;
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import org.jetbrains.annotations.NotNull;
@@ -40,8 +40,8 @@ public final class HtslConverter {
      * occurs in syntax highlighting during the macro-expansion of {@code highlighted-code} tag macro.
      * </ul>
      */
-    public @NotNull ImmutableList<@NotNull Node> convert(final @NotNull ImmutableList<@NotNull Sexp> forms) {
-        return ImmutableList.map(forms, this::convertForm);
+    public @NotNull Seq<@NotNull Node> convert(final @NotNull Seq<@NotNull Sexp> forms) {
+        return forms.map(this::convertForm);
     }
 
     private @NotNull Node convertForm(final @NotNull Sexp form) {
@@ -49,14 +49,14 @@ public final class HtslConverter {
             return new Node.Text(string.value());
         }
         final var list = Sexps.asList(form);
-        if (list == null || list.size() < 1) {
+        if (list == null || list.isEmpty()) {
             throw signalError("This doesn't appear to be a valid HTSL element: " + Sexps.prettyPrint(form));
         }
-        final var tagHead = extractTagHead(list.get(0));
+        final var tagHead = extractTagHead(list.first());
         final var tagName = tagHead.tagName;
         try (final var trace = new Trace(() -> "Converting HTSL element " + tagName + " into a DOM node")) {
             trace.use();
-            final var children = list.subList(1, list.size());
+            final var children = list.withoutFirst();
             final var tagMacro = tagMacros.get(tagName);
             if (tagMacro != null) {
                 return tagMacro.expand(this, tagHead.attributes, children);
@@ -67,8 +67,8 @@ public final class HtslConverter {
 
     private @NotNull Node.Element convertElement(
         final @NotNull Sexp.Symbol tagName,
-        final @NotNull ImmutableList<Sexp> attributes,
-        final @NotNull ImmutableList<Sexp> children
+        final @NotNull Seq<Sexp> attributes,
+        final @NotNull Seq<Sexp> children
     ) {
         final var tag = Tag.byHtmlName(tagName.symbolName());
         if (tag == null) {
@@ -82,16 +82,20 @@ public final class HtslConverter {
 
     private static void convertAttributes(
         final @NotNull Node.ElementBuilder builder,
-        final @NotNull ImmutableList<Sexp> attributes
+        final @NotNull Seq<Sexp> attributes
     ) {
-        for (int i = 0, size = attributes.size(); i < size; i += 2) {
-            final var keyForm = attributes.get(i);
+        for (var it = attributes; !it.isEmpty(); ) {
+            final var keyForm = it.first();
+            it = it.withoutFirst();
             final var key = Sexps.asKeyword(keyForm);
             if (key == null) {
                 throw signalError("Attribute name doesn't appear to be a Lisp keyword: " + Sexps.prettyPrint(keyForm));
             }
             final var attributeName = key.symbolName().substring(1);
-            final var value = (i + 1 < size) ? attributes.get(i + 1) : Sexp.KnownSymbol.NIL;
+            final var value = it.isEmpty() ? Sexp.KnownSymbol.NIL : it.first();
+            if (!it.isEmpty()) {
+                it = it.withoutFirst();
+            }
             switch (value) {
                 case Sexp.String string -> builder.set(attributeName, string.value());
                 case Sexp.Integer integer -> builder.set(attributeName, integer.value());
@@ -112,45 +116,45 @@ public final class HtslConverter {
     private static @NotNull TagHead extractTagHead(final @NotNull Sexp form) {
         final var symbol = Sexps.asSymbol(form);
         if (symbol != null) {
-            return new TagHead(symbol, ImmutableList.empty());
+            return new TagHead(symbol, Seq.empty());
         }
         final var list = Sexps.asList(form);
         if (list == null || list.isEmpty()) {
             throw signalError("This doesn't appear to be a valid HTSL tag head: " + Sexps.prettyPrint(form));
         }
-        final var tagNameForm = list.get(0);
+        final var tagNameForm = list.first();
         final var tagName = Sexps.asSymbol(tagNameForm);
         if (tagName == null) {
             throw signalError("This doesn't appear to be a valid HTSL tag name: " + Sexps.prettyPrint(tagNameForm));
         }
-        return new TagHead(tagName, list.subList(1, list.size()));
+        return new TagHead(tagName, list.withoutFirst());
     }
 
     private @NotNull Node expandCodeBlock(
-        final @NotNull ImmutableList<Sexp> attributes,
-        final @NotNull ImmutableList<Sexp> children
+        final @NotNull Seq<Sexp> attributes,
+        final @NotNull Seq<Sexp> children
     ) {
-        if (attributes.size() != 2 || attributes.get(0) != Sexp.KnownSymbol.KW_LANGUAGE) {
+        if (attributes.exactSize() != 2 || attributes.first() != Sexp.KnownSymbol.KW_LANGUAGE) {
             throw signalError("code-block accepts exactly one attribute, :language");
         }
-        final var languageNameForm = attributes.get(1);
+        final var languageNameForm = attributes.last();
         if (!(languageNameForm instanceof Sexp.String languageName)) {
             throw signalError("This doesn't appear to be a string: " + Sexps.prettyPrint(languageNameForm));
         }
-        return Renderer.wrapCodeBlock(ImmutableList.map(children, this::convertForm), languageName.value());
+        return Renderer.wrapCodeBlock(children.map(this::convertForm), languageName.value());
     }
 
     private @NotNull Node expandHighlightedCode(
-        final @NotNull ImmutableList<Sexp> attributes,
-        final @NotNull ImmutableList<Sexp> children
+        final @NotNull Seq<Sexp> attributes,
+        final @NotNull Seq<Sexp> children
     ) {
-        if (children.size() != 1 || !(children.get(0) instanceof Sexp.String codeNode)) {
+        if (children.exactSize() != 1 || !(children.first() instanceof Sexp.String codeNode)) {
             throw signalError("highlighted-code accepts exactly one string child");
         }
-        if (attributes.size() != 2 || attributes.get(0) != Sexp.KnownSymbol.KW_LANGUAGE) {
+        if (attributes.exactSize() != 2 || attributes.first() != Sexp.KnownSymbol.KW_LANGUAGE) {
             throw signalError("highlighted-code accepts exactly one attribute, :language");
         }
-        final var languageTagForm = attributes.get(1);
+        final var languageTagForm = attributes.last();
         final var languageTag = Sexps.asKeyword(languageTagForm);
         if (languageTag == null) {
             throw signalError("This doesn't appear to be a language name: " + Sexps.prettyPrint(languageTagForm));
@@ -165,8 +169,8 @@ public final class HtslConverter {
     }
 
     private @NotNull Node expandImageFigure(
-        final @NotNull ImmutableList<Sexp> attributes,
-        final @NotNull ImmutableList<Sexp> children
+        final @NotNull Seq<Sexp> attributes,
+        final @NotNull Seq<Sexp> children
     ) {
         return Node.build(Tag.FIGURE, figure -> {
             figure.appendBuild(Tag.FIGCAPTION, figcaption -> convertChildren(figcaption, children));
@@ -176,8 +180,8 @@ public final class HtslConverter {
     }
 
     private @NotNull Node expandSidenote(
-        final @NotNull ImmutableList<Sexp> attributes,
-        final @NotNull ImmutableList<Sexp> children
+        final @NotNull Seq<Sexp> attributes,
+        final @NotNull Seq<Sexp> children
     ) {
         return Node.build(Tag.DIV, aside -> {
             convertAttributes(aside, attributes);
@@ -188,8 +192,8 @@ public final class HtslConverter {
     }
 
     private @NotNull Node expandFigcontent(
-        final @NotNull ImmutableList<Sexp> attributes,
-        final @NotNull ImmutableList<Sexp> children
+        final @NotNull Seq<Sexp> attributes,
+        final @NotNull Seq<Sexp> children
     ) {
         return buildFigcontent(figcontent -> {
             convertAttributes(figcontent, attributes);
@@ -198,8 +202,8 @@ public final class HtslConverter {
     }
 
     private @NotNull Node expandInfoBox(
-        final @NotNull ImmutableList<Sexp> attributes,
-        final @NotNull ImmutableList<Sexp> children
+        final @NotNull Seq<Sexp> attributes,
+        final @NotNull Seq<Sexp> children
     ) {
         return Node.build(Tag.DIV, div -> {
             convertAttributes(div, attributes);
@@ -210,7 +214,7 @@ public final class HtslConverter {
 
     private void convertChildren(
         final @NotNull Node.ElementBuilder builder,
-        final @NotNull ImmutableList<Sexp> children
+        final @NotNull Seq<Sexp> children
     ) {
         for (final var child : children) {
             builder.append(convertForm(child));
@@ -249,11 +253,11 @@ public final class HtslConverter {
     private interface TagMacroExpander {
         @NotNull Node expand(
             @NotNull HtslConverter converter,
-            @NotNull ImmutableList<Sexp> attributes,
-            @NotNull ImmutableList<Sexp> children
+            @NotNull Seq<Sexp> attributes,
+            @NotNull Seq<Sexp> children
         );
     }
 
-    private record TagHead(@NotNull Sexp.Symbol tagName, @NotNull ImmutableList<Sexp> attributes) {
+    private record TagHead(@NotNull Sexp.Symbol tagName, @NotNull Seq<Sexp> attributes) {
     }
 }

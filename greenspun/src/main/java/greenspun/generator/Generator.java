@@ -26,7 +26,7 @@ import greenspun.sexp.reader.ByteStream;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.CollectionExecutorService;
 import greenspun.util.Trace;
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.exception.IOExceptionCondition;
 import org.jetbrains.annotations.NotNull;
@@ -258,7 +258,7 @@ public final class Generator {
                 innerArticle.date(),
                 innerArticle.inhibitTableOfContents(),
                 innerArticle.topics(),
-                new Section(rootSection.identifier(), rootSection.header(), ImmutableList.empty(), rootSection.body())
+                new Section(rootSection.identifier(), rootSection.header(), Seq.empty(), rootSection.body())
             ),
             orderedArticle.target
         ).toArchivedArticle();

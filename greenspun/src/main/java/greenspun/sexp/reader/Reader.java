@@ -14,7 +14,7 @@ import java.util.Arrays;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.SymbolTable;
 import greenspun.util.UnreachableCodeReachedError;
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.exception.IOExceptionCondition;
@@ -106,7 +106,7 @@ public final class Reader {
     }
 
     private @NotNull Sexp.List readList() {
-        final var builder = new ImmutableList.Builder<@NotNull Sexp>(initialListCapacity);
+        var list = Seq.<@NotNull Sexp>empty();
         while (true) {
             if (skipSkippables().hitEof()) {
                 throw signalUnterminatedListError();
@@ -120,12 +120,12 @@ public final class Reader {
             }
             final var form = readForm();
             if (form != null) {
-                builder.add(form);
+                list = list.appended(form);
             } else {
                 throw signalUnterminatedListError();
             }
         }
-        return new Sexp.List(builder.freeze());
+        return new Sexp.List(list);
     }
 
     private @NotNull Sexp.String readString() {
@@ -235,7 +235,6 @@ public final class Reader {
     }
 
     private static final byte lastControlByte = 0x1F;
-    private static final int initialListCapacity = 8;
     private static final int initialStringCapacity = 256;
     private static final int initialSymbolCapacity = 16;
     private static final int maxDepth = 150;

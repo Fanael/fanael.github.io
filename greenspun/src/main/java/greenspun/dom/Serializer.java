@@ -4,7 +4,7 @@ package greenspun.dom;
 
 import java.io.IOException;
 import java.io.Writer;
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,8 +31,8 @@ public final class Serializer {
 
     void serializePseudoElement(
         final @NotNull String elementName,
-        final @NotNull ImmutableList<@NotNull Attribute> attributes,
-        final @NotNull ImmutableList<@NotNull Node> children,
+        final @NotNull Seq<@NotNull Attribute> attributes,
+        final @NotNull Seq<@NotNull Node> children,
         final boolean omitClosingTag
     ) throws IOException {
         writer.write('<');
@@ -69,7 +69,7 @@ public final class Serializer {
         serializePseudoElement(tag.htmlName(), element.attributes(), element.children(), tag.omitClosingTag());
     }
 
-    private void serializeAttributes(final @NotNull ImmutableList<@NotNull Attribute> attributes) throws IOException {
+    private void serializeAttributes(final @NotNull Seq<@NotNull Attribute> attributes) throws IOException {
         for (final var attribute : attributes) {
             switch (attribute) {
                 case Attribute.Boolean booleanAttr -> {

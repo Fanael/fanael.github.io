@@ -10,7 +10,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import greenspun.util.collection.ImmutableList;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;
@@ -62,29 +61,33 @@ public final class CollectionExecutorService {
         }));
     }
 
-    private <T, R> @NotNull ImmutableList<@NotNull Future<R>> submitTasks(
+    private <T, R> @NotNull ArrayList<@NotNull Future<R>> submitTasks(
         final @NotNull Collection<? extends T> collection,
         final @NotNull Function<? super T, ? extends R> function
     ) {
         final var inheritedState = ConditionContext.saveInheritableState();
-        return ImmutableList.map(collection, element -> executorService.submit(() -> {
-            final var previousState = ConditionContext.inheritState(inheritedState);
-            try (final var trace = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
-                trace.use();
-                return function.apply(element);
-            } finally {
-                ConditionContext.restoreState(previousState);
-            }
-        }));
+        final var result = new ArrayList<@NotNull Future<R>>(collection.size());
+        for (final var element : collection) {
+            result.add(executorService.submit(() -> {
+                final var previousState = ConditionContext.inheritState(inheritedState);
+                try (final var t = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
+                    t.use();
+                    return function.apply(element);
+                } finally {
+                    ConditionContext.restoreState(previousState);
+                }
+            }));
+        }
+        return result;
     }
 
-    private static <T> @NotNull ArrayList<T> collectResults(final @NotNull ImmutableList<@NotNull Future<T>> futures) {
+    private static <T> @NotNull ArrayList<T> collectResults(final @NotNull ArrayList<@NotNull Future<T>> futures) {
         final var result = new ArrayList<T>(futures.size());
         new AwaitImpl<>(futures.iterator(), result::add).awaitAll();
         return result;
     }
 
-    private static void waitForResults(final @NotNull ImmutableList<@NotNull Future<Object>> futures) {
+    private static void waitForResults(final @NotNull ArrayList<@NotNull Future<Object>> futures) {
         new AwaitImpl<>(futures.iterator(), value -> {
         }).awaitAll();
     }

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.dom;
 
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import org.jetbrains.annotations.NotNull;
 
-record VerificationError(@NotNull String message, @NotNull ImmutableList<@NotNull Tag> ancestorTags) {
+record VerificationError(@NotNull String message, @NotNull Seq<@NotNull Tag> ancestorTags) {
 }

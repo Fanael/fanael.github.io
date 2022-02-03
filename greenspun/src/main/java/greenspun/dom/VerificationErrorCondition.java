@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.dom;
 
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.Condition;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
  * The associated detailed message contains the list of errors formatted in human-readable way.
  */
 public final class VerificationErrorCondition extends Condition {
-    VerificationErrorCondition(final @NotNull ImmutableList<@NotNull VerificationError> errors) {
+    VerificationErrorCondition(final @NotNull Seq<@NotNull VerificationError> errors) {
         super("DOM verification failed");
         this.errors = errors;
     }
@@ -32,5 +32,5 @@ public final class VerificationErrorCondition extends Condition {
         return builder.toString();
     }
 
-    private final @NotNull ImmutableList<@NotNull VerificationError> errors;
+    private final @NotNull Seq<@NotNull VerificationError> errors;
 }

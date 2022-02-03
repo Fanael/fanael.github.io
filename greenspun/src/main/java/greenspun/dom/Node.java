@@ -3,8 +3,7 @@
 package greenspun.dom;
 
 import java.math.BigInteger;
-import java.util.Collection;
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,7 +33,7 @@ public abstract sealed class Node {
      * Returns a new element object of the given tag with no attributes or children.
      */
     public static @NotNull Element makeEmptyElement(final @NotNull Tag tag) {
-        return new Element(tag, ImmutableList.empty(), ImmutableList.empty());
+        return new Element(tag, Seq.empty(), Seq.empty());
     }
 
     /**
@@ -77,8 +76,8 @@ public abstract sealed class Node {
     public static final class Element extends Node {
         private Element(
             final @NotNull Tag tag,
-            final @NotNull ImmutableList<@NotNull Attribute> attributes,
-            final @NotNull ImmutableList<@NotNull Node> children
+            final @NotNull Seq<@NotNull Attribute> attributes,
+            final @NotNull Seq<@NotNull Node> children
         ) {
             this.tag = tag;
             this.attributes = attributes;
@@ -97,7 +96,7 @@ public abstract sealed class Node {
          */
         public @NotNull Element buildClone(final @NotNull BuildFunction buildFunction) {
             final var builder = new ElementBuilder(tag);
-            builder.attributes.addAll(attributes);
+            builder.attributes = attributes;
             buildFunction.build(builder);
             return builder.toElement();
         }
@@ -105,14 +104,14 @@ public abstract sealed class Node {
         /**
          * Retrieves the immutable list of all attributes of this element.
          */
-        public @NotNull ImmutableList<@NotNull Attribute> attributes() {
+        public @NotNull Seq<@NotNull Attribute> attributes() {
             return attributes;
         }
 
         /**
          * Retrieves the immutable list of all children of this element.
          */
-        public @NotNull ImmutableList<@NotNull Node> children() {
+        public @NotNull Seq<@NotNull Node> children() {
             return children;
         }
 
@@ -120,8 +119,12 @@ public abstract sealed class Node {
          * Retrieves the value of the attribute with the give name, or {@code null} if no such attribute is present.
          */
         public @Nullable Attribute getAttribute(final @NotNull String name) {
-            final var index = attributes.findFirst(attribute -> name.equals(attribute.name()));
-            return (index == -1) ? null : attributes.get(index);
+            for (final var attribute : attributes) {
+                if (name.equals(attribute.name())) {
+                    return attribute;
+                }
+            }
+            return null;
         }
 
         @NotNull Tag tag() {
@@ -129,8 +132,8 @@ public abstract sealed class Node {
         }
 
         private final @NotNull Tag tag;
-        private final ImmutableList<@NotNull Attribute> attributes;
-        private final ImmutableList<@NotNull Node> children;
+        private final Seq<@NotNull Attribute> attributes;
+        private final Seq<@NotNull Node> children;
     }
 
     /**
@@ -152,20 +155,18 @@ public abstract sealed class Node {
          * {@link Verifier}.
          */
         public void append(final @NotNull Node child) {
-            children.add(child);
+            children = children.appended(child);
         }
 
         /**
-         * Appends the given collection of children to the list of children.
-         * <p>
-         * Nodes are added in the order returned by the collection's iterator.
+         * Appends the given sequence of children to the list of children.
          * <p>
          * This method doesn't perform any checking: it can be used to create cycles in the DOM "tree" or to insert
          * nodes into contexts they don't belong in. This is not checked here, but it can be detected by the DOM
          * {@link Verifier}.
          */
-        public void append(final @NotNull Collection<? extends @NotNull Node> newChildren) {
-            children.addAll(newChildren);
+        public void append(final @NotNull Seq<? extends @NotNull Node> newChildren) {
+            children = children.concat(newChildren);
         }
 
         /**
@@ -199,18 +200,15 @@ public abstract sealed class Node {
          */
         public void set(final @NotNull Attribute attribute) {
             final var name = attribute.name();
-            final var size = attributes.size();
-            int index = 0;
-            for (; index < size; index += 1) {
-                if (name.equals(attributes.get(index).name())) {
-                    break;
+            long index = 0;
+            for (final var attr : attributes) {
+                if (name.equals(attr.name())) {
+                    attributes = attributes.updated(index, attribute);
+                    return;
                 }
+                index += 1;
             }
-            if (index < size) {
-                attributes.set(index, attribute);
-            } else {
-                attributes.add(attribute);
-            }
+            attributes = attributes.appended(attribute);
         }
 
         /**
@@ -242,11 +240,11 @@ public abstract sealed class Node {
         }
 
         private @NotNull Element toElement() {
-            return new Element(tag, attributes.freeze(), children.freeze());
+            return new Element(tag, attributes, children);
         }
 
         private final @NotNull Tag tag;
-        private final ImmutableList.Builder<@NotNull Attribute> attributes = new ImmutableList.Builder<>();
-        private final ImmutableList.Builder<@NotNull Node> children = new ImmutableList.Builder<>();
+        private Seq<@NotNull Attribute> attributes = Seq.empty();
+        private Seq<@NotNull Node> children = Seq.empty();
     }
 }

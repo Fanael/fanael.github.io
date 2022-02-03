@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.dom;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
-import greenspun.util.collection.ImmutableList;
+import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +34,7 @@ public final class Verifier {
     private void verifyRoot(final @NotNull Node rootNode) {
         verify(rootNode, Context.ROOT);
         if (!verificationErrors.isEmpty()) {
-            throw ConditionContext.error(new VerificationErrorCondition(verificationErrors.freeze()));
+            throw ConditionContext.error(new VerificationErrorCondition(verificationErrors));
         }
     }
 
@@ -110,13 +109,14 @@ public final class Verifier {
                 recordError("Empty element '" + tagName + "' has children");
             }
         } else {
-            ancestors.add(element);
+            final var previousAncestors = ancestors;
+            ancestors = ancestors.appended(element);
             try {
                 for (final var child : element.children()) {
                     verify(child, childContext);
                 }
             } finally {
-                ancestors.remove(ancestors.size() - 1);
+                ancestors = previousAncestors;
             }
         }
     }
@@ -149,11 +149,11 @@ public final class Verifier {
     }
 
     private void recordError(final @NotNull String message) {
-        verificationErrors.add(new VerificationError(message, getAncestorTags()));
+        verificationErrors = verificationErrors.appended(new VerificationError(message, getAncestorTags()));
     }
 
-    private @NotNull ImmutableList<Tag> getAncestorTags() {
-        return ImmutableList.map(ancestors, Node.Element::tag);
+    private @NotNull Seq<Tag> getAncestorTags() {
+        return ancestors.map(Node.Element::tag);
     }
 
     private static @Nullable Context getEffectiveChildContext(final @NotNull Tag tag, final @NotNull Context context) {
@@ -182,8 +182,8 @@ public final class Verifier {
     private static final EnumSet<Context> rawTextContexts =
         EnumSet.of(Context.FLOW, Context.PHRASING, Context.TEXT_ONLY);
 
-    private final ImmutableList.Builder<@NotNull VerificationError> verificationErrors = new ImmutableList.Builder<>();
-    private final ArrayList<Node.Element> ancestors = new ArrayList<>();
+    private @NotNull Seq<@NotNull VerificationError> verificationErrors = Seq.empty();
+    private @NotNull Seq<Node.@NotNull Element> ancestors = Seq.empty();
     private final HashSet<String> foundIds = new HashSet<>();
 
     interface AttributeVerifier {
