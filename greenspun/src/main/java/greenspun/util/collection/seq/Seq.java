@@ -151,7 +151,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
     public final int hashCode() {
         final var accumulator = new HashCodeAccumulator<T>();
         forEachChunk(accumulator);
-        return accumulator.result();
+        return accumulator.hashCode;
     }
 
     /**
@@ -746,5 +746,49 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         }
 
         abstract void forEachRemainingImpl(@NotNull Consumer<? super T> action);
+    }
+
+    private static final class HashCodeAccumulator<T> implements ChunkConsumer<T> {
+        @Override
+        public void acceptSingle(final T object) {
+            hashCode = mixHash(hashCode, object);
+        }
+
+        @Override
+        public void acceptArray(final T @NotNull [] array) {
+            int h = hashCode;
+            for (final var item : array) {
+                h = mixHash(h, item);
+            }
+            hashCode = h;
+        }
+
+        private static int mixHash(final int hash, final @Nullable Object object) {
+            return 31 * hash + Objects.hashCode(object);
+        }
+
+        private int hashCode = 1;
+    }
+
+    private static final class ArrayFiller<T extends U, U> implements ChunkConsumer<T> {
+        private ArrayFiller(final U @NotNull [] array) {
+            this.array = array;
+        }
+
+        @Override
+        public void acceptSingle(final T object) {
+            array[index] = object;
+            index += 1;
+        }
+
+        @Override
+        public void acceptArray(final T @NotNull [] array) {
+            final var length = array.length;
+            System.arraycopy(array, 0, this.array, index, length);
+            index += length;
+        }
+
+        private final U @NotNull [] array;
+        private int index = 0;
     }
 }

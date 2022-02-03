@@ -136,7 +136,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         if (remaining < middleSize) {
             final var accumulator = new IndexAccumulator(remaining);
             final var node = getRecursive(middle, accumulator);
-            return node.values()[(int) accumulator.get()];
+            return node.values()[(int) accumulator.remaining];
         }
         remaining -= middleSize;
         assert remaining <= Integer.MAX_VALUE;
@@ -237,7 +237,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
             final Supplier<T> fellThrough = () -> {
                 throw fellThroughTryingToIndex();
             };
-            if (accumulator.get() < middleSize) {
+            if (accumulator.remaining < middleSize) {
                 final var node = getRecursive(middle, accumulator);
                 return getAccumulatingSingle(accumulator, node.values(), fellThrough);
             }
@@ -427,13 +427,8 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new Deep<>(tag, size, prefix, middle, suffix);
     }
 
-    private static <T, Phantom> @NotNull Node<T> getRecursive(
-        final @NotNull TaggedSeq<@NotNull Node<T>, Node<Phantom>> seq,
-        final @NotNull IndexAccumulator accumulator
-    ) {
-        return (seq instanceof Deep<Node<T>, Node<Phantom>> deep)
-            ? deep.getRecursive(accumulator)
-            : seq.getImpl(accumulator.get());
+    private static <T> T getRecursive(final @NotNull TaggedSeq<T, ?> seq, final @NotNull IndexAccumulator accumulator) {
+        return (seq instanceof Deep<T, ?> deep) ? deep.getRecursive(accumulator) : seq.getImpl(accumulator.remaining);
     }
 
     private static <T> @NotNull ArraySplit<T> splitArray(
@@ -537,5 +532,22 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     private record ArraySplit<T>(T @NotNull [] left, T middle, T @NotNull [] right) {
+    }
+
+    private static final class IndexAccumulator {
+        private IndexAccumulator(final long remaining) {
+            this.remaining = remaining;
+        }
+
+        private boolean subtract(final long objectSize) {
+            final var newValue = remaining - objectSize;
+            if (newValue < 0) {
+                return true;
+            }
+            remaining = newValue;
+            return false;
+        }
+
+        private long remaining;
     }
 }
