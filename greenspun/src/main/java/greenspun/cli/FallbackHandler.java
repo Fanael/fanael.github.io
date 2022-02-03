@@ -3,9 +3,9 @@
 package greenspun.cli;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import greenspun.util.IterableUtils;
+import java.io.PrintStream;
 import greenspun.util.Trace;
+import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.Condition;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.HandlerProcedure;
@@ -30,7 +30,7 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
             }
             return;
         }
-        final var restarts = IterableUtils.toList(ConditionContext.restarts());
+        final var restarts = Seq.fromIterable(ConditionContext.restarts());
         try (final var streams = Streams.acquire()) {
             showCondition(streams, condition.condition(), "A fatal condition");
             chooseRestart(streams, restarts).unwindTo();
@@ -61,28 +61,24 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
 
     private static @NotNull Restart chooseRestart(
         final @NotNull Streams streams,
-        final @NotNull ArrayList<Restart> restarts
+        final @NotNull Seq<Restart> restarts
     ) {
-        if (restarts.size() < 1) {
+        if (restarts.isEmpty()) {
             throw new RuntimeException("No restarts available");
         }
 
         final var err = streams.err();
-        err.println("Available restarts:");
-        for (int i = 0; i < restarts.size(); i += 1) {
-            err.println(" " + (i + 1) + ". " + restarts.get(i).name());
-        }
-        err.println();
+        showRestarts(err, restarts);
         while (true) {
             err.print("Enter restart number > ");
             try {
                 final var line = streams.in().readLine();
                 if (line == null) {
                     err.println("End of input found, arbitrarily picking the last restart.");
-                    return restarts.get(restarts.size() - 1);
+                    return restarts.last();
                 }
                 final var index = Integer.parseInt(line.strip());
-                if (index >= 1 && index <= restarts.size()) {
+                if (index >= 1 && index <= restarts.exactSize()) {
                     return restarts.get(index - 1);
                 } else {
                     err.println("Invalid restart index " + index + ", value out of bounds.");
@@ -92,9 +88,19 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
             } catch (final IOException e) {
                 err.println("I/O error occurred: " + e);
                 err.println("Arbitrarily picking the last restart.");
-                return restarts.get(restarts.size() - 1);
+                return restarts.last();
             }
         }
+    }
+
+    private static void showRestarts(final @NotNull PrintStream stream, final @NotNull Seq<Restart> restarts) {
+        long index = 1;
+        stream.println("Available restarts:");
+        for (final var restart : restarts) {
+            stream.println(" " + index + ". " + restart.name());
+            index += 1;
+        }
+        stream.println();
     }
 
     private static final FallbackHandler instance = new FallbackHandler();

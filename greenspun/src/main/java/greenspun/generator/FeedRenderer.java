@@ -7,7 +7,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
@@ -15,6 +14,7 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.exception.ParserConfigurationExceptionCondition;
 import greenspun.util.condition.exception.TransformerExceptionCondition;
@@ -32,7 +32,7 @@ final class FeedRenderer {
         }
     }
 
-    void createDom(final @NotNull List<ArchivedArticle> articles, final @NotNull Instant buildTime) {
+    void createDom(final @NotNull Seq<ArchivedArticle> articles, final @NotNull Instant buildTime) {
         final var utcTime = buildTime.atOffset(ZoneOffset.UTC);
         document.appendChild(build("rss", rss -> {
             rss.set("version", "2.0");
@@ -70,7 +70,7 @@ final class FeedRenderer {
         }
     }
 
-    private void createItems(final @NotNull ElementBuilder parent, final @NotNull List<ArchivedArticle> articles) {
+    private void createItems(final @NotNull ElementBuilder parent, final @NotNull Seq<ArchivedArticle> articles) {
         for (final var article : articles) {
             final var fullUrl = siteUri.resolve(article.uri().toString());
             final var innerArticle = article.article();

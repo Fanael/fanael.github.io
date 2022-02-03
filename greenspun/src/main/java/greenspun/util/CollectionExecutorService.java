@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
 import org.jetbrains.annotations.NotNull;
@@ -26,8 +26,8 @@ public final class CollectionExecutorService {
     }
 
     /**
-     * Returns a fresh {@link ArrayList} containing the results of applying the given function to the elements of
-     * the given collection, in order of the collection's iterator if the collection guarantees an order.
+     * Returns a fresh {@link Seq} containing the results of applying the given function to the elements of the given
+     * iterable.
      * <p>
      * Elements are processed concurrently by submitting tasks to the associated {@link ExecutorService}. The tasks
      * inherit the {@link ConditionContext} state from the calling thread. Unwinds that escape a task are propagated to
@@ -35,15 +35,15 @@ public final class CollectionExecutorService {
      * <p>
      * This method waits for all the submitted tasks to finish before returning.
      */
-    public <T, R> @NotNull ArrayList<R> map(
-        final @NotNull Collection<? extends T> collection,
+    public <T, R> @NotNull Seq<R> map(
+        final @NotNull Iterable<? extends T> iterable,
         final @NotNull Function<? super T, ? extends R> function
     ) {
-        return collectResults(submitTasks(collection, function));
+        return collectResults(submitTasks(iterable, function));
     }
 
     /**
-     * Applies the given consumer to the elements of the given collection.
+     * Applies the given consumer to the elements of the given iterable.
      * <p>
      * Elements are processed concurrently by submitting tasks to the associated {@link ExecutorService}. The tasks
      * inherit the {@link ConditionContext} state from the calling thread. Unwinds that escape a task are propagated to
@@ -52,58 +52,58 @@ public final class CollectionExecutorService {
      * This method waits for all the submitted tasks to finish before returning.
      */
     public <T> void forEach(
-        final @NotNull Collection<? extends T> collection,
+        final @NotNull Iterable<? extends T> iterable,
         final @NotNull Consumer<? super T> consumer
     ) {
-        waitForResults(submitTasks(collection, value -> {
+        waitForResults(submitTasks(iterable, value -> {
             consumer.accept(value);
             return null;
         }));
     }
 
-    private <T, R> @NotNull ArrayList<@NotNull Future<R>> submitTasks(
-        final @NotNull Collection<? extends T> collection,
+    private <T, R> @NotNull Seq<@NotNull Future<R>> submitTasks(
+        final @NotNull Iterable<? extends T> iterable,
         final @NotNull Function<? super T, ? extends R> function
     ) {
         final var inheritedState = ConditionContext.saveInheritableState();
-        final var result = new ArrayList<@NotNull Future<R>>(collection.size());
-        for (final var element : collection) {
-            result.add(executorService.submit(() -> {
-                final var previousState = ConditionContext.inheritState(inheritedState);
-                try (final var t = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
-                    t.use();
-                    return function.apply(element);
-                } finally {
-                    ConditionContext.restoreState(previousState);
-                }
-            }));
-        }
-        return result;
+        return Seq.mapIterable(iterable, (item) -> executorService.submit(() -> {
+            final var previousState = ConditionContext.inheritState(inheritedState);
+            try (final var t = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
+                t.use();
+                return function.apply(item);
+            } finally {
+                ConditionContext.restoreState(previousState);
+            }
+        }));
     }
 
-    private static <T> @NotNull ArrayList<T> collectResults(final @NotNull ArrayList<@NotNull Future<T>> futures) {
-        final var result = new ArrayList<T>(futures.size());
-        new AwaitImpl<>(futures.iterator(), result::add).awaitAll();
-        return result;
+    private static <T> @NotNull Seq<T> collectResults(final @NotNull Seq<@NotNull Future<T>> futures) {
+        return new AwaitImpl<>(futures.iterator(), Seq<T>::appended).awaitAll(Seq.empty());
     }
 
-    private static void waitForResults(final @NotNull ArrayList<@NotNull Future<Object>> futures) {
-        new AwaitImpl<>(futures.iterator(), value -> {
-        }).awaitAll();
+    private static void waitForResults(final @NotNull Seq<? extends @NotNull Future<?>> futures) {
+        new AwaitImpl<>(futures.iterator(), (acc, value) -> acc).awaitAll(null);
     }
 
     private final @NotNull ExecutorService executorService;
 
-    private static final class AwaitImpl<T> {
-        private AwaitImpl(final @NotNull Iterator<Future<T>> iterator, final @NotNull Consumer<T> consumer) {
+    private static final class AwaitImpl<T, A> {
+        private AwaitImpl(
+            final @NotNull Iterator<? extends @NotNull Future<? extends T>> iterator,
+            final @NotNull BiFunction<? super A, ? super T, ? extends A> combiner
+        ) {
             this.iterator = iterator;
-            this.consumer = consumer;
+            this.combiner = combiner;
         }
 
-        private void awaitAll() {
+        private A awaitAll(final A initialValue) {
             try {
-                iterate(this::awaitOne);
+                var accumulator = initialValue;
+                while (iterator.hasNext()) {
+                    accumulator = awaitOne(accumulator, iterator.next());
+                }
                 checkInterruptions();
+                return accumulator;
             } finally {
                 cancelIfNeeded();
             }
@@ -117,23 +117,20 @@ public final class CollectionExecutorService {
 
         private void cancelIfNeeded() {
             if (needsCancellation) {
-                iterate(future -> future.cancel(true));
+                while (iterator.hasNext()) {
+                    iterator.next().cancel(true);
+                }
             }
         }
 
-        private void iterate(final @NotNull FutureConsumer<T> futureConsumer) {
-            while (iterator.hasNext()) {
-                futureConsumer.accept(iterator.next());
-            }
-        }
-
-        private void awaitOne(final @NotNull Future<T> future) {
+        private A awaitOne(final A accumulator, final @NotNull Future<? extends T> future) {
             try {
-                consumer.accept(future.get());
+                return combiner.apply(accumulator, future.get());
             } catch (final InterruptedException e) {
                 throw SneakyThrow.doThrow(e);
             } catch (final ExecutionException e) {
                 recover(e);
+                return accumulator; // Will end up being discarded anyway.
             }
         }
 
@@ -151,14 +148,9 @@ public final class CollectionExecutorService {
             }
         }
 
-        private final @NotNull Iterator<Future<T>> iterator;
-        private final @NotNull Consumer<T> consumer;
+        private final @NotNull Iterator<? extends @NotNull Future<? extends T>> iterator;
+        private final @NotNull BiFunction<? super A, ? super T, ? extends A> combiner;
         private boolean foundInterrupt = false;
         private boolean needsCancellation = false;
-
-        @FunctionalInterface
-        private interface FutureConsumer<T> {
-            void accept(@NotNull Future<T> future);
-        }
     }
 }

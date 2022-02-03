@@ -4,6 +4,7 @@ package greenspun.util.collection.seq;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -101,6 +102,43 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      */
     public static <T> @NotNull Seq<T> of(final T e1, final T e2, final T e3, final T e4) {
         return Deep.ofUnits(e1, e2, e3, e4);
+    }
+
+    /**
+     * Returns a new persistent sequence containing the elements of the given iterable in iteration order.
+     * <p>
+     * Complexity: constant time if the iterable is already a {@code Seq}, linear time otherwise.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> @NotNull Seq<T> fromIterable(final @NotNull Iterable<? extends T> iterable) {
+        if (iterable instanceof Seq<? extends T> seq) {
+            return (Seq<T>) seq; // Seq is immutable, this is fine.
+        }
+        @NotNull Seq<T> result = empty();
+        for (final var item : iterable) {
+            result = result.appended(item);
+        }
+        return result;
+    }
+
+    /**
+     * Returns a new persistent sequence containing the results of applying the given function to the elements of
+     * the given iterable in iteration order.
+     * <p>
+     * Complexity: linear time.
+     */
+    public static <T, R> @NotNull Seq<R> mapIterable(
+        final @NotNull Iterable<? extends T> iterable,
+        final @NotNull Function<? super T, ? extends R> function
+    ) {
+        if (iterable instanceof Seq<? extends T> seq) {
+            return seq.map(function);
+        }
+        @NotNull Seq<R> result = empty();
+        for (final var item : iterable) {
+            result = result.appended(function.apply(item));
+        }
+        return result;
     }
 
     /**
@@ -462,6 +500,18 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
     }
 
     /**
+     * Returns a copy of this sequence with elements sorted according to the given comparator.
+     * <p>
+     * This operation is stable: the relative order of elements considered equal by the comparator is preserved.
+     * <p>
+     * Complexity: linear time if this sequence is already sorted or nearly sorted, O(n log n) otherwise.
+     */
+    @CheckReturnValue
+    public final @NotNull Seq<T> sorted(final @NotNull Comparator<? super T> comparator) {
+        return sortedImpl(this, comparator);
+    }
+
+    /**
      * @deprecated Mutable operation, always throws {@link UnsupportedOperationException}.
      */
     @Deprecated
@@ -557,6 +607,75 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
 
     private static @NotNull Predicate<Object> makeEqualityPredicate(final @Nullable Object object) {
         return (object != null) ? object::equals : Objects::isNull;
+    }
+
+    private static <T> @NotNull Seq<T> sortedImpl(
+        final @NotNull Seq<T> seq,
+        final @NotNull Comparator<? super T> comparator
+    ) {
+        final var size = seq.exactSize;
+        if (size <= 1) {
+            return seq;
+        }
+        if (seq instanceof Deep<T, ?> deep && deep.eligibleForInsertionSort()) {
+            // No point in splitting any further.
+            final var array = deep.toSmallArray();
+            insertionSort(array, comparator);
+            return ArrayOps.toSeq(deep.tag(), size, array);
+        }
+        final var split = seq.splitAt(size / 2);
+        final var left = sortedImpl(split.left, comparator);
+        final var right = sortedImpl(split.right, comparator);
+        return merge(left, right, comparator);
+    }
+
+    private static <T> @NotNull Seq<T> merge(
+        final @NotNull Seq<T> left,
+        final @NotNull Seq<T> right,
+        final @NotNull Comparator<? super T> comparator
+    ) {
+        if (left.isEmpty()) {
+            return right;
+        }
+        if (right.isEmpty()) {
+            return left;
+        }
+        if (comparator.compare(left.last(), right.first()) <= 0) {
+            return left.concat(right);
+        }
+        var l = left;
+        var r = right;
+        var itemL = l.first();
+        var itemR = r.first();
+        Seq<T> result = empty();
+        while (true) {
+            if (comparator.compare(itemL, itemR) <= 0) {
+                result = result.appended(itemL);
+                l = l.withoutFirst();
+                if (l.isEmpty()) {
+                    return result.concat(r);
+                }
+                itemL = l.first();
+            } else {
+                result = result.appended(itemR);
+                r = r.withoutFirst();
+                if (r.isEmpty()) {
+                    return result.concat(l);
+                }
+                itemR = r.first();
+            }
+        }
+    }
+
+    private static <T> void insertionSort(final T @NotNull [] array, final @NotNull Comparator<? super T> comparator) {
+        final var length = array.length;
+        for (int i = 1; i < length; i += 1) {
+            for (int k = i; k > 0 && comparator.compare(array[k - 1], array[k]) > 0; k -= 1) {
+                final var temp = array[k];
+                array[k] = array[k - 1];
+                array[k - 1] = temp;
+            }
+        }
     }
 
     // Some JVMs are unable to create arrays of exactly Integer.MAX_VALUE elements, so give them some slack.

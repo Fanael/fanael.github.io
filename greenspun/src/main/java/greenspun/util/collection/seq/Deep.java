@@ -177,6 +177,15 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new TreeSplit<>(left, split.middle, right);
     }
 
+    boolean eligibleForInsertionSort() {
+        return exactSize() <= Node.maxLength && middle.isEmpty();
+    }
+
+    T @NotNull [] toSmallArray() {
+        assert eligibleForInsertionSort();
+        return ArrayOps.concat(tag(), prefix, suffix);
+    }
+
     private @NotNull Deep<T, Phantom> prependedSimple(final long newSize, final T object) {
         final var tag = tag();
         return new Deep<>(tag, newSize, ArrayOps.prepended(tag, prefix, object), middle, suffix);

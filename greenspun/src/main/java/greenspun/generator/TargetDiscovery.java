@@ -9,10 +9,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
 import java.util.HashSet;
 import greenspun.util.PathUtils;
 import greenspun.util.Trace;
+import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.exception.IOExceptionCondition;
 import org.jetbrains.annotations.NotNull;
@@ -31,25 +31,26 @@ final class TargetDiscovery {
     }
 
     @NotNull Targets discover() {
-        final var directoriesToCreate = new ArrayList<@NotNull Path>();
-        final var staticFiles = new ArrayList<@NotNull Target>();
-        discoverStaticFiles(directoriesToCreate, staticFiles);
+        final var staticTargets = discoverStaticFiles();
         final var pages = discoverPages();
         final var articles = discoverArticles();
-        final var filesToUnlink = new ArrayList<@NotNull Path>();
-        final var directoriesToUnlink = new ArrayList<@NotNull Path>();
-        discoverFilesToUnlink(filesToUnlink, directoriesToUnlink);
-        return new Targets(filesToUnlink, directoriesToUnlink, directoriesToCreate, staticFiles, pages, articles);
+        final var unlinkTargets = discoverFilesToUnlink();
+        return new Targets(
+            unlinkTargets.files,
+            unlinkTargets.directories,
+            staticTargets.directoriesToCreate,
+            staticTargets.targets,
+            pages,
+            articles
+        );
     }
 
-    private void discoverStaticFiles(
-        final @NotNull ArrayList<@NotNull Path> directoriesToCreate,
-        final @NotNull ArrayList<@NotNull Target> staticTargets
-    ) {
+    private @NotNull StaticTargets discoverStaticFiles() {
         try (final var trace = new Trace("Discovering static files")) {
             trace.use();
             try {
                 final var path = sourceDirectory.resolve(Generator.staticSubdirectoryName);
+                final var result = new StaticTargets();
                 Files.walkFileTree(path, new SimpleFileVisitor<>() {
                     @Override
                     public @NotNull FileVisitResult preVisitDirectory(
@@ -57,7 +58,7 @@ final class TargetDiscovery {
                         final @NotNull BasicFileAttributes attributes
                     ) {
                         final var relativePath = sourceDirectory.relativize(directory);
-                        directoriesToCreate.add(relativePath);
+                        result.directoriesToCreate = result.directoriesToCreate.appended(relativePath);
                         knownDestinationPaths.add(relativePath);
                         return FileVisitResult.CONTINUE;
                     }
@@ -68,38 +69,37 @@ final class TargetDiscovery {
                         final @NotNull BasicFileAttributes attributes
                     ) {
                         final var relativePath = sourceDirectory.relativize(file);
-                        staticTargets.add(new Target(relativePath, relativePath));
+                        result.targets = result.targets.appended(new Target(relativePath, relativePath));
                         knownDestinationPaths.add(relativePath);
                         return FileVisitResult.CONTINUE;
                     }
                 });
+                return result;
             } catch (final IOException e) {
                 throw ConditionContext.error(new IOExceptionCondition(e));
             }
         }
     }
 
-    private @NotNull ArrayList<@NotNull Target> discoverArticles() {
+    private @NotNull Seq<@NotNull Target> discoverArticles() {
         try (final var trace = new Trace("Discovering article files")) {
             trace.use();
             return discoverHtmlTargetsInDirectory(sourceDirectory);
         }
     }
 
-    private @NotNull ArrayList<@NotNull Target> discoverPages() {
+    private @NotNull Seq<@NotNull Target> discoverPages() {
         try (final var trace = new Trace("Discovering non-article page files")) {
             trace.use();
             return discoverHtmlTargetsInDirectory(sourceDirectory.resolve(Generator.pagesSubdirectoryName));
         }
     }
 
-    private void discoverFilesToUnlink(
-        final @NotNull ArrayList<@NotNull Path> filesToUnlink,
-        final @NotNull ArrayList<@NotNull Path> directoriesToUnlink
-    ) {
+    private @NotNull UnlinkTargets discoverFilesToUnlink() {
         try (final var trace = new Trace("Discovering files to remove from destination directory")) {
             trace.use();
             try {
+                final var result = new UnlinkTargets();
                 Files.walkFileTree(destinationDirectory, new SimpleFileVisitor<>() {
                     @Override
                     public @NotNull FileVisitResult preVisitDirectory(
@@ -116,7 +116,7 @@ final class TargetDiscovery {
                     ) {
                         final var relativePath = destinationDirectory.relativize(file);
                         if (!isDotFile(file) && !knownDestinationPaths.contains(relativePath)) {
-                            filesToUnlink.add(relativePath);
+                            result.files = result.files.appended(relativePath);
                         }
                         return FileVisitResult.CONTINUE;
                     }
@@ -130,7 +130,7 @@ final class TargetDiscovery {
                         }
                         final var relativePath = destinationDirectory.relativize(directory);
                         if (!knownDestinationPaths.contains(relativePath)) {
-                            directoriesToUnlink.add(relativePath);
+                            result.directories = result.directories.appended(relativePath);
                         }
                         return FileVisitResult.CONTINUE;
                     }
@@ -140,22 +140,23 @@ final class TargetDiscovery {
                         return name != null && name.toString().startsWith(".");
                     }
                 });
+                return result;
             } catch (final IOException e) {
                 throw ConditionContext.error(new IOExceptionCondition(e));
             }
         }
     }
 
-    private @NotNull ArrayList<@NotNull Target> discoverHtmlTargetsInDirectory(final @NotNull Path directory) {
+    private @NotNull Seq<@NotNull Target> discoverHtmlTargetsInDirectory(final @NotNull Path directory) {
         try (final var stream = Files.newDirectoryStream(directory)) {
-            final var targets = new ArrayList<@NotNull Target>();
+            var targets = Seq.<@NotNull Target>empty();
             for (final var path : stream) {
                 if (Files.isDirectory(path)) {
                     continue;
                 }
                 final var sourcePath = sourceDirectory.relativize(path);
                 final var destinationPath = PathUtils.changeExtension(sourcePath, "html");
-                targets.add(new Target(sourcePath, destinationPath));
+                targets = targets.appended(new Target(sourcePath, destinationPath));
                 knownDestinationPaths.add(destinationPath);
             }
             return targets;
@@ -169,4 +170,14 @@ final class TargetDiscovery {
     private final @NotNull Path sourceDirectory;
     private final @NotNull Path destinationDirectory;
     private final HashSet<Path> knownDestinationPaths = new HashSet<>();
+
+    private static final class StaticTargets {
+        private @NotNull Seq<@NotNull Path> directoriesToCreate = Seq.empty();
+        private @NotNull Seq<@NotNull Target> targets = Seq.empty();
+    }
+
+    private static final class UnlinkTargets {
+        private @NotNull Seq<@NotNull Path> files = Seq.empty();
+        private @NotNull Seq<@NotNull Path> directories = Seq.empty();
+    }
 }

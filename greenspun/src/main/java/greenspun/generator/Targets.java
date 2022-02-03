@@ -4,15 +4,15 @@ package greenspun.generator;
 
 
 import java.nio.file.Path;
-import java.util.ArrayList;
+import greenspun.util.collection.seq.Seq;
 import org.jetbrains.annotations.NotNull;
 
 record Targets(
-    @NotNull ArrayList<@NotNull Path> filesToUnlink,
-    @NotNull ArrayList<@NotNull Path> directoriesToUnlink,
-    @NotNull ArrayList<@NotNull Path> directoriesToCreate,
-    @NotNull ArrayList<@NotNull Target> staticTargets,
-    @NotNull ArrayList<@NotNull Target> pageTargets,
-    @NotNull ArrayList<@NotNull Target> articleTargets
+    @NotNull Seq<@NotNull Path> filesToUnlink,
+    @NotNull Seq<@NotNull Path> directoriesToUnlink,
+    @NotNull Seq<@NotNull Path> directoriesToCreate,
+    @NotNull Seq<@NotNull Target> staticTargets,
+    @NotNull Seq<@NotNull Target> pageTargets,
+    @NotNull Seq<@NotNull Target> articleTargets
 ) {
 }

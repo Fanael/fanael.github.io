@@ -5,7 +5,6 @@ package greenspun.article;
 import java.math.BigInteger;
 import java.time.DateTimeException;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -152,10 +151,10 @@ public final class Parser {
         }
         // Use depth-first search to walk the section graph to compute the referred-from set of each section.
         final var seenSections = new HashSet<Sexp.Symbol>();
-        final var stack = new ArrayList<SectionParent>();
-        stack.add(new SectionParent(rootSectionId, null));
+        var stack = Seq.of(new SectionParent(rootSectionId, null));
         while (!stack.isEmpty()) {
-            final var reference = stack.remove(stack.size() - 1);
+            final var reference = stack.last();
+            stack = stack.withoutLast();
             final var sectionId = reference.section;
             final var parentId = reference.parent;
             if (parentId != null) {
@@ -168,7 +167,7 @@ public final class Parser {
                 if (!sectionsById.containsKey(childId)) {
                     throw signalLinkingError("Reference to undefined section " + childId + " found in " + sectionId);
                 }
-                stack.add(new SectionParent(childId, sectionId));
+                stack = stack.appended(new SectionParent(childId, sectionId));
             }
         }
         // Now we can look for potential errors.

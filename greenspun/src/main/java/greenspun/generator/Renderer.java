@@ -4,7 +4,6 @@ package greenspun.generator;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.function.Function;
 import greenspun.article.Article;
 import greenspun.article.Section;
@@ -57,9 +56,9 @@ public final class Renderer {
     }
 
     static @NotNull Node.Element renderArchiveIndex(
-        final @NotNull List<@NotNull ArchivedQuarter> quarters,
-        final @NotNull List<@NotNull ArchivedTopic> topics,
-        final @NotNull List<@NotNull ArchivedArticle> articles
+        final @NotNull Seq<@NotNull ArchivedQuarter> quarters,
+        final @NotNull Seq<@NotNull ArchivedTopic> topics,
+        final @NotNull Seq<@NotNull ArchivedArticle> articles
     ) {
         return renderDocument(
             renderHead("Blog archive index", "Main page of blog archives"),
@@ -68,7 +67,7 @@ public final class Renderer {
         );
     }
 
-    @NotNull Node.Element renderFrontPage(final @NotNull List<@NotNull ArchivedArticle> articles) {
+    @NotNull Node.Element renderFrontPage(final @NotNull Seq<@NotNull ArchivedArticle> articles) {
         return renderDocument(
             renderHead(null, "Latest posts on " + RenderConstants.siteTitle),
             Constants.simpleBottomNav,
@@ -86,7 +85,7 @@ public final class Renderer {
 
     @NotNull Node.Element renderTopicArchive(
         final @NotNull String topicName,
-        final @NotNull List<@NotNull ArchivedArticle> articles
+        final @NotNull Seq<@NotNull ArchivedArticle> articles
     ) {
         return renderArchive(
             "Blog archives for topic " + topicName,
@@ -97,7 +96,7 @@ public final class Renderer {
 
     @NotNull Node.Element renderQuarterlyArchive(
         final @NotNull Quarter quarter,
-        final @NotNull List<@NotNull ArchivedArticle> articles
+        final @NotNull Seq<@NotNull ArchivedArticle> articles
     ) {
         return renderArchive(
             "Blog archives for the " + quarter,
@@ -122,9 +121,9 @@ public final class Renderer {
 
     private static void renderArchiveIndexBody(
         final @NotNull Node.ElementBuilder parent,
-        final @NotNull List<ArchivedQuarter> quarters,
-        final @NotNull List<ArchivedTopic> topics,
-        final @NotNull List<ArchivedArticle> articles
+        final @NotNull Seq<ArchivedQuarter> quarters,
+        final @NotNull Seq<ArchivedTopic> topics,
+        final @NotNull Seq<ArchivedArticle> articles
     ) {
         parent.appendBuild(Tag.HEADER, header -> header.appendBuild(Tag.H1, h1 -> h1.appendText("Blog archives")));
         parent.append(renderArchiveIndexSection("By date", quarters,
@@ -140,7 +139,7 @@ public final class Renderer {
 
     private static <T> Node.@NotNull Element renderArchiveIndexSection(
         final @NotNull String name,
-        final @NotNull List<? extends T> elements,
+        final @NotNull Seq<? extends T> elements,
         final @NotNull Function<? super T, ? extends Node> linkFormatter
     ) {
         return Node.build(Tag.SECTION, section -> {
@@ -156,7 +155,7 @@ public final class Renderer {
     private @NotNull Node.Element renderArchive(
         final @NotNull String title,
         final @NotNull String header,
-        final @NotNull List<ArchivedArticle> articles
+        final @NotNull Seq<ArchivedArticle> articles
     ) {
         return renderDocument(
             renderHead(title, title),
@@ -190,7 +189,7 @@ public final class Renderer {
         });
     }
 
-    private static @NotNull Node.Element renderArchiveTableOfContents(final @NotNull List<ArchivedArticle> articles) {
+    private static @NotNull Node.Element renderArchiveTableOfContents(final @NotNull Seq<ArchivedArticle> articles) {
         return Node.build(Tag.NAV, nav -> {
             nav.set("class", "toc");
             nav.set("aria-labelledby", "toc-label");
@@ -206,7 +205,7 @@ public final class Renderer {
 
     private void renderExcerpts(
         final @NotNull Node.ElementBuilder parent,
-        final @NotNull List<ArchivedArticle> articles
+        final @NotNull Seq<ArchivedArticle> articles
     ) {
         for (final var article : articles) {
             final var innerArticle = article.article();

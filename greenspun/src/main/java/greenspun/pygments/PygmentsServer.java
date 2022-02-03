@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import greenspun.dom.Node;
@@ -55,7 +54,7 @@ public final class PygmentsServer implements AutoCloseable {
     public void close() {
         lock.lock();
         try {
-            assert freeConnections.size() == activeConnectionCount.get()
+            assert freeConnections.exactSize() == activeConnectionCount.get()
                 : "Attempted to shut down the connection pool with outstanding busy connections";
             for (final var connection : freeConnections) {
                 connection.initiateShutdown();
@@ -68,7 +67,7 @@ public final class PygmentsServer implements AutoCloseable {
                 connection.waitForShutdown();
                 connection.destroy();
             }
-            freeConnections.clear();
+            freeConnections = Seq.empty();
             activeConnectionCount.set(0);
         } finally {
             lock.unlock();
@@ -117,7 +116,7 @@ public final class PygmentsServer implements AutoCloseable {
         if (connection.stillAlive) {
             lock.lock();
             try {
-                freeConnections.add(connection);
+                freeConnections = freeConnections.appended(connection);
             } finally {
                 lock.unlock();
             }
@@ -129,7 +128,12 @@ public final class PygmentsServer implements AutoCloseable {
     private @Nullable Connection popFreeConnection() {
         lock.lock();
         try {
-            return freeConnections.isEmpty() ? null : freeConnections.remove(freeConnections.size() - 1);
+            if (freeConnections.isEmpty()) {
+                return null;
+            }
+            final var connection = freeConnections.last();
+            freeConnections = freeConnections.withoutLast();
+            return connection;
         } finally {
             lock.unlock();
         }
@@ -153,7 +157,7 @@ public final class PygmentsServer implements AutoCloseable {
     private final @NotNull Path sourceCodePath;
     private final AtomicInteger activeConnectionCount = new AtomicInteger(0);
     private final ReentrantLock lock = new ReentrantLock();
-    private final ArrayList<@NotNull Connection> freeConnections = new ArrayList<>();
+    private Seq<@NotNull Connection> freeConnections = Seq.empty();
 
     private static final class Connection {
         private Connection(final @NotNull Process process) {

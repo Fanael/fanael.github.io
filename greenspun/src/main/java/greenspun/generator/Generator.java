@@ -8,10 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import greenspun.article.Article;
 import greenspun.article.HtslConverter;
@@ -89,8 +87,8 @@ public final class Generator {
         copyFiles(targets.staticTargets());
         generatePages(targets.pageTargets());
         final var articles = generateArticles(targets.articleTargets());
-        generateFrontPage(articles.subList(0, Math.min(articles.size(), frontPageArticleCount)));
-        generateFeed(articles.subList(0, Math.min(articles.size(), feedArticleCount)), buildTime);
+        generateFrontPage(articles.splitAt(Math.min(articles.exactSize(), frontPageArticleCount)).left());
+        generateFeed(articles.splitAt(Math.min(articles.exactSize(), feedArticleCount)).left(), buildTime);
         generateArchives(articles);
     }
 
@@ -113,7 +111,7 @@ public final class Generator {
         }
     }
 
-    private void copyFiles(final @NotNull List<Target> targets) {
+    private void copyFiles(final @NotNull Seq<Target> targets) {
         for (final var target : targets) {
             final var sourcePath = target.sourcePath();
             try (final var trace = new Trace(() -> "Copying static file: " + sourcePath)) {
@@ -129,7 +127,7 @@ public final class Generator {
         }
     }
 
-    private void generatePages(final @NotNull List<Target> targets) {
+    private void generatePages(final @NotNull Seq<Target> targets) {
         final var renderer = makeNonArticleRenderer();
         executor.forEach(targets, target -> generatePage(target, renderer));
     }
@@ -145,23 +143,25 @@ public final class Generator {
         }
     }
 
-    private @NotNull ArrayList<ArchivedArticle> generateArticles(final @NotNull List<Target> targets) {
-        final var articles = executor.map(targets, this::loadArticle);
+    private @NotNull Seq<ArchivedArticle> generateArticles(final @NotNull Seq<Target> targets) {
         // Use the file name as a tie-breaker to ensure we don't rely on the order the file system returned paths in.
-        articles.sort(
+        final var articles = executor.map(targets, this::loadArticle).sorted(
             Comparator.comparing((final @NotNull LoadedArticle article) -> article.article.date())
-                .thenComparing((final @NotNull LoadedArticle article) -> article.target().sourcePath())
+                .thenComparing(article -> article.target().sourcePath())
                 .reversed()
         );
-        final var articleCount = articles.size();
-        final var orderedArticles = new ArrayList<@NotNull OrderedArticle>(articleCount);
-        for (int i = 0; i < articleCount; i += 1) {
-            final var article = articles.get(i);
-            final var predecessorUri = (i + 1 < articleCount) ? articles.get(i + 1).destinationUri() : null;
-            final var successorUri = (i > 0) ? articles.get(i - 1).destinationUri() : null;
+        var orderedArticles = Seq.<@NotNull OrderedArticle>empty();
+        @Nullable LoadedArticle successor = null;
+        for (var it = articles; !it.isEmpty(); ) {
+            final var article = it.first();
+            it = it.withoutFirst();
+            final var predecessorUri = it.isEmpty() ? null : it.first().destinationUri();
+            final var successorUri = (successor == null) ? null : successor.destinationUri();
             final var innerArticle = article.article;
             final var target = article.target;
-            orderedArticles.add(new OrderedArticle(innerArticle, target, predecessorUri, successorUri));
+            final var ordered = new OrderedArticle(innerArticle, target, predecessorUri, successorUri);
+            orderedArticles = orderedArticles.appended(ordered);
+            successor = article;
         }
         final var renderer = makeArticleRenderer();
         return executor.map(orderedArticles, article -> generateArticle(article, renderer));
@@ -264,7 +264,7 @@ public final class Generator {
         ).toArchivedArticle();
     }
 
-    private void generateArchives(final @NotNull List<ArchivedArticle> articles) {
+    private void generateArchives(final @NotNull Seq<ArchivedArticle> articles) {
         try (final var outerTrace = new Trace("Generating blog archives")) {
             outerTrace.use();
             final var archivedQuarters = generateQuarterlyArchives(articles);
@@ -278,15 +278,13 @@ public final class Generator {
         }
     }
 
-    private @NotNull ArrayList<ArchivedTopic> generateTopicArchives(
-        final @NotNull List<ArchivedArticle> articles
-    ) {
+    private @NotNull Seq<ArchivedTopic> generateTopicArchives(final @NotNull Seq<ArchivedArticle> articles) {
         try (final var outerTrace = new Trace("Generating per-topic blog archives")) {
             outerTrace.use();
-            final var articlesByTopic = new HashMap<String, ArrayList<ArchivedArticle>>();
+            final var articlesByTopic = new HashMap<String, Seq<ArchivedArticle>>();
             for (final var article : articles) {
                 for (final var topic : article.article().topics()) {
-                    articlesByTopic.computeIfAbsent(topic, key -> new ArrayList<>()).add(article);
+                    articlesByTopic.merge(topic, Seq.of(article), Seq::concat);
                 }
             }
             final var topics = executor.map(articlesByTopic.entrySet(), entry -> {
@@ -301,20 +299,16 @@ public final class Generator {
                     return new ArchivedTopic(topicName, new DomainRelativeUri(destinationRelativePath));
                 }
             });
-            topics.sort(Comparator.comparing(ArchivedTopic::topic));
-            return topics;
+            return topics.sorted(Comparator.comparing(ArchivedTopic::topic));
         }
     }
 
-    private @NotNull ArrayList<ArchivedQuarter> generateQuarterlyArchives(
-        final @NotNull List<ArchivedArticle> articles
-    ) {
+    private @NotNull Seq<ArchivedQuarter> generateQuarterlyArchives(final @NotNull Seq<ArchivedArticle> articles) {
         try (final var outerTrace = new Trace("Generating per-quarter blog archives")) {
             outerTrace.use();
-            final var articlesByQuarter = new HashMap<Quarter, ArrayList<ArchivedArticle>>();
+            final var articlesByQuarter = new HashMap<Quarter, Seq<ArchivedArticle>>();
             for (final var article : articles) {
-                final var quarter = Quarter.fromDate(article.article().date());
-                articlesByQuarter.computeIfAbsent(quarter, key -> new ArrayList<>()).add(article);
+                articlesByQuarter.merge(Quarter.fromDate(article.article().date()), Seq.of(article), Seq::concat);
             }
             final var quarters = executor.map(articlesByQuarter.entrySet(), entry -> {
                 final var quarter = entry.getKey();
@@ -328,12 +322,11 @@ public final class Generator {
                     return new ArchivedQuarter(quarter, new DomainRelativeUri(destinationRelativePath));
                 }
             });
-            quarters.sort(Comparator.comparing(ArchivedQuarter::quarter).reversed());
-            return quarters;
+            return quarters.sorted(Comparator.comparing(ArchivedQuarter::quarter).reversed());
         }
     }
 
-    private void generateFrontPage(final @NotNull List<ArchivedArticle> articles) {
+    private void generateFrontPage(final @NotNull Seq<ArchivedArticle> articles) {
         try (final var trace = new Trace("Generating the front page")) {
             trace.use();
             final var domTree = makeArticleRenderer().renderFrontPage(articles);
@@ -341,7 +334,7 @@ public final class Generator {
         }
     }
 
-    private void generateFeed(final @NotNull List<ArchivedArticle> articles, final @NotNull Instant buildTime) {
+    private void generateFeed(final @NotNull Seq<ArchivedArticle> articles, final @NotNull Instant buildTime) {
         try (final var trace = new Trace("Generating RSS feed")) {
             trace.use();
             final var feedRenderer = new FeedRenderer();
