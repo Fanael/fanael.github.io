@@ -46,7 +46,7 @@ java.toolchain {
 
 jar.manifest.attributes "Main-Class": application.mainClass.get()
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += [
             "--enable-preview",
             "-Xlint",
@@ -54,11 +54,11 @@ tasks.withType(JavaCompile) {
     ]
 }
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     jvmArgs += "--enable-preview"
 }
 
-tasks.withType(JavaExec) {
+tasks.withType(JavaExec).configureEach {
     jvmArgs += "--enable-preview"
 }
 
