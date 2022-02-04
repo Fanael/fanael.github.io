@@ -492,13 +492,20 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
             }
             final var result = array[index];
             index += 1;
+            overallIndex += 1;
             return result;
+        }
+
+        @Override
+        public long nextIndex() {
+            return overallIndex;
         }
 
         @Override
         void forEachRemainingImpl(final @NotNull Consumer<? super T> action) {
             while (true) {
                 ArrayOps.forEachFrom(array, index, action);
+                overallIndex += array.length - index;
                 if (stage == suffixStage) {
                     break;
                 }
@@ -540,6 +547,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         private static final int middleStage = 1;
         private static final int suffixStage = 2;
 
+        private long overallIndex = 0;
         private int index = 0;
         private T @NotNull [] array = prefix;
         private int stage = prefixStage;

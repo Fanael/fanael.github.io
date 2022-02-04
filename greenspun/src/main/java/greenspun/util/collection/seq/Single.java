@@ -127,6 +127,11 @@ final class Single<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
 
         @Override
+        public long nextIndex() {
+            return passed ? 1 : 0;
+        }
+
+        @Override
         void forEachRemainingImpl(final @NotNull Consumer<? super T> action) {
             if (!passed) {
                 action.accept(value);

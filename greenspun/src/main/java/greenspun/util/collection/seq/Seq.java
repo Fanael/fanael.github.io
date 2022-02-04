@@ -718,6 +718,15 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         public abstract T next();
 
         /**
+         * Returns the index of the element that would be returned by a subsequent call to {@link #next()}.
+         * <p>
+         * If at the end of the sequence, returns the sequence size.
+         * <p>
+         * Complexity: constant time.
+         */
+        public abstract long nextIndex();
+
+        /**
          * Performs the given action for all remaining elements.
          * <p>
          * If the action throws an exception, the exception is relayed to the caller; the state of the iterator becomes

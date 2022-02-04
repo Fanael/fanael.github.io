@@ -120,6 +120,11 @@ final class Empty<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
 
         @Override
+        public long nextIndex() {
+            return 0;
+        }
+
+        @Override
         void forEachRemainingImpl(final @NotNull Consumer<? super T> action) {
             // Nothing to do here.
         }
