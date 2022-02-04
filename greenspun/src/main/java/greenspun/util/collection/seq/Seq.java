@@ -644,20 +644,20 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         var r = right;
         var itemL = l.first();
         var itemR = r.first();
-        Seq<T> result = empty();
+        final var builder = new Builder<T>(l.exactSize + r.exactSize);
         while (true) {
             if (comparator.compare(itemL, itemR) <= 0) {
-                result = result.appended(itemL);
+                builder.append(itemL);
                 l = l.withoutFirst();
                 if (l.isEmpty()) {
-                    return result.concat(r);
+                    return builder.toSeq().concat(r);
                 }
                 itemL = l.first();
             } else {
-                result = result.appended(itemR);
+                builder.append(itemR);
                 r = r.withoutFirst();
                 if (r.isEmpty()) {
-                    return result.concat(l);
+                    return builder.toSeq().concat(l);
                 }
                 itemR = r.first();
             }
@@ -787,5 +787,41 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
 
         private final U @NotNull [] array;
         private int index = 0;
+    }
+
+    // A minimal mutable builder for use in sorting.
+    private static final class Builder<T> {
+        private Builder(final long sizeHint) {
+            buffer = TypeTag.<T>unit().newArray((int) Math.min(sizeHint, maxBufferSize));
+        }
+
+        private void append(final T object) {
+            if (bufferIndex >= buffer.length) {
+                flushBuffer();
+            }
+            final var index = bufferIndex;
+            buffer[index] = object;
+            bufferIndex = index + 1;
+        }
+
+        private @NotNull Seq<T> toSeq() {
+            flushBuffer();
+            return sequence;
+        }
+
+        private void flushBuffer() {
+            final var effectiveLength = bufferIndex;
+            if (effectiveLength == 0) {
+                return;
+            }
+            sequence = sequence.concat(ArrayOps.toSeq(TypeTag.unit(), effectiveLength, buffer, effectiveLength));
+            bufferIndex = 0;
+        }
+
+        private static final int maxBufferSize = 2 * TaggedSeq.maxAffixLength;
+
+        private final T @NotNull [] buffer;
+        private int bufferIndex = 0;
+        private @NotNull Seq<T> sequence = empty();
     }
 }

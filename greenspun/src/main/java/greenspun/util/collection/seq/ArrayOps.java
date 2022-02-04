@@ -103,7 +103,7 @@ final class ArrayOps {
         final @NotNull TypeTag<T, Phantom> tag,
         final T @NotNull [] array
     ) {
-        return toSeq(tag, tag.measureArray(array), array);
+        return toSeq(tag, tag.measureArray(array), array, array.length);
     }
 
     static <T, Phantom> @NotNull TaggedSeq<T, Phantom> toSeq(
@@ -111,14 +111,22 @@ final class ArrayOps {
         final long size,
         final T @NotNull [] array
     ) {
-        final var length = array.length;
-        return switch (length) {
+        return toSeq(tag, size, array, array.length);
+    }
+
+    static <T, Phantom> @NotNull TaggedSeq<T, Phantom> toSeq(
+        final @NotNull TypeTag<T, Phantom> tag,
+        final long size,
+        final T @NotNull [] array,
+        final int effectiveLength
+    ) {
+        return switch (effectiveLength) {
             case 0 -> tag.emptySeq();
             case 1 -> new Single<>(tag, size, array[0]);
             default -> {
-                final var middle = length / 2;
+                final var middle = effectiveLength / 2;
                 final var prefix = Arrays.copyOf(array, middle);
-                final var suffix = Arrays.copyOfRange(array, middle, length);
+                final var suffix = Arrays.copyOfRange(array, middle, effectiveLength);
                 yield new Deep<>(tag, size, prefix, Empty.node(), suffix);
             }
         };
