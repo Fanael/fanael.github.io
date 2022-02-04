@@ -155,23 +155,28 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     @Override
     @NotNull TreeSplit<T, Phantom> splitTree(final long index, final long accumulator) {
         final var tag = tag();
-        final var prefixSize = accumulator + tag.measureArray(prefix);
+        final var prefixSplitPoint = findArraySplitPoint(tag, index, accumulator, prefix);
+        final var prefixSize = prefixSplitPoint.accumulator;
         if (index < prefixSize) {
-            final var split = splitArray(tag, index, accumulator, prefix);
+            final var split = splitArray(tag, prefix, prefixSplitPoint.index);
             final var left = ArrayOps.toSeq(tag, split.left);
             final var right = fromUnknownPrefix(tag, split.right, middle, suffix);
             return new TreeSplit<>(left, split.middle, right);
         }
-        final var middleSize = prefixSize + middle.exactSize();
-        if (index < middleSize) {
+        assert prefixSplitPoint.index == prefix.length;
+        final var leftSideSize = prefixSize + middle.exactSize();
+        if (index < leftSideSize) {
             final var split = middle.splitTree(index, prefixSize);
-            final var nodeSplit =
-                splitArray(tag, index, prefixSize + split.left().exactSize(), split.middle().values());
+            final var nodeValues = split.middle().values();
+            final var splitPoint =
+                findArraySplitPoint(tag, index, prefixSize + split.left().exactSize(), nodeValues);
+            final var nodeSplit = splitArray(tag, nodeValues, splitPoint.index);
             final var left = fromUnknownSuffix(tag, prefix, split.left(), nodeSplit.left);
             final var right = fromUnknownPrefix(tag, nodeSplit.right, split.right(), suffix);
             return new TreeSplit<>(left, nodeSplit.middle, right);
         }
-        final var split = splitArray(tag, index, middleSize, suffix);
+        final var splitPoint = findArraySplitPoint(tag, index, leftSideSize, suffix);
+        final var split = splitArray(tag, suffix, splitPoint.index);
         final var left = fromUnknownSuffix(tag, prefix, middle, split.left);
         final var right = ArrayOps.toSeq(tag, split.right);
         return new TreeSplit<>(left, split.middle, right);
@@ -431,24 +436,40 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return (seq instanceof Deep<T, ?> deep) ? deep.getRecursive(accumulator) : seq.getImpl(accumulator.remaining);
     }
 
-    private static <T> @NotNull ArraySplit<T> splitArray(
+    private static <T> @NotNull ArraySplitPoint findArraySplitPoint(
         final @NotNull TypeTag<T, ?> tag,
         final long index,
-        final long accumulator,
+        final long initialAccumulator,
         final T @NotNull [] array
     ) {
-        // TODO: consider specializing for TypeTag.unit()
         final var length = array.length;
-        final var lastIndex = length - 1;
-        var acc = accumulator;
-        for (int i = 0; i < lastIndex; i += 1) {
-            final var item = array[i];
-            acc += tag.measureSingle(item);
-            if (index < acc) {
-                return new ArraySplit<>(Arrays.copyOf(array, i), item, Arrays.copyOfRange(array, i + 1, length));
+        if (tag == TypeTag.unit()) {
+            final var distance = index - initialAccumulator;
+            final var inBounds = (distance < length) ? 1 : 0;
+            final var arrayIndex = (int) Math.min(length, index - initialAccumulator);
+            return new ArraySplitPoint(arrayIndex, initialAccumulator + arrayIndex + inBounds);
+        }
+        var accumulator = initialAccumulator;
+        int i = 0;
+        for (; i < length; i += 1) {
+            accumulator += tag.measureSingle(array[i]);
+            if (index < accumulator) {
+                break;
             }
         }
-        return new ArraySplit<>(Arrays.copyOf(array, lastIndex), array[lastIndex], tag.emptyArray());
+        return new ArraySplitPoint(i, accumulator);
+    }
+
+    private static <T> @NotNull ArraySplit<T> splitArray(
+        final @NotNull TypeTag<T, ?> tag,
+        final T @NotNull [] array,
+        final int index
+    ) {
+        final var length = array.length;
+        final var i = Math.min(index, length - 1);
+        final var left = (i > 0) ? Arrays.copyOf(array, i) : tag.emptyArray();
+        final var right = (i < length - 1) ? Arrays.copyOfRange(array, i + 1, length) : tag.emptyArray();
+        return new ArraySplit<>(left, array[i], right);
     }
 
     private final T @NotNull [] prefix;
@@ -529,6 +550,9 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         @NotNull TaggedSeq<@NotNull Node<T>, Node<Phantom>> middle,
         T @NotNull [] affix
     ) {
+    }
+
+    private record ArraySplitPoint(int index, long accumulator) {
     }
 
     private record ArraySplit<T>(T @NotNull [] left, T middle, T @NotNull [] right) {
