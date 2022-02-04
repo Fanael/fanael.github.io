@@ -84,18 +84,14 @@ public final class HtslConverter {
         final @NotNull Node.ElementBuilder builder,
         final @NotNull Seq<Sexp> attributes
     ) {
-        for (var it = attributes; !it.isEmpty(); ) {
-            final var keyForm = it.first();
-            it = it.withoutFirst();
+        for (final var it = attributes.iterator(); it.hasNext(); ) {
+            final var keyForm = it.next();
             final var key = Sexps.asKeyword(keyForm);
             if (key == null) {
                 throw signalError("Attribute name doesn't appear to be a Lisp keyword: " + Sexps.prettyPrint(keyForm));
             }
             final var attributeName = key.symbolName().substring(1);
-            final var value = it.isEmpty() ? Sexp.KnownSymbol.NIL : it.first();
-            if (!it.isEmpty()) {
-                it = it.withoutFirst();
-            }
+            final var value = it.hasNext() ? it.next() : Sexp.KnownSymbol.NIL;
             switch (value) {
                 case Sexp.String string -> builder.set(attributeName, string.value());
                 case Sexp.Integer integer -> builder.set(attributeName, integer.value());
