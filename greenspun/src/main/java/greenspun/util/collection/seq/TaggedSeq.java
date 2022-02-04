@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.collection.seq;
 
+import java.util.Objects;
 import java.util.function.Function;
 import greenspun.util.UnreachableCodeReachedError;
 import org.jetbrains.annotations.NotNull;
@@ -47,6 +48,12 @@ abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Empty, Single
         final var otherTagged = (TaggedSeq<? extends T, ?>) other;
         assert tag == otherTagged.tag;
         return concatImpl((TaggedSeq<T, Phantom>) otherTagged);
+    }
+
+    @Override
+    public final @NotNull Seq<T> updated(final long index, final T newValue) {
+        final var split = splitTree(Objects.checkIndex(index, exactSize()), 0);
+        return split.left.concat(split.right.prepended(newValue));
     }
 
     @Override

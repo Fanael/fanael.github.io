@@ -478,11 +478,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws IndexOutOfBoundsException if the index is out of range
      */
     @CheckReturnValue
-    public final @NotNull Seq<T> updated(final long index, final T newValue) {
-        // Check the index in case it's equal to the size: splitAt would let that through.
-        final var split = splitAt(Objects.checkIndex(index, exactSize));
-        return split.left.concat(split.right.updatedFirst(newValue));
-    }
+    public abstract @NotNull Seq<T> updated(final long index, final T newValue);
 
     /**
      * Splits this sequence into two at the given index.
