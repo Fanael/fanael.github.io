@@ -200,13 +200,12 @@ public abstract sealed class Node {
          */
         public void set(final @NotNull Attribute attribute) {
             final var name = attribute.name();
-            long index = 0;
-            for (final var attr : attributes) {
+            for (final var it = attributes.iterator(); it.hasNext(); ) {
+                final var attr = it.next();
                 if (name.equals(attr.name())) {
-                    attributes = attributes.updated(index, attribute);
+                    attributes = attributes.updated(it.nextIndex() - 1, attribute);
                     return;
                 }
-                index += 1;
             }
             attributes = attributes.appended(attribute);
         }
