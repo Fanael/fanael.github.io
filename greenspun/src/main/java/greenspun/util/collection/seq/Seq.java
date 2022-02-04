@@ -640,26 +640,24 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         if (comparator.compare(left.last(), right.first()) <= 0) {
             return left.concat(right);
         }
-        var l = left;
-        var r = right;
-        var itemL = l.first();
-        var itemR = r.first();
-        final var builder = new Builder<T>(l.exactSize + r.exactSize);
+        final var l = left.iterator();
+        final var r = right.iterator();
+        var itemL = l.next();
+        var itemR = r.next();
+        final var builder = new Builder<T>(left.exactSize + right.exactSize);
         while (true) {
             if (comparator.compare(itemL, itemR) <= 0) {
                 builder.append(itemL);
-                l = l.withoutFirst();
-                if (l.isEmpty()) {
-                    return builder.toSeq().concat(r);
+                if (!l.hasNext()) {
+                    return builder.toSeq().concat(right.splitAt(r.nextIndex() - 1).right);
                 }
-                itemL = l.first();
+                itemL = l.next();
             } else {
                 builder.append(itemR);
-                r = r.withoutFirst();
-                if (r.isEmpty()) {
-                    return builder.toSeq().concat(l);
+                if (!r.hasNext()) {
+                    return builder.toSeq().concat(left.splitAt(l.nextIndex() - 1).right);
                 }
-                itemR = r.first();
+                itemR = r.next();
             }
         }
     }
