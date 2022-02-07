@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
 import java.util.concurrent.locks.ReentrantLock;
 import greenspun.util.SneakyThrow;
 import org.jetbrains.annotations.NotNull;
@@ -51,7 +50,7 @@ final class Streams implements AutoCloseable {
     private static final class Holder {
         private static final ReentrantLock lock = new ReentrantLock();
         private static final BufferedReader inputReader =
-            new BufferedReader(new InputStreamReader(new StandardInput(), Charset.defaultCharset()));
+            new BufferedReader(new InputStreamReader(new StandardInput(), System.console().charset()));
     }
 
     private static final class StandardInput extends InputStream {
