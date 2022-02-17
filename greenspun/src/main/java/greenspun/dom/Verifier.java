@@ -74,12 +74,12 @@ public final class Verifier {
         }
 
         for (final var attributeName : tag.requiredAttributes()) {
-            if (element.getAttribute(attributeName) == null) {
+            if (Attributes.get(element.attributes(), attributeName) == null) {
                 recordAttributeError(tag, attributeName, "required attribute not found");
             }
         }
 
-        if (element.getAttribute("id") instanceof Attribute.String id) {
+        if (Attributes.get(element.attributes(), "id") instanceof Attribute.String id) {
             final var value = id.value();
             if (!foundIds.add(value)) {
                 recordAttributeError(tag, "id", "duplicate ID found: '" + value + '\'');

@@ -8,6 +8,7 @@ import java.util.function.Function;
 import greenspun.article.Article;
 import greenspun.article.Section;
 import greenspun.dom.Attribute;
+import greenspun.dom.Attributes;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
 import greenspun.util.collection.seq.Seq;
@@ -34,7 +35,7 @@ public final class Renderer {
         final @NotNull Seq<@NotNull Node> nodes,
         final @NotNull String prettyLanguageName
     ) {
-        return wrapCodeBlock(Seq.of(Node.build(Tag.CODE, code -> code.append(nodes))), prettyLanguageName);
+        return wrapCodeBlock(Seq.of(Node.simple(Tag.CODE, nodes)), prettyLanguageName);
     }
 
     /**
@@ -44,15 +45,16 @@ public final class Renderer {
         final @NotNull Seq<@NotNull Node> nodes,
         final @NotNull String prettyLanguageName
     ) {
-        return Node.build(Tag.PRE, pre -> {
-            pre.set("class", "code-block");
-            pre.appendBuild(Tag.SPAN, span -> {
-                span.set("class", "cx-language");
-                span.appendText(prettyLanguageName);
-            });
-            pre.appendText("\n");
-            pre.append(renderLineNumbers(nodes));
-        });
+        final var language = new Node.Element(
+            Tag.SPAN,
+            Seq.of(Attribute.of("class", "cx-language")),
+            Seq.of(new Node.Text(prettyLanguageName))
+        );
+        return new Node.Element(
+            Tag.PRE,
+            Seq.of(Attribute.of("class", "code-block")),
+            Seq.of(language, Constants.newLine).concat(renderLineNumbers(nodes))
+        );
     }
 
     static @NotNull Node.Element renderArchiveIndex(
@@ -63,23 +65,18 @@ public final class Renderer {
         return renderDocument(
             renderHead("Blog archive index", "Main page of blog archives"),
             Constants.simpleBottomNav,
-            main -> renderArchiveIndexBody(main, quarters, topics, articles)
+            renderArchiveIndexBody(quarters, topics, articles)
         );
     }
 
     @NotNull Node.Element renderFrontPage(final @NotNull Seq<@NotNull ArchivedArticle> articles) {
+        final var header = Node.simple(Tag.HEADER, Node.simple(Tag.H1, new Node.Text("Latest articles")));
         return renderDocument(
             renderHead(null, "Latest posts on " + RenderConstants.siteTitle),
             Constants.simpleBottomNav,
-            main -> {
-                main.appendBuild(Tag.HEADER,
-                    header -> header.appendBuild(Tag.H1, h1 -> h1.appendText("Latest articles")));
-                if (articles.isEmpty()) {
-                    main.appendBuild(Tag.P, p -> p.appendText("There are no articles yet."));
-                } else {
-                    renderExcerpts(main, articles);
-                }
-            }
+            articles.isEmpty()
+                ? Seq.of(header, Node.simple(Tag.P, new Node.Text("There are no articles yet.")))
+                : renderExcerpts(articles).prepended(header)
         );
     }
 
@@ -109,7 +106,7 @@ public final class Renderer {
         return renderDocument(
             renderHead(article.article().title(), article.article().description()),
             renderBottomNav(article.predecessorUri(), article.successorUri()),
-            main -> main.append(renderArticleBody(article.article()))
+            Seq.of(renderArticleBody(article.article()))
         );
     }
 
@@ -119,22 +116,22 @@ public final class Renderer {
             : nodes;
     }
 
-    private static void renderArchiveIndexBody(
-        final @NotNull Node.ElementBuilder parent,
+    private static @NotNull Seq<@NotNull Node> renderArchiveIndexBody(
         final @NotNull Seq<ArchivedQuarter> quarters,
         final @NotNull Seq<ArchivedTopic> topics,
         final @NotNull Seq<ArchivedArticle> articles
     ) {
-        parent.appendBuild(Tag.HEADER, header -> header.appendBuild(Tag.H1, h1 -> h1.appendText("Blog archives")));
-        parent.append(renderArchiveIndexSection("By date", quarters,
-            quarter -> renderSimpleLink(quarter.uri().toString(), "The " + quarter.quarter())));
-        parent.append(renderArchiveIndexSection("By topic", topics,
-            topic -> renderSimpleLink(topic.uri().toString(), topic.topic())));
-        parent.append(renderArchiveIndexSection("By article title", articles,
-            article -> renderSimpleLink(
+        return Seq.of(
+            Node.simple(Tag.HEADER, Node.simple(Tag.H1, new Node.Text("Blog archives"))),
+            renderArchiveIndexSection("By date", quarters, quarter -> renderSimpleLink(
+                quarter.uri().toString(), "The " + quarter.quarter())),
+            renderArchiveIndexSection("By topic", topics, topic -> renderSimpleLink(
+                topic.uri().toString(), topic.topic())),
+            renderArchiveIndexSection("By article title", articles, article -> renderSimpleLink(
                 article.uri().toString(),
                 renderIsoDate(article.article().date()) + " — " + article.article().title()
-            )));
+            ))
+        );
     }
 
     private static <T> Node.@NotNull Element renderArchiveIndexSection(
@@ -142,14 +139,10 @@ public final class Renderer {
         final @NotNull Seq<? extends T> elements,
         final @NotNull Function<? super T, ? extends Node> linkFormatter
     ) {
-        return Node.build(Tag.SECTION, section -> {
-            section.appendBuild(Tag.H2, h2 -> h2.appendText(name));
-            section.appendBuild(Tag.UL, ul -> {
-                for (final var element : elements) {
-                    ul.appendBuild(Tag.LI, li -> li.append(linkFormatter.apply(element)));
-                }
-            });
-        });
+        return Node.simple(Tag.SECTION, Seq.of(
+            Node.simple(Tag.H2, new Node.Text(name)),
+            Node.simple(Tag.UL, elements.map(element -> Node.simple(Tag.LI, linkFormatter.apply(element))))
+        ));
     }
 
     private @NotNull Node.Element renderArchive(
@@ -160,138 +153,132 @@ public final class Renderer {
         return renderDocument(
             renderHead(title, title),
             Constants.simpleBottomNav,
-            main -> {
-                main.appendBuild(Tag.HEADER,
-                    headerElement -> headerElement.appendBuild(Tag.H1, h1 -> h1.appendText(header)));
-                main.append(renderArchiveTableOfContents(articles));
-                renderExcerpts(main, articles);
-            }
+            renderExcerpts(articles)
+                .prepended(renderArchiveTableOfContents(articles))
+                .prepended(Node.simple(Tag.HEADER, Node.simple(Tag.H1, new Node.Text(header))))
         );
     }
 
     private static @NotNull Node.Element renderDocument(
         final @NotNull Node.Element head,
         final @NotNull Node.Element bottomNav,
-        final @NotNull Node.BuildFunction mainBuildFunction
+        final @NotNull Seq<@NotNull Node> mainContent
     ) {
-        return Node.build(Tag.HTML, html -> {
-            html.set(Constants.htmlLang);
-            html.append(head);
-            html.appendBuild(Tag.BODY, body -> {
-                body.append(Constants.header);
-                body.appendBuild(Tag.MAIN, main -> {
-                    main.set(Constants.idMain);
-                    mainBuildFunction.build(main);
-                });
-                body.append(bottomNav);
-                body.append(Constants.footer);
-            });
-        });
+        return new Node.Element(
+            Tag.HTML,
+            Seq.of(Constants.htmlLang),
+            Seq.of(head, Node.simple(
+                Tag.BODY,
+                Constants.header
+                    .appended(new Node.Element(Tag.MAIN, Seq.of(Constants.idMain), mainContent))
+                    .appended(bottomNav)
+                    .appended(Constants.footer)
+            ))
+        );
     }
 
     private static @NotNull Node.Element renderArchiveTableOfContents(final @NotNull Seq<ArchivedArticle> articles) {
-        return Node.build(Tag.NAV, nav -> {
-            nav.set("class", "toc");
-            nav.set("aria-labelledby", "toc-label");
-            nav.append(Constants.tocLabel);
-            nav.appendBuild(Tag.OL, ol -> {
-                for (final var article : articles) {
-                    ol.appendBuild(Tag.LI,
-                        li -> li.append(renderSimpleLink('#' + article.identifier(), article.article().title())));
-                }
-            });
-        });
+        return new Node.Element(
+            Tag.NAV,
+            Seq.of(Attribute.of("class", "toc"), Attribute.of("aria-labelledby", "toc-label")),
+            Seq.of(
+                Constants.tocLabel,
+                Node.simple(Tag.OL, articles.map(article ->
+                    Node.simple(Tag.LI, renderSimpleLink('#' + article.identifier(), article.article().title()))))));
     }
 
-    private void renderExcerpts(
-        final @NotNull Node.ElementBuilder parent,
-        final @NotNull Seq<ArchivedArticle> articles
-    ) {
+    private @NotNull Seq<@NotNull Node> renderExcerpts(final @NotNull Seq<ArchivedArticle> articles) {
+        @NotNull Seq<@NotNull Node> result = Seq.empty();
         for (final var article : articles) {
             final var innerArticle = article.article();
             final var title = innerArticle.title();
-            parent.appendBuild(Tag.ARTICLE, articleElement -> {
-                articleElement.set("id", article.identifier());
-                articleElement.appendBuild(Tag.HEADER, header -> {
-                    header.appendBuild(Tag.H2, h2 -> h2.append(renderSimpleLink(article.uri().toString(), title)));
-                    header.append(renderPublicationDate(innerArticle.date()));
-                    final var topics = renderArticleTopics(innerArticle.topics());
-                    if (topics != null) {
-                        header.append(topics);
-                    }
-                });
-                articleElement.append(innerArticle.rootSection().body());
-                articleElement.appendBuild(Tag.A, a -> {
-                    a.set("class", "read-full");
-                    a.set("href", article.uri().toString());
-                    a.set("aria-label", "Read the full article: " + title);
-                    a.appendText("Read the full article…");
-                });
-            });
+            var headerContents = Seq.<Node>of(
+                Node.simple(Tag.H2, renderSimpleLink(article.uri().toString(), title)),
+                renderPublicationDate(innerArticle.date())
+            );
+            final var topics = renderArticleTopics(innerArticle.topics());
+            if (topics != null) {
+                headerContents = headerContents.appended(topics);
+            }
+            result = result.appended(new Node.Element(
+                Tag.ARTICLE,
+                Seq.of(Attribute.of("id", article.identifier())),
+                innerArticle.rootSection().body()
+                    .prepended(Node.simple(Tag.HEADER, headerContents))
+                    .appended(new Node.Element(
+                        Tag.A,
+                        Seq.of(
+                            Attribute.of("class", "read-full"),
+                            Attribute.of("href", article.uri().toString()),
+                            Attribute.of("aria-label", "Read the full article: " + title)
+                        ),
+                        Seq.of(new Node.Text("Read the full article…"))
+                    ))
+            ));
         }
+        return result;
     }
 
     private static @NotNull Node.Element renderHead(
         final @Nullable String title,
         final @NotNull String description
     ) {
-        return Node.build(Tag.HEAD, head -> {
-            head.append(Constants.headPrefix);
-            head.appendBuild(Tag.META_NAMED, meta -> {
-                meta.set("name", "description");
-                meta.set("content", description);
-            });
-            head.append(Constants.headSuffix);
-            final var effectiveTitle =
-                (title != null) ? (title + " - " + RenderConstants.siteTitle) : RenderConstants.siteTitle;
-            head.appendBuild(Tag.TITLE, titleElement -> titleElement.appendText(effectiveTitle));
-        });
+        final var effectiveTitle =
+            (title != null) ? (title + " - " + RenderConstants.siteTitle) : RenderConstants.siteTitle;
+        return Node.simple(
+            Tag.HEAD,
+            Constants.headPrefix
+                .appended(Node.empty(Tag.META_NAMED, Seq.of(
+                    Attribute.of("name", "description"),
+                    Attribute.of("content", description)
+                )))
+                .concat(Constants.headSuffix)
+                .appended(Node.simple(Tag.TITLE, new Node.Text(effectiveTitle)))
+        );
     }
 
     private @NotNull Node.Element renderArticleBody(final @NotNull Article article) {
-        return Node.build(Tag.ARTICLE, articleElement -> {
-            articleElement.append(renderArticleHeader(article));
-            articleElement.append(article.rootSection().body());
-            final var children = article.rootSection().children();
-            if (!children.isEmpty() && !article.inhibitTableOfContents()) {
-                articleElement.append(renderTableOfContents(children));
-            }
-            for (final var child : children) {
-                articleElement.append(renderSubsection(child, 2));
-            }
-        });
+        var contents = article.rootSection().body().prepended(renderArticleHeader(article));
+        final var children = article.rootSection().children();
+        if (!children.isEmpty() && !article.inhibitTableOfContents()) {
+            contents = contents.appended(renderTableOfContents(children));
+        }
+        for (final var child : children) {
+            contents = contents.appended(renderSubsection(child, 2));
+        }
+        return Node.simple(Tag.ARTICLE, contents);
     }
 
     private @NotNull Node.Element renderArticleHeader(final @NotNull Article article) {
-        return Node.build(Tag.HEADER, header -> {
-            header.append(renderHeading(Tag.H1, "#main", article.title()));
-            if (headerRenderMode.shouldRender()) {
-                header.append(renderPublicationDate(article.date()));
-                final var topicsNode = renderArticleTopics(article.topics());
-                if (topicsNode != null) {
-                    header.append(topicsNode);
-                }
+        var contents = Seq.<Node>of(renderHeading(Tag.H1, "#main", article.title()));
+        if (headerRenderMode.shouldRender()) {
+            contents = contents.appended(renderPublicationDate(article.date()));
+            final var topicsNode = renderArticleTopics(article.topics());
+            if (topicsNode != null) {
+                contents = contents.appended(topicsNode);
             }
-        });
+        }
+        return Node.simple(Tag.HEADER, contents);
     }
 
     private static @NotNull Node.Element renderPublicationDate(final @NotNull LocalDate date) {
-        return Node.build(Tag.P, p -> {
-            p.appendText("Published on the ");
-            p.appendBuild(Tag.TIME, time -> {
-                time.set("datetime", renderIsoDate(date));
-                final var day = date.getDayOfMonth();
-                final var daySuffix = switch (day % 10) {
-                    case 1 -> (day == 11) ? "th" : "st";
-                    case 2 -> (day == 12) ? "th" : "nd";
-                    case 3 -> (day == 13) ? "th" : "rd";
-                    default -> "th";
-                };
-                final var prettyDate =
-                    day + daySuffix + " of " + Constants.monthNames[date.getMonthValue() - 1] + ' ' + date.getYear();
-                time.appendText(prettyDate);
-            });
-        });
+        final var day = date.getDayOfMonth();
+        final var daySuffix = switch (day % 10) {
+            case 1 -> (day == 11) ? "th" : "st";
+            case 2 -> (day == 12) ? "th" : "nd";
+            case 3 -> (day == 13) ? "th" : "rd";
+            default -> "th";
+        };
+        final var prettyDate =
+            day + daySuffix + " of " + Constants.monthNames[date.getMonthValue() - 1] + ' ' + date.getYear();
+        return Node.simple(Tag.P, Seq.of(
+            new Node.Text("Published on the "),
+            new Node.Element(
+                Tag.TIME,
+                Seq.of(Attribute.of("datetime", renderIsoDate(date))),
+                Seq.of(new Node.Text(prettyDate))
+            )
+        ));
     }
 
     private static @NotNull String renderIsoDate(final @NotNull LocalDate date) {
@@ -299,51 +286,48 @@ public final class Renderer {
     }
 
     private @Nullable Node.Element renderArticleTopics(final @NotNull Seq<String> topics) {
-        return topics.isEmpty() ? null : Node.build(Tag.P, p -> {
-            p.appendText("Topics: ");
-            boolean needsSeparator = false;
-            for (final String topicName : topics) {
-                if (needsSeparator) {
-                    p.appendText(", ");
-                }
-                p.append(renderSimpleLink(headerRenderMode.getTopicArchiveUri(topicName), topicName));
-                needsSeparator = true;
+        if (topics.isEmpty()) {
+            return null;
+        }
+        var contents = Seq.<Node>of(new Node.Text("Topics: "));
+        boolean needsSeparator = false;
+        for (final String topicName : topics) {
+            if (needsSeparator) {
+                contents = contents.appended(new Node.Text(", "));
             }
-        });
+            contents = contents.appended(renderSimpleLink(headerRenderMode.getTopicArchiveUri(topicName), topicName));
+            needsSeparator = true;
+        }
+        return Node.simple(Tag.P, contents);
     }
 
     private static @NotNull Node.Element renderTableOfContents(final @NotNull Seq<Section> childrenOfRoot) {
-        return Node.build(Tag.NAV, nav -> {
-            nav.set("class", "toc");
-            nav.set("aria-labelledby", "toc-label");
-            nav.append(Constants.tocLabel);
-            nav.append(renderTableOfContentsList(childrenOfRoot));
-        });
+        return new Node.Element(
+            Tag.NAV,
+            Seq.of(Attribute.of("class", "toc"), Attribute.of("aria-labelledby", "toc-label")),
+            Seq.of(Constants.tocLabel, renderTableOfContentsList(childrenOfRoot))
+        );
     }
 
     private static @NotNull Node.Element renderTableOfContentsList(final @NotNull Seq<Section> children) {
-        return Node.build(Tag.OL, ol -> {
-            for (final var child : children) {
-                ol.appendBuild(Tag.LI, li -> {
-                    li.append(renderSimpleLink('#' + child.identifier().symbolName(), child.header()));
-                    final var grandchildren = child.children();
-                    if (!grandchildren.isEmpty()) {
-                        li.append(renderTableOfContentsList(grandchildren));
-                    }
-                });
-            }
-        });
+        return Node.simple(Tag.OL, children.map(child -> {
+            final var grandchildren = child.children();
+            final var link = renderSimpleLink('#' + child.identifier().symbolName(), child.header());
+            return Node.simple(
+                Tag.LI,
+                grandchildren.isEmpty() ? Seq.of(link) : Seq.of(link, renderTableOfContentsList(grandchildren))
+            );
+        }));
     }
 
     private static @NotNull Node.Element renderSubsection(final @NotNull Section section, final int nestingLevel) {
-        return Node.build(Tag.SECTION, sectionElement -> {
-            sectionElement.set("id", section.identifier().symbolName());
-            sectionElement.append(renderSectionHeader(section, nestingLevel));
-            sectionElement.append(section.body());
-            for (final var child : section.children()) {
-                sectionElement.append(renderSubsection(child, nestingLevel + 1));
-            }
-        });
+        return new Node.Element(
+            Tag.SECTION,
+            Seq.of(Attribute.of("id", section.identifier().symbolName())),
+            section.body()
+                .prepended(renderSectionHeader(section, nestingLevel))
+                .concat(section.children().map(child -> renderSubsection(child, nestingLevel + 1)))
+        );
     }
 
     private static @NotNull Node.Element renderSectionHeader(final @NotNull Section section, final int nestingLevel) {
@@ -357,55 +341,48 @@ public final class Renderer {
         final @NotNull String target,
         final @NotNull String text
     ) {
-        return Node.build(tag, heading -> heading.appendBuild(Tag.A, a -> {
-            a.set("class", "section-link");
-            a.set("href", target);
-            a.appendBuild(Tag.SPAN, span -> span.appendText(text));
-            a.append(Constants.sectionLinkMarker);
-        }));
+        return Node.simple(tag, new Node.Element(
+            Tag.A,
+            Seq.of(Attribute.of("class", "section-link"), Attribute.of("href", target)),
+            Seq.of(Node.simple(Tag.SPAN, new Node.Text(text)), Constants.sectionLinkMarker)
+        ));
     }
 
     private static @NotNull Node.Element renderSimpleLink(final @NotNull String href, final @NotNull String text) {
-        return Node.build(Tag.A, a -> {
-            a.set("href", href);
-            a.appendText(text);
-        });
+        return new Node.Element(Tag.A, Seq.of(Attribute.of("href", href)), Seq.of(new Node.Text(text)));
     }
 
     private static @NotNull Node.Element renderBottomNav(
         final @Nullable DomainRelativeUri predecessorUri,
         final @Nullable DomainRelativeUri successorUri
     ) {
-        return Node.build(Tag.NAV, nav -> {
-            nav.set("aria-label", "Chronological, secondary");
-            nav.appendBuild(Tag.UL, ul -> {
-                ul.set("id", "order-nav");
-                ul.append(Constants.topLink);
-                ul.appendBuild(Tag.LI, li -> {
-                    li.set("class", "prev");
-                    if (predecessorUri != null) {
-                        li.appendBuild(Tag.A, a -> {
-                            a.set("rel", "prev");
-                            a.set("href", predecessorUri.toString());
-                            a.append(Constants.decorativeLeftArrow);
-                            a.appendText("Older");
-                        });
-                    }
-                });
-                ul.append(Constants.archivesLink);
-                ul.appendBuild(Tag.LI, li -> {
-                    li.set("class", "next");
-                    if (successorUri != null) {
-                        li.appendBuild(Tag.A, a -> {
-                            a.set("rel", "next");
-                            a.set("href", successorUri.toString());
-                            a.appendText("Newer");
-                            a.append(Constants.decorativeRightArrow);
-                        });
-                    }
-                });
-            });
-        });
+        final var predecessorLink = new Node.Element(
+            Tag.LI,
+            Seq.of(Attribute.of("class", "prev")),
+            (predecessorUri == null)
+                ? Seq.empty()
+                : Seq.of(new Node.Element(Tag.A,
+                Seq.of(Attribute.of("rel", "prev"), Attribute.of("href", predecessorUri.toString())),
+                Seq.of(Constants.decorativeLeftArrow, new Node.Text("Older"))))
+        );
+        final var successorLink = new Node.Element(
+            Tag.LI,
+            Seq.of(Attribute.of("class", "next")),
+            (successorUri == null)
+                ? Seq.empty()
+                : Seq.of(new Node.Element(Tag.A,
+                Seq.of(Attribute.of("rel", "next"), Attribute.of("href", successorUri.toString())),
+                Seq.of(new Node.Text("Newer"), Constants.decorativeRightArrow)))
+        );
+        return new Node.Element(
+            Tag.NAV,
+            Seq.of(Attribute.of("aria-label", "Chronological, secondary")),
+            Seq.of(new Node.Element(
+                Tag.UL,
+                Seq.of(Attribute.of("id", "order-nav")),
+                Seq.of(Constants.topLink, predecessorLink, Constants.archivesLink, successorLink)
+            ))
+        );
     }
 
     private final @NotNull HeaderRenderMode headerRenderMode;
@@ -416,16 +393,14 @@ public final class Renderer {
         }
 
         private @NotNull Node.Element render() {
-            return originalContainer.buildClone(clone -> {
-                if (originalContainer.getAttribute("class") instanceof Attribute.String oldClass) {
-                    clone.set("class", oldClass.value() + ' ' + Constants.numberedClassName);
-                } else {
-                    clone.set(Constants.classNumbered);
-                }
-                renderElement(new PendingElement(originalContainer, null));
-                clone.append(newRootChildren);
-                newRootChildren = Seq.empty();
-            });
+            renderElement(new PendingElement(originalContainer, null));
+            final var result = new Node.Element(
+                originalContainer.tag(),
+                Attributes.addedClass(originalContainer.attributes(), Constants.numberedClassName),
+                newRootChildren
+            );
+            newRootChildren = Seq.empty();
+            return result;
         }
 
         private void renderElement(final @NotNull PendingElement element) {
@@ -477,7 +452,8 @@ public final class Renderer {
                 }
             } else {
                 if (!children.isEmpty() || element.original.children().isEmpty()) {
-                    final var clone = element.original.buildClone(el -> el.append(children));
+                    final var original = element.original;
+                    final var clone = new Node.Element(original.tag(), original.attributes(), children);
                     element.parent.appendChild(clone);
                 }
             }
@@ -490,7 +466,7 @@ public final class Renderer {
         private static @NotNull Node.Element wrapLineContent(final @NotNull Seq<@NotNull Node> nodes) {
             return (nodes.exactSize() == 1 && nodes.first() instanceof Node.Element element)
                 ? element
-                : Node.build(Tag.SPAN, span -> span.append(nodes));
+                : Node.simple(Tag.SPAN, nodes);
         }
 
         private final @NotNull Node.Element originalContainer;
@@ -515,128 +491,134 @@ public final class Renderer {
     // Put constants in a separate class, so that they're created on first access rather than when the renderer class is
     // loaded.
     private static final class Constants {
-        private static final Seq<Node.Element> headPrefix = Seq.of(
-            Node.makeEmptyElement(Tag.META_CHARSET_UTF8),
-            Node.build(Tag.META_NAMED, meta -> {
-                meta.set("name", "viewport");
-                meta.set("content", "width=device-width, initial-scale=1");
-            }),
-            Node.build(Tag.META_NAMED, meta -> {
-                meta.set("name", "generator");
-                meta.set("content", "Some custom Common Lisp");
-            })
+        private static final Seq<Node> headPrefix = Seq.of(
+            Node.empty(Tag.META_CHARSET_UTF8, Seq.empty()),
+            Node.empty(Tag.META_NAMED, Seq.of(
+                Attribute.of("name", "viewport"),
+                Attribute.of("content", "width=device-width, initial-scale=1")
+            )),
+            Node.empty(Tag.META_NAMED, Seq.of(
+                Attribute.of("name", "generator"),
+                Attribute.of("content", "Some custom Common Lisp")
+            ))
         );
 
-        private static final Seq<Node.Element> headSuffix = Seq.of(
-            Node.build(Tag.LINK, link -> {
-                link.set("rel", "alternate");
-                link.set("href", '/' + RenderConstants.feedFileName);
-                link.set("title", RenderConstants.siteTitle);
-                link.set("type", "application/rss+xml");
-            }),
-            Node.build(Tag.LINK, link -> {
-                link.set("rel", "stylesheet");
-                link.set("href", "/static/theme.css");
-            }),
-            Node.build(Tag.LINK, link -> {
-                link.set("rel", "license");
-                link.set("href", "https://creativecommons.org/licenses/by-sa/4.0/");
-            })
+        private static final Seq<Node> headSuffix = Seq.of(
+            Node.empty(Tag.LINK, Seq.of(
+                Attribute.of("rel", "alternate"),
+                Attribute.of("href", '/' + RenderConstants.feedFileName),
+                Attribute.of("title", RenderConstants.siteTitle),
+                Attribute.of("type", "application/rss+xml")
+            )),
+            Node.empty(Tag.LINK, Seq.of(
+                Attribute.of("rel", "stylesheet"),
+                Attribute.of("href", "/static/theme.css")
+            )),
+            Node.empty(Tag.LINK, Seq.of(
+                Attribute.of("rel", "license"),
+                Attribute.of("href", "https://creativecommons.org/licenses/by-sa/4.0/")
+            ))
         );
 
-        private static final Seq<Node.Element> header = Seq.of(
-            Node.build(Tag.A, a -> {
-                a.set("id", "skip-nav");
-                a.set("class", "at-only");
-                a.set("href", "#main");
-                a.appendText("Skip to main content");
-            }),
-            Node.build(Tag.HEADER, header -> {
-                header.set("id", "top-header");
-                header.appendText(RenderConstants.siteTitle);
-            }),
-            Node.build(Tag.NAV, nav -> {
-                nav.set("aria-label", "Primary");
-                nav.appendBuild(Tag.UL, ul -> {
-                    ul.set("id", "top-nav");
-                    ul.appendBuild(Tag.LI, li -> li.append(renderSimpleLink("/", "Main page")));
-                    ul.appendBuild(Tag.LI, li -> li.append(renderSimpleLink("/archives/", "Archives")));
-                    ul.appendBuild(Tag.LI,
-                        li -> li.append(renderSimpleLink("https://github.com/Fanael/fanael.github.io/", "GitHub")));
-                    ul.appendBuild(Tag.LI, li -> li.appendBuild(Tag.A, a -> {
-                        a.set("rel", "author");
-                        a.set("href", "/pages/about.html");
-                        a.appendText("About");
-                    }));
-                });
-            })
+        private static final Seq<Node> header = Seq.of(
+            new Node.Element(
+                Tag.A,
+                Seq.of(
+                    Attribute.of("id", "skip-nav"),
+                    Attribute.of("class", "at-only"),
+                    Attribute.of("href", "#main")
+                ),
+                Seq.of(new Node.Text("Skip to main content"))
+            ),
+            new Node.Element(
+                Tag.HEADER,
+                Seq.of(Attribute.of("id", "top-header")),
+                Seq.of(new Node.Text(RenderConstants.siteTitle))
+            ),
+            new Node.Element(
+                Tag.NAV,
+                Seq.of(Attribute.of("aria-label", "Primary")),
+                Seq.of(new Node.Element(
+                    Tag.UL,
+                    Seq.of(Attribute.of("id", "top-nav")),
+                    Seq.of(
+                        Node.simple(Tag.LI, renderSimpleLink("/", "Main page")),
+                        Node.simple(Tag.LI, renderSimpleLink("/archives/", "Archives")),
+                        Node.simple(Tag.LI, renderSimpleLink("https://github.com/Fanael/fanael.github.io/", "GitHub")),
+                        Node.simple(Tag.LI, new Node.Element(
+                            Tag.A,
+                            Seq.of(Attribute.of("rel", "author"), Attribute.of("href", "/pages/about.html")),
+                            Seq.of(new Node.Text("About"))
+                        ))
+                    )
+                ))
+            )
         );
 
-        private static final Node.Element footer = Node.build(Tag.FOOTER, footer -> footer.appendBuild(Tag.UL, ul -> {
-            ul.set("id", "footer");
-            ul.appendBuild(Tag.LI, li -> li.appendText("Powered by HTML & CSS"));
-            ul.appendBuild(Tag.LI, li -> li.appendText(RenderConstants.copyrightLine));
-            ul.appendBuild(Tag.LI, li -> {
-                li.appendText("Licensed under a ");
-                li.appendBuild(Tag.A, a -> {
-                    a.set("rel", "license");
-                    a.set("href", "https://creativecommons.org/licenses/by-sa/4.0/");
-                    a.appendText("Creative Commons Attribution-ShareAlike 4.0 International License");
-                });
-            });
-        }));
+        private static final Node.Element footer = Node.simple(Tag.FOOTER, new Node.Element(Tag.UL,
+            Seq.of(Attribute.of("id", "footer")),
+            Seq.of(
+                Node.simple(Tag.LI, new Node.Text("Powered by HTML & CSS")),
+                Node.simple(Tag.LI, new Node.Text(RenderConstants.copyrightLine)),
+                Node.simple(Tag.LI, Seq.of(
+                    new Node.Text("Licensed under a "),
+                    new Node.Element(
+                        Tag.A,
+                        Seq.of(
+                            Attribute.of("rel", "license"),
+                            Attribute.of("href", "https://creativecommons.org/licenses/by-sa/4.0/")
+                        ),
+                        Seq.of(new Node.Text("Creative Commons Attribution-ShareAlike 4.0 International License"))
+                    )
+                ))
+            )
+        ));
 
         private static final Attribute.String ariaHidden = new Attribute.String("aria-hidden", "true");
 
-        private static final Node.Element topLink = Node.build(Tag.LI, li -> {
-            li.set("class", "top");
-            li.appendBuild(Tag.A, a -> {
-                a.set("href", "#skip-nav");
-                a.appendBuild(Tag.SPAN, span -> {
-                    span.set(ariaHidden);
-                    span.appendText("↑ ");
-                });
-                a.appendText("Top");
-                a.appendBuild(Tag.SPAN, span -> {
-                    span.set(ariaHidden);
-                    span.appendText(" ↑");
-                });
-            });
-        });
+        private static final Node.Element topLink = new Node.Element(
+            Tag.LI,
+            Seq.of(Attribute.of("class", "top")),
+            Seq.of(new Node.Element(
+                Tag.A,
+                Seq.of(Attribute.of("href", "#skip-nav")),
+                Seq.of(
+                    new Node.Element(Tag.SPAN, Seq.of(ariaHidden), Seq.of(new Node.Text("↑ "))),
+                    new Node.Text("Top"),
+                    new Node.Element(Tag.SPAN, Seq.of(ariaHidden), Seq.of(new Node.Text(" ↑")))
+                )
+            ))
+        );
 
-        private static final Node.Element archivesLink = Node.build(Tag.LI,
-            li -> li.append(renderSimpleLink("/archives/", "Blog archives")));
+        private static final Node.Element archivesLink =
+            Node.simple(Tag.LI, renderSimpleLink("/archives/", "Blog archives"));
 
-        private static final Node.Element decorativeLeftArrow = Node.build(Tag.SPAN, span -> {
-            span.set(ariaHidden);
-            span.appendText("← ");
-        });
+        private static final Node.Element decorativeLeftArrow =
+            new Node.Element(Tag.SPAN, Seq.of(ariaHidden), Seq.of(new Node.Text("← ")));
 
-        private static final Node.Element decorativeRightArrow = Node.build(Tag.SPAN, span -> {
-            span.set(ariaHidden);
-            span.appendText(" →");
-        });
+        private static final Node.Element decorativeRightArrow =
+            new Node.Element(Tag.SPAN, Seq.of(ariaHidden), Seq.of(new Node.Text(" →")));
 
         private static final Node.Element simpleBottomNav = renderBottomNav(null, null);
 
-        private static final Node.Element sectionLinkMarker = Node.build(Tag.SPAN, span -> {
-            span.set(ariaHidden);
-            span.appendText(" §");
-        });
+        private static final Node.Element sectionLinkMarker =
+            new Node.Element(Tag.SPAN, Seq.of(ariaHidden), Seq.of(new Node.Text(" §")));
 
-        private static final Node.Element tocLabel = Node.build(Tag.SPAN, span -> {
-            span.set("id", "toc-label");
-            span.appendText("Table of contents");
-        });
+        private static final Node.Element tocLabel = new Node.Element(
+            Tag.SPAN,
+            Seq.of(Attribute.of("id", "toc-label")),
+            Seq.of(new Node.Text("Table of contents"))
+        );
 
-        private static final Node.Element lineNumberMarker = Node.build(Tag.SPAN, span -> span.set("class", "cx-ln"));
+        private static final Node.Element lineNumberMarker = Node.empty(Tag.SPAN, Attribute.of("class", "cx-ln"));
+
+        private static final Node.Text newLine = new Node.Text("\n");
 
         private static final Attribute.String htmlLang = new Attribute.String("lang", "en");
 
         private static final Attribute.String idMain = new Attribute.String("id", "main");
 
         private static final String numberedClassName = "cx-numbered";
-        private static final Attribute.String classNumbered = new Attribute.String("class", numberedClassName);
 
         private static final String[] monthNames = {
             "January", "February", "March", "April", "May", "June",

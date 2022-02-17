@@ -14,6 +14,28 @@ public abstract sealed class Attribute {
     }
 
     /**
+     * Returns a new instance of a boolean attribute.
+     */
+    @SuppressWarnings("BooleanParameter")
+    public static @NotNull Boolean of(final @NotNull java.lang.String name, final boolean value) {
+        return new Boolean(name, value);
+    }
+
+    /**
+     * Returns a new instance of an integer attribute.
+     */
+    public static @NotNull Integer of(final @NotNull java.lang.String name, final @NotNull BigInteger value) {
+        return new Integer(name, value);
+    }
+
+    /**
+     * Returns a new instance of a string attribute.
+     */
+    public static @NotNull String of(final @NotNull java.lang.String name, final @NotNull java.lang.String value) {
+        return new String(name, value);
+    }
+
+    /**
      * Retrieves the name of this attribute.
      */
     public final @NotNull java.lang.String name() {

@@ -3,6 +3,8 @@
 package greenspun.article;
 
 import java.util.Map;
+import greenspun.dom.Attribute;
+import greenspun.dom.Attributes;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
 import greenspun.generator.Renderer;
@@ -74,32 +76,29 @@ public final class HtslConverter {
         if (tag == null) {
             throw signalError("Unknown tag name " + tagName);
         }
-        return Node.build(tag, builder -> {
-            convertAttributes(builder, attributes);
-            convertChildren(builder, children);
-        });
+        final var convertedAttributes = convertAttributes(attributes);
+        final var convertedChildren = children.map(this::convertForm);
+        return new Node.Element(tag, convertedAttributes, convertedChildren);
     }
 
-    private static void convertAttributes(
-        final @NotNull Node.ElementBuilder builder,
-        final @NotNull Seq<Sexp> attributes
-    ) {
+    private static @NotNull Seq<Attribute> convertAttributes(final @NotNull Seq<Sexp> attributes) {
+        @NotNull Seq<Attribute> result = Seq.empty();
         for (final var it = attributes.iterator(); it.hasNext(); ) {
             final var keyForm = it.next();
             final var key = Sexps.asKeyword(keyForm);
             if (key == null) {
                 throw signalError("Attribute name doesn't appear to be a Lisp keyword: " + Sexps.prettyPrint(keyForm));
             }
-            final var attributeName = key.symbolName().substring(1);
+            final var name = key.symbolName().substring(1);
             final var value = it.hasNext() ? it.next() : Sexp.KnownSymbol.NIL;
             switch (value) {
-                case Sexp.String string -> builder.set(attributeName, string.value());
-                case Sexp.Integer integer -> builder.set(attributeName, integer.value());
+                case Sexp.String string -> result = Attributes.updated(result, Attribute.of(name, string.value()));
+                case Sexp.Integer integer -> result = Attributes.updated(result, Attribute.of(name, integer.value()));
                 default -> {
                     if (Sexps.isNil(value)) {
-                        builder.set(attributeName, false);
+                        result = Attributes.updated(result, Attribute.of(name, false));
                     } else if (value == Sexp.KnownSymbol.T) {
-                        builder.set(attributeName, true);
+                        result = Attributes.updated(result, Attribute.of(name, true));
                     } else {
                         throw signalError(
                             "Don't know what to do with this attribute value: " + Sexps.prettyPrint(value));
@@ -107,6 +106,7 @@ public final class HtslConverter {
                 }
             }
         }
+        return result;
     }
 
     private static @NotNull TagHead extractTagHead(final @NotNull Sexp form) {
@@ -164,64 +164,56 @@ public final class HtslConverter {
         return pygmentsCache.highlightCode(code, pygmentsLanguageName, prettyLanguageName);
     }
 
-    private @NotNull Node expandImageFigure(
+    private @NotNull Node.Element expandImageFigure(
         final @NotNull Seq<Sexp> attributes,
         final @NotNull Seq<Sexp> children
     ) {
-        return Node.build(Tag.FIGURE, figure -> {
-            figure.appendBuild(Tag.FIGCAPTION, figcaption -> convertChildren(figcaption, children));
-            figure.append(buildFigcontent(
-                figcontent -> figcontent.appendBuild(Tag.IMG, img -> convertAttributes(img, attributes))));
-        });
+        return Node.simple(
+            Tag.FIGURE,
+            Seq.of(
+                Node.simple(Tag.FIGCAPTION, children.map(this::convertForm)),
+                makeFigureContent(
+                    Seq.empty(),
+                    Seq.of(Node.empty(Tag.IMG, convertAttributes(attributes))))));
     }
 
-    private @NotNull Node expandSidenote(
+    private @NotNull Node.Element expandSidenote(
         final @NotNull Seq<Sexp> attributes,
         final @NotNull Seq<Sexp> children
     ) {
-        return Node.build(Tag.DIV, aside -> {
-            convertAttributes(aside, attributes);
-            aside.set("class", "sidenote");
-            aside.set("role", "note");
-            convertChildren(aside, children);
-        });
+        return new Node.Element(
+            Tag.DIV,
+            Attributes.updated(
+                Attributes.addedClass(convertAttributes(attributes), "sidenote"),
+                Attribute.of("role", "note")
+            ),
+            children.map(this::convertForm)
+        );
     }
 
-    private @NotNull Node expandFigcontent(
+    private @NotNull Node.Element expandFigcontent(
         final @NotNull Seq<Sexp> attributes,
         final @NotNull Seq<Sexp> children
     ) {
-        return buildFigcontent(figcontent -> {
-            convertAttributes(figcontent, attributes);
-            convertChildren(figcontent, children);
-        });
+        return makeFigureContent(convertAttributes(attributes), children.map(this::convertForm));
     }
 
-    private @NotNull Node expandInfoBox(
+    private @NotNull Node.Element expandInfoBox(
         final @NotNull Seq<Sexp> attributes,
         final @NotNull Seq<Sexp> children
     ) {
-        return Node.build(Tag.DIV, div -> {
-            convertAttributes(div, attributes);
-            div.set("class", "info");
-            convertChildren(div, children);
-        });
+        return new Node.Element(
+            Tag.DIV,
+            Attributes.addedClass(convertAttributes(attributes), "info"),
+            children.map(this::convertForm)
+        );
     }
 
-    private void convertChildren(
-        final @NotNull Node.ElementBuilder builder,
-        final @NotNull Seq<Sexp> children
+    private static @NotNull Node.Element makeFigureContent(
+        final @NotNull Seq<@NotNull Attribute> attributes,
+        final @NotNull Seq<@NotNull Node> children
     ) {
-        for (final var child : children) {
-            builder.append(convertForm(child));
-        }
-    }
-
-    private static @NotNull Node.Element buildFigcontent(final @NotNull Node.BuildFunction function) {
-        return Node.build(Tag.DIV, div -> {
-            function.build(div);
-            div.set("class", "holder");
-        });
+        return new Node.Element(Tag.DIV, Attributes.addedClass(attributes, "holder"), children);
     }
 
     private static @NotNull UnhandledErrorError signalError(final @NotNull String message) {

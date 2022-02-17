@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import greenspun.dom.Attribute;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
 import greenspun.util.Trace;
@@ -366,10 +367,11 @@ public final class PygmentsServer implements AutoCloseable {
         private @NotNull Node makeNode() {
             final var textNode = new Node.Text(builder.toString());
             final var cssClass = lastClass;
-            return cssClass.isEmpty() ? textNode : Node.build(Tag.SPAN, span -> {
-                span.set("class", cssClass);
-                span.append(textNode);
-            });
+            return cssClass.isEmpty() ? textNode : new Node.Element(
+                Tag.SPAN,
+                Seq.of(Attribute.of("class", cssClass)),
+                Seq.of(textNode)
+            );
         }
 
         private @NotNull Seq<@NotNull Node> nodes = Seq.empty();
