@@ -522,18 +522,20 @@ public final class Renderer {
 
         private static final Seq<Node> header = Seq.of(
             new Node.Element(
-                Tag.A,
-                Seq.of(
-                    Attribute.of("id", "skip-nav"),
-                    Attribute.of("class", "at-only"),
-                    Attribute.of("href", "#main")
-                ),
-                Seq.of(new Node.Text("Skip to main content"))
-            ),
-            new Node.Element(
                 Tag.HEADER,
                 Seq.of(Attribute.of("id", "top-header")),
-                Seq.of(new Node.Text(RenderConstants.siteTitle))
+                Seq.of(
+                    new Node.Element(
+                        Tag.A,
+                        Seq.of(
+                            Attribute.of("id", "skip-nav"),
+                            Attribute.of("class", "at-only"),
+                            Attribute.of("href", "#main")
+                        ),
+                        Seq.of(new Node.Text("Skip to main content"))
+                    ),
+                    Node.simple(Tag.SPAN, new Node.Text(RenderConstants.siteTitle))
+                )
             ),
             new Node.Element(
                 Tag.NAV,
