@@ -91,17 +91,22 @@ main li {
 }
 
 /* Banner-header */
+#top-header {
+    padding: 1.5rem 0 1rem;
+    position: relative;
+    text-align: center;
+}
+
+#top-header span {
+    font-size: 207.4%;
+    font-variant: small-caps;
+}
+
 #skip-nav {
+    left: 0;
     padding: 0 0.25ch;
     position: absolute;
     top: 0.25em;
-}
-
-#top-header {
-    font-size: 207.4%;
-    font-variant: small-caps;
-    padding: 1.5rem 0 1rem;
-    text-align: center;
 }
 
 /* Navigation menu */
@@ -596,6 +601,21 @@ article:not(:last-child) .read-full {
 
     .c-c, #footer li, article header p, .cx-ln {
         color: #a5a5a5;
+    }
+
+    @supports (-webkit-background-clip: text) or (background-clip: text) {
+        #top-header span {
+            -webkit-background-clip: text;
+            background-clip: text;
+            background-image: linear-gradient(
+                to right,
+                #9ad4ee 0%, #9ad4ee 8%, #bfcaec 13%, #dcc1de 18%,
+                #ecbdc6 23%, #ecbdc6 31%, #edcdd3 36%, #eedee1 41%,
+                #eee 46%, #eee 54%, #eedee1 59%, #edcdd3 64%,
+                #ecbdc6 69%, #ecbdc6 77%, #dcc1de 82%, #bfcaec 87%,
+                #9ad4ee 92%);
+            color: transparent;
+        }
     }
 }
 
