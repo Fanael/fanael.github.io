@@ -62,8 +62,11 @@ tasks.withType(JavaExec).configureEach {
     jvmArgs += "--enable-preview"
 }
 
-javadoc.options.addBooleanOption("-enable-preview", true)
-javadoc.options.addStringOption("-release", java.toolchain.languageVersion.get().toString())
+javadoc {
+    options.addBooleanOption("-enable-preview", true)
+    options.addStringOption("-release", java.toolchain.languageVersion.get().toString())
+    options.addStringOption("-show-module-contents", "all")
+}
 
 test {
     useJUnitPlatform()
