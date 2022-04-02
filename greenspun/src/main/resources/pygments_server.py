@@ -45,10 +45,9 @@ List of known commands:
    type, with their usual semantics.
 '''
 from __future__ import annotations
-from typing import Callable, NoReturn, Optional
+from typing import Callable, NoReturn, Optional, Protocol, TypeAlias
 import sys
 import traceback
-from typing_extensions import Protocol, TypeAlias
 import pygments.lexer as lex
 import pygments.lexers as lxs
 import pygments.token as tok
