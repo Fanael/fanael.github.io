@@ -79,7 +79,7 @@ main li {
     margin: 0.5em 0;
 }
 
-.at-only:not(:focus):not(:active), .cx-ln::before {
+.at-only:not(:focus):not(:active) {
     clip-path: inset(50%);
     clip: rect(1px, 1px, 1px, 1px);
     height: 1px;
@@ -347,12 +347,6 @@ figure, .code-block {
     }
 
     .cx-ln::before {
-        content: "Line ";
-        display: inline-block;
-        position: static;
-    }
-
-    .cx-ln::after {
         content: counter(line-number);
     }
 }
