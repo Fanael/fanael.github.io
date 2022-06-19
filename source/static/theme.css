@@ -349,6 +349,14 @@ figure, .code-block {
     .cx-ln::before {
         content: counter(line-number);
     }
+
+    .cx-ln + * {
+        transition: background-color 0.2s;
+    }
+
+    .cx-ln + :hover, .cx-ln:hover + * {
+        background-color: rgba(196, 196, 179, 0.267);
+    }
 }
 
 .c-k, .c-se {
@@ -595,6 +603,10 @@ article:not(:last-child) .read-full {
 
     .c-c, #footer li, article header p, .cx-ln {
         color: #a5a5a5;
+    }
+
+    .cx-ln + :hover, .cx-ln:hover + * {
+        background-color: #222;
     }
 
     @supports (-webkit-background-clip: text) or (background-clip: text) {
