@@ -88,7 +88,7 @@ public final class Generator {
         generatePages(targets.pageTargets());
         final var articles = generateArticles(targets.articleTargets());
         generateFrontPage(articles.splitAt(Math.min(articles.exactSize(), frontPageArticleCount)).front());
-        generateFeed(articles.splitAt(Math.min(articles.exactSize(), feedArticleCount)).front(), buildTime);
+        generateFeed(articles, buildTime);
         generateArchives(articles);
     }
 
@@ -372,7 +372,6 @@ public final class Generator {
     static final String archivesSubdirectoryName = "archives";
     private static final Path archivesSubdirectoryPath = Path.of(archivesSubdirectoryName);
     private static final int frontPageArticleCount = 5;
-    private static final int feedArticleCount = 10;
 
     private final @NotNull Path sourceDirectory;
     private final @NotNull Path destinationDirectory;
