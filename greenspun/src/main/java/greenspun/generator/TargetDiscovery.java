@@ -50,7 +50,8 @@ final class TargetDiscovery {
             trace.use();
             try {
                 final var path = sourceDirectory.resolve(Generator.staticSubdirectoryName);
-                final var result = new StaticTargets();
+                final var directoriesToCreate = new Seq.Builder<@NotNull Path>();
+                final var targets = new Seq.Builder<@NotNull Target>();
                 Files.walkFileTree(path, new SimpleFileVisitor<>() {
                     @Override
                     public @NotNull FileVisitResult preVisitDirectory(
@@ -58,7 +59,7 @@ final class TargetDiscovery {
                         final @NotNull BasicFileAttributes attributes
                     ) {
                         final var relativePath = sourceDirectory.relativize(directory);
-                        result.directoriesToCreate = result.directoriesToCreate.appended(relativePath);
+                        directoriesToCreate.append(relativePath);
                         knownDestinationPaths.add(relativePath);
                         return FileVisitResult.CONTINUE;
                     }
@@ -69,12 +70,12 @@ final class TargetDiscovery {
                         final @NotNull BasicFileAttributes attributes
                     ) {
                         final var relativePath = sourceDirectory.relativize(file);
-                        result.targets = result.targets.appended(new Target(relativePath, relativePath));
+                        targets.append(new Target(relativePath, relativePath));
                         knownDestinationPaths.add(relativePath);
                         return FileVisitResult.CONTINUE;
                     }
                 });
-                return result;
+                return new StaticTargets(directoriesToCreate.toSeq(), targets.toSeq());
             } catch (final IOException e) {
                 throw ConditionContext.error(new IOExceptionCondition(e));
             }
@@ -99,7 +100,8 @@ final class TargetDiscovery {
         try (final var trace = new Trace("Discovering files to remove from destination directory")) {
             trace.use();
             try {
-                final var result = new UnlinkTargets();
+                final var files = new Seq.Builder<@NotNull Path>();
+                final var directories = new Seq.Builder<@NotNull Path>();
                 Files.walkFileTree(destinationDirectory, new SimpleFileVisitor<>() {
                     @Override
                     public @NotNull FileVisitResult preVisitDirectory(
@@ -116,7 +118,7 @@ final class TargetDiscovery {
                     ) {
                         final var relativePath = destinationDirectory.relativize(file);
                         if (!isDotFile(file) && !knownDestinationPaths.contains(relativePath)) {
-                            result.files = result.files.appended(relativePath);
+                            files.append(relativePath);
                         }
                         return FileVisitResult.CONTINUE;
                     }
@@ -130,7 +132,7 @@ final class TargetDiscovery {
                         }
                         final var relativePath = destinationDirectory.relativize(directory);
                         if (!knownDestinationPaths.contains(relativePath)) {
-                            result.directories = result.directories.appended(relativePath);
+                            directories.append(relativePath);
                         }
                         return FileVisitResult.CONTINUE;
                     }
@@ -140,7 +142,7 @@ final class TargetDiscovery {
                         return name != null && name.toString().startsWith(".");
                     }
                 });
-                return result;
+                return new UnlinkTargets(files.toSeq(), directories.toSeq());
             } catch (final IOException e) {
                 throw ConditionContext.error(new IOExceptionCondition(e));
             }
@@ -149,17 +151,17 @@ final class TargetDiscovery {
 
     private @NotNull Seq<@NotNull Target> discoverHtmlTargetsInDirectory(final @NotNull Path directory) {
         try (final var stream = Files.newDirectoryStream(directory)) {
-            var targets = Seq.<@NotNull Target>empty();
+            final var targets = new Seq.Builder<@NotNull Target>();
             for (final var path : stream) {
                 if (Files.isDirectory(path)) {
                     continue;
                 }
                 final var sourcePath = sourceDirectory.relativize(path);
                 final var destinationPath = PathUtils.changeExtension(sourcePath, "html");
-                targets = targets.appended(new Target(sourcePath, destinationPath));
+                targets.append(new Target(sourcePath, destinationPath));
                 knownDestinationPaths.add(destinationPath);
             }
-            return targets;
+            return targets.toSeq();
         } catch (final DirectoryIteratorException e) {
             throw ConditionContext.error(new IOExceptionCondition(e.getCause()));
         } catch (final IOException e) {
@@ -171,13 +173,15 @@ final class TargetDiscovery {
     private final @NotNull Path destinationDirectory;
     private final HashSet<Path> knownDestinationPaths = new HashSet<>();
 
-    private static final class StaticTargets {
-        private @NotNull Seq<@NotNull Path> directoriesToCreate = Seq.empty();
-        private @NotNull Seq<@NotNull Target> targets = Seq.empty();
+    private record StaticTargets(
+        @NotNull Seq<@NotNull Path> directoriesToCreate,
+        @NotNull Seq<@NotNull Target> targets
+    ) {
     }
 
-    private static final class UnlinkTargets {
-        private @NotNull Seq<@NotNull Path> files = Seq.empty();
-        private @NotNull Seq<@NotNull Path> directories = Seq.empty();
+    private record UnlinkTargets(
+        @NotNull Seq<@NotNull Path> files,
+        @NotNull Seq<@NotNull Path> directories
+    ) {
     }
 }

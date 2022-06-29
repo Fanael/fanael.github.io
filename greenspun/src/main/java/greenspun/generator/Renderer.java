@@ -188,7 +188,7 @@ public final class Renderer {
     }
 
     private @NotNull Seq<@NotNull Node> renderExcerpts(final @NotNull Seq<ArchivedArticle> articles) {
-        @NotNull Seq<@NotNull Node> result = Seq.empty();
+        final var result = new Seq.Builder<@NotNull Node>();
         for (final var article : articles) {
             final var innerArticle = article.article();
             final var title = innerArticle.title();
@@ -200,7 +200,7 @@ public final class Renderer {
             if (topics != null) {
                 headerContents = headerContents.appended(topics);
             }
-            result = result.appended(new Node.Element(
+            result.append(new Node.Element(
                 Tag.ARTICLE,
                 Seq.of(Attribute.of("id", article.identifier())),
                 innerArticle.rootSection().body()
@@ -216,7 +216,7 @@ public final class Renderer {
                     ))
             ));
         }
-        return result;
+        return result.toSeq();
     }
 
     private static @NotNull Node.Element renderHead(
@@ -394,13 +394,11 @@ public final class Renderer {
 
         private @NotNull Node.Element render() {
             renderElement(new PendingElement(originalContainer, null));
-            final var result = new Node.Element(
+            return new Node.Element(
                 originalContainer.tag(),
                 Attributes.addedClass(originalContainer.attributes(), Constants.numberedClassName),
-                newRootChildren
+                newRootChildren.take()
             );
-            newRootChildren = Seq.empty();
-            return result;
         }
 
         private void renderElement(final @NotNull PendingElement element) {
@@ -418,21 +416,21 @@ public final class Renderer {
             final var length = string.length();
             final var firstLineFeedPosition = string.indexOf('\n');
             if (firstLineFeedPosition == -1) {
-                parent.appendChild(textNode);
+                parent.newChildren.append(textNode);
             } else if (firstLineFeedPosition == length - 1) {
-                parent.appendChild(textNode);
+                parent.newChildren.append(textNode);
                 closeLine(parent);
             } else {
                 int position = 0;
                 int lineFeedPosition = firstLineFeedPosition;
                 do {
                     final var nextLineStart = lineFeedPosition + 1;
-                    parent.appendChild(new Node.Text(string.substring(position, nextLineStart)));
+                    parent.newChildren.append(new Node.Text(string.substring(position, nextLineStart)));
                     position = nextLineStart;
                     closeLine(parent);
                 } while ((lineFeedPosition = string.indexOf('\n', position)) != -1);
                 if (position < length) {
-                    parent.appendChild(new Node.Text(string.substring(position, length)));
+                    parent.newChildren.append(new Node.Text(string.substring(position, length)));
                 }
             }
         }
@@ -444,8 +442,7 @@ public final class Renderer {
         }
 
         private void closeElement(final @NotNull PendingElement element) {
-            final var children = element.newChildren;
-            element.newChildren = Seq.empty();
+            final var children = element.newChildren.take();
             if (element.parent == null) {
                 if (!children.isEmpty()) {
                     appendLine(children);
@@ -454,13 +451,14 @@ public final class Renderer {
                 if (!children.isEmpty() || element.original.children().isEmpty()) {
                     final var original = element.original;
                     final var clone = new Node.Element(original.tag(), original.attributes(), children);
-                    element.parent.appendChild(clone);
+                    element.parent.newChildren.append(clone);
                 }
             }
         }
 
         private void appendLine(final @NotNull Seq<@NotNull Node> nodes) {
-            newRootChildren = newRootChildren.appended(Constants.lineNumberMarker).appended(wrapLineContent(nodes));
+            newRootChildren.append(Constants.lineNumberMarker);
+            newRootChildren.append(wrapLineContent(nodes));
         }
 
         private static @NotNull Node.Element wrapLineContent(final @NotNull Seq<@NotNull Node> nodes) {
@@ -470,7 +468,7 @@ public final class Renderer {
         }
 
         private final @NotNull Node.Element originalContainer;
-        private @NotNull Seq<@NotNull Node> newRootChildren = Seq.empty();
+        private final @NotNull Seq.Builder<@NotNull Node> newRootChildren = new Seq.Builder<>();
 
         private static final class PendingElement {
             private PendingElement(final @NotNull Node.Element original, final @Nullable PendingElement parent) {
@@ -478,13 +476,9 @@ public final class Renderer {
                 this.parent = parent;
             }
 
-            void appendChild(final @NotNull Node node) {
-                newChildren = newChildren.appended(node);
-            }
-
             private final @NotNull Node.Element original;
             private final @Nullable PendingElement parent;
-            private @NotNull Seq<@NotNull Node> newChildren = Seq.empty();
+            private final @NotNull Seq.Builder<@NotNull Node> newChildren = new Seq.Builder<>();
         }
     }
 

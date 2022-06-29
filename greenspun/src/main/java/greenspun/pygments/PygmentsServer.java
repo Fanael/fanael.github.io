@@ -353,14 +353,14 @@ public final class PygmentsServer implements AutoCloseable {
 
         private @NotNull Seq<@NotNull Node> finish() {
             flushBuilder();
-            return nodes;
+            return nodes.toSeq();
         }
 
         private void flushBuilder() {
             if (builder.isEmpty()) {
                 return;
             }
-            nodes = nodes.appended(makeNode());
+            nodes.append(makeNode());
             builder.setLength(0);
         }
 
@@ -374,7 +374,7 @@ public final class PygmentsServer implements AutoCloseable {
             );
         }
 
-        private @NotNull Seq<@NotNull Node> nodes = Seq.empty();
+        private final @NotNull Seq.Builder<@NotNull Node> nodes = new Seq.Builder<>();
         private final StringBuilder builder = new StringBuilder();
         private @NotNull String lastClass = "";
     }

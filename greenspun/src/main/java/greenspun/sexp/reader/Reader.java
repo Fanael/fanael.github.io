@@ -106,7 +106,7 @@ public final class Reader {
     }
 
     private @NotNull Sexp.List readList() {
-        var list = Seq.<@NotNull Sexp>empty();
+        final var list = new Seq.Builder<@NotNull Sexp>();
         while (true) {
             if (skipSkippables().hitEof()) {
                 throw signalUnterminatedListError();
@@ -120,12 +120,12 @@ public final class Reader {
             }
             final var form = readForm();
             if (form != null) {
-                list = list.appended(form);
+                list.append(form);
             } else {
                 throw signalUnterminatedListError();
             }
         }
-        return new Sexp.List(list);
+        return new Sexp.List(list.toSeq());
     }
 
     private @NotNull Sexp.String readString() {

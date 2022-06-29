@@ -150,7 +150,7 @@ public final class Generator {
                 .thenComparing(article -> article.target().sourcePath())
                 .reversed()
         );
-        var orderedArticles = Seq.<@NotNull OrderedArticle>empty();
+        final var orderedArticles = new Seq.Builder<@NotNull OrderedArticle>();
         @Nullable LoadedArticle successor = null;
         for (var it = articles; !it.isEmpty(); ) {
             final var article = it.first();
@@ -160,11 +160,11 @@ public final class Generator {
             final var innerArticle = article.article;
             final var target = article.target;
             final var ordered = new OrderedArticle(innerArticle, target, predecessorUri, successorUri);
-            orderedArticles = orderedArticles.appended(ordered);
+            orderedArticles.append(ordered);
             successor = article;
         }
         final var renderer = makeArticleRenderer();
-        return executor.map(orderedArticles, article -> generateArticle(article, renderer));
+        return executor.map(orderedArticles.toSeq(), article -> generateArticle(article, renderer));
     }
 
     private @NotNull ArchivedArticle generateArticle(

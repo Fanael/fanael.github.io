@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import greenspun.util.collection.seq.Seq;
@@ -68,8 +67,8 @@ public final class CollectionExecutorService {
         final var inheritedState = ConditionContext.saveInheritableState();
         return Seq.mapIterable(iterable, (item) -> executorService.submit(() -> {
             final var previousState = ConditionContext.inheritState(inheritedState);
-            try (final var t = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
-                t.use();
+            try (final var trace = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
+                trace.use();
                 return function.apply(item);
             } finally {
                 ConditionContext.restoreState(previousState);
@@ -78,32 +77,33 @@ public final class CollectionExecutorService {
     }
 
     private static <T> @NotNull Seq<T> collectResults(final @NotNull Seq<@NotNull Future<T>> futures) {
-        return new AwaitImpl<>(futures.iterator(), Seq<T>::appended).awaitAll(Seq.empty());
+        final var builder = new Seq.Builder<T>();
+        new AwaitImpl<>(futures.iterator(), builder::append).awaitAll();
+        return builder.toSeq();
     }
 
     private static void waitForResults(final @NotNull Seq<? extends @NotNull Future<?>> futures) {
-        new AwaitImpl<>(futures.iterator(), (acc, value) -> acc).awaitAll(null);
+        new AwaitImpl<>(futures.iterator(), (value) -> {
+        }).awaitAll();
     }
 
     private final @NotNull ExecutorService executorService;
 
-    private static final class AwaitImpl<T, A> {
+    private static final class AwaitImpl<T> {
         private AwaitImpl(
             final @NotNull Iterator<? extends @NotNull Future<? extends T>> iterator,
-            final @NotNull BiFunction<? super A, ? super T, ? extends A> combiner
+            final @NotNull Consumer<? super T> consumer
         ) {
             this.iterator = iterator;
-            this.combiner = combiner;
+            this.consumer = consumer;
         }
 
-        private A awaitAll(final A initialValue) {
+        private void awaitAll() {
             try {
-                var accumulator = initialValue;
                 while (iterator.hasNext()) {
-                    accumulator = awaitOne(accumulator, iterator.next());
+                    awaitOne(iterator.next());
                 }
                 checkInterruptions();
-                return accumulator;
             } finally {
                 cancelIfNeeded();
             }
@@ -123,14 +123,13 @@ public final class CollectionExecutorService {
             }
         }
 
-        private A awaitOne(final A accumulator, final @NotNull Future<? extends T> future) {
+        private void awaitOne(final @NotNull Future<? extends T> future) {
             try {
-                return combiner.apply(accumulator, future.get());
+                consumer.accept(future.get());
             } catch (final InterruptedException e) {
                 throw SneakyThrow.doThrow(e);
             } catch (final ExecutionException e) {
                 recover(e);
-                return accumulator; // Will end up being discarded anyway.
             }
         }
 
@@ -149,7 +148,7 @@ public final class CollectionExecutorService {
         }
 
         private final @NotNull Iterator<? extends @NotNull Future<? extends T>> iterator;
-        private final @NotNull BiFunction<? super A, ? super T, ? extends A> combiner;
+        private final @NotNull Consumer<? super T> consumer;
         private boolean foundInterrupt = false;
         private boolean needsCancellation = false;
     }
