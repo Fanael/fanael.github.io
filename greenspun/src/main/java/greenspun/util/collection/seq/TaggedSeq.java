@@ -4,21 +4,12 @@ package greenspun.util.collection.seq;
 
 import java.util.Objects;
 import java.util.function.Function;
-import greenspun.util.UnreachableCodeReachedError;
 import org.jetbrains.annotations.NotNull;
 
-abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Empty, Single, Deep {
-    TaggedSeq(final @NotNull TypeTag<T, Phantom> tag, final long exactSize) {
-        super(exactSize);
+abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Shallow, Deep {
+    TaggedSeq(final @NotNull Tag<T, Phantom> tag, final long subtreeSize) {
+        super(subtreeSize);
         this.tag = tag;
-    }
-
-    static @NotNull UnsupportedOperationException unsupportedModification() {
-        throw new UnsupportedOperationException("Sequences don't support in-place mutation");
-    }
-
-    static @NotNull UnreachableCodeReachedError fellThroughTryingToIndex() {
-        throw new UnreachableCodeReachedError("Fell through a sequence trying to index it");
     }
 
     @Override
@@ -52,8 +43,8 @@ abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Empty, Single
 
     @Override
     public final @NotNull Seq<T> updated(final long index, final T newValue) {
-        final var split = splitTree(Objects.checkIndex(index, exactSize()), 0);
-        return split.left.concat(split.right.prepended(newValue));
+        final var split = splitTree(Objects.checkIndex(index, subtreeSize), 0);
+        return split.front.concat(split.back.prepended(newValue));
     }
 
     @Override
@@ -62,37 +53,32 @@ abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Empty, Single
             return new Split<>(this, empty());
         }
         final var split = splitTree(index, 0);
-        return new Split<>(split.left, split.right.prepended(split.middle));
+        return new Split<>(split.front, split.back.prepended(split.middle));
     }
 
     abstract @NotNull TaggedSeq<T, Phantom> concatImpl(@NotNull TaggedSeq<T, Phantom> other);
 
-    abstract @NotNull TreeSplit<T, Phantom> splitTree(final long index, final long accumulator);
-
-    final @NotNull TypeTag<T, Phantom> tag() {
-        return tag;
-    }
-
-    final long computeNewSize(final long delta) {
-        try {
-            return Math.addExact(exactSize(), delta);
-        } catch (final ArithmeticException e) {
-            throw new IllegalStateException("Sequence size too large");
-        }
-    }
+    abstract @NotNull TreeSplit<T, Phantom> splitTree(long index, long accumulator);
 
     final long addToSize(final T object) {
-        return computeNewSize(tag().measureSingle(object));
+        return computeNewSize(tag.measureSingle(object));
     }
 
     final long subtractFromSize(final T object) {
-        return computeNewSize(-tag().measureSingle(object));
+        return computeNewSize(-tag.measureSingle(object));
     }
 
-    static final int maxAffixLength = 32;
+    final long updateSize(final T newObject, final T oldObject) {
+        return computeNewSize(tag.measureSingle(newObject) - tag.measureSingle(oldObject));
+    }
 
-    private final @NotNull TypeTag<T, Phantom> tag;
+    final @NotNull GetResult<T> getFromArray(final T @NotNull [] array, final @NotNull Tag.SplitPoint splitPoint) {
+        final var element = array[splitPoint.index()];
+        return new GetResult<>(element, splitPoint.accumulator() - tag.measureSingle(element));
+    }
 
-    record TreeSplit<T, Phantom>(@NotNull TaggedSeq<T, Phantom> left, T middle, @NotNull TaggedSeq<T, Phantom> right) {
+    final @NotNull Tag<T, Phantom> tag;
+
+    record TreeSplit<T, Phantom>(@NotNull TaggedSeq<T, Phantom> front, T middle, @NotNull TaggedSeq<T, Phantom> back) {
     }
 }

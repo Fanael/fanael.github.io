@@ -87,8 +87,8 @@ public final class Generator {
         copyFiles(targets.staticTargets());
         generatePages(targets.pageTargets());
         final var articles = generateArticles(targets.articleTargets());
-        generateFrontPage(articles.splitAt(Math.min(articles.exactSize(), frontPageArticleCount)).left());
-        generateFeed(articles.splitAt(Math.min(articles.exactSize(), feedArticleCount)).left(), buildTime);
+        generateFrontPage(articles.splitAt(Math.min(articles.exactSize(), frontPageArticleCount)).front());
+        generateFeed(articles.splitAt(Math.min(articles.exactSize(), feedArticleCount)).front(), buildTime);
         generateArchives(articles);
     }
 

@@ -6,61 +6,43 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     Deep(
-        final @NotNull TypeTag<T, Phantom> tag,
-        final long size,
+        final @NotNull Tag<T, Phantom> tag,
+        final long subtreeSize,
         final T @NotNull [] prefix,
-        final @NotNull TaggedSeq<@NotNull Node<T>, Node<Phantom>> middle,
+        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle,
         final T @NotNull [] suffix
     ) {
-        super(tag, size);
-        assert prefix.length > 0 && prefix.length <= maxAffixLength;
-        assert suffix.length > 0 && suffix.length <= maxAffixLength;
-        assert size == tag.measureArray(prefix) + middle.exactSize() + tag.measureArray(suffix);
+        super(tag, subtreeSize);
         this.prefix = prefix;
         this.middle = middle;
         this.suffix = suffix;
-    }
-
-    @SuppressWarnings("unchecked")
-    static <T> @NotNull Deep<T, Object> ofUnits(final T e1, final T e2) {
-        return new Deep<>(TypeTag.unit(), 2, (T[]) new Object[]{e1}, Empty.node(), (T[]) new Object[]{e2});
-    }
-
-    @SuppressWarnings("unchecked")
-    static <T> @NotNull Deep<T, Object> ofUnits(final T e1, final T e2, final T e3) {
-        return new Deep<>(TypeTag.unit(), 3, (T[]) new Object[]{e1, e2}, Empty.node(), (T[]) new Object[]{e3});
-    }
-
-    @SuppressWarnings("unchecked")
-    static <T> @NotNull Deep<T, Object> ofUnits(final T e1, final T e2, final T e3, final T e4) {
-        return new Deep<>(TypeTag.unit(), 4, (T[]) new Object[]{e1, e2}, Empty.node(), (T[]) new Object[]{e3, e4});
+        assert checkInvariants();
     }
 
     @Override
-    public @NotNull Seq.Itr<T> iterator() {
-        return new Itr();
+    public @NotNull Itr<T> iterator() {
+        return new Itr<>(this);
     }
 
     @Override
     public boolean anySatisfies(final @NotNull Predicate<? super T> predicate) {
         return ArrayOps.anySatisfies(prefix, predicate)
             || ArrayOps.anySatisfies(suffix, predicate)
-            || middle.anySatisfies(node -> ArrayOps.anySatisfies(node.values(), predicate));
+            || middle.anySatisfies(chunk -> ArrayOps.anySatisfies(chunk.values, predicate));
     }
 
     @Override
-    public @NotNull <U> TaggedSeq<U, Phantom> map(final @NotNull Function<? super T, ? extends U> function) {
-        final var tag = tag().<U>cast();
-        final var newPrefix = ArrayOps.map(tag, prefix, function);
-        final var newMiddle = middle.map(node -> node.map(tag, function));
-        final var newSuffix = ArrayOps.map(tag, suffix, function);
-        return new Deep<>(tag.cast(), exactSize(), newPrefix, newMiddle, newSuffix);
+    public <U> @NotNull TaggedSeq<U, Phantom> map(final @NotNull Function<? super T, ? extends U> function) {
+        final var newTag = tag.<U>cast();
+        final var newPrefix = ArrayOps.map(prefix, function);
+        final var newMiddle = middle.map(chunk -> chunk.map(newTag, function));
+        final var newSuffix = ArrayOps.map(suffix, function);
+        return new Deep<>(newTag, subtreeSize, newPrefix, newMiddle, newSuffix);
     }
 
     @Override
@@ -75,21 +57,14 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
 
     @Override
     public @NotNull TaggedSeq<T, Phantom> updatedFirst(final T object) {
-        final var tag = tag();
-        final var newSize = computeNewSize(tag.measureSingle(object) - tag.measureSingle(prefix[0]));
-        final var newPrefix = prefix.clone();
-        newPrefix[0] = object;
-        return new Deep<>(tag(), newSize, newPrefix, middle, suffix);
+        final var newSize = updateSize(object, first());
+        return withNewFront(newSize, ArrayOps.updated(prefix, 0, object), middle);
     }
 
     @Override
     public @NotNull TaggedSeq<T, Phantom> updatedLast(final T object) {
-        final var tag = tag();
-        final var lastIndex = suffix.length - 1;
-        final var newSize = computeNewSize(tag.measureSingle(object) - tag.measureSingle(suffix[lastIndex]));
-        final var newSuffix = suffix.clone();
-        newSuffix[lastIndex] = object;
-        return new Deep<>(tag(), newSize, prefix, middle, newSuffix);
+        final var newSize = updateSize(object, last());
+        return withNewBack(newSize, middle, ArrayOps.updated(suffix, suffix.length - 1, object));
     }
 
     @Override
@@ -106,480 +81,488 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
 
     @Override
     public @NotNull TaggedSeq<T, Phantom> withoutFirst() {
-        final var size = subtractFromSize(first());
-        return (prefix.length > 1) ? withoutFirstSimple(size) : withoutFirstNoPrefix(size);
+        final var newSize = subtractFromSize(first());
+        return (prefix.length > 1) ? withoutFirstSimple(newSize) : withoutFirstNoPrefix(newSize);
     }
 
     @Override
     public @NotNull TaggedSeq<T, Phantom> withoutLast() {
-        final var size = subtractFromSize(last());
-        return (suffix.length > 1) ? withoutLastSimple(size) : withoutLastNoSuffix(size);
+        final var newSize = subtractFromSize(last());
+        return (suffix.length > 1) ? withoutLastSimple(newSize) : withoutLastNoSuffix(newSize);
     }
 
     @Override
-    void forEachChunk(final @NotNull ChunkConsumer<T> action) {
-        action.acceptArray(prefix);
-        middle.forEachChunk(action.lift());
-        action.acceptArray(suffix);
+    void forEachArray(final @NotNull ArrayConsumer<T> action) {
+        action.accept(prefix);
+        middle.forEachArray(chunks -> ArrayOps.forEach(chunks, chunk -> action.accept(chunk.values)));
+        action.accept(suffix);
     }
 
     @Override
-    T getImpl(final long index) {
-        // We're storing units, not nodes, so we can use direct indexing of affixes.
-        assert tag() == TypeTag.unit();
-        final var prefixSize = prefix.length;
+    @NotNull GetResult<T> getImpl(final long index, final long accumulator) {
+        final var prefixSplitPoint = tag.findSplitPoint(prefix, index, accumulator);
+        final var prefixSize = prefixSplitPoint.accumulator();
         if (index < prefixSize) {
-            return prefix[(int) index];
+            return getFromArray(prefix, prefixSplitPoint);
         }
-        var remaining = index - prefixSize;
-        final var middleSize = middle.exactSize();
-        if (remaining < middleSize) {
-            final var accumulator = new IndexAccumulator(remaining);
-            final var node = getRecursive(middle, accumulator);
-            return node.values()[(int) accumulator.remaining];
+        final var frontSize = prefixSize + middle.subtreeSize;
+        if (index < frontSize) {
+            final var result = middle.getImpl(index, prefixSize);
+            final var array = result.element().values;
+            final var splitPoint = tag.findSplitPoint(array, index, result.accumulator());
+            return getFromArray(array, splitPoint);
         }
-        remaining -= middleSize;
-        assert remaining <= Integer.MAX_VALUE;
-        return suffix[(int) remaining];
+        final var suffixSplitPoint = tag.findSplitPoint(suffix, index, frontSize);
+        return getFromArray(suffix, suffixSplitPoint);
+    }
+
+    @Override
+    boolean eligibleForInsertionSortImpl() {
+        return middle.isEmpty();
+    }
+
+    @Override
+    T @NotNull [] toSmallArray() {
+        assert eligibleForInsertionSort();
+        return ArrayOps.concat(prefix, suffix);
     }
 
     @Override
     @NotNull TaggedSeq<T, Phantom> concatImpl(final @NotNull TaggedSeq<T, Phantom> other) {
         return switch (other) {
-            case Empty<T, Phantom> ignored -> this;
-            case Single<T, Phantom> single -> appended(single.first());
-            case Deep<T, Phantom> deep -> concatDeep(deep);
+            case Shallow<T, Phantom> shallow -> appendedShallow(shallow);
+            case Deep<T, Phantom> deep -> appendedDeep(deep);
         };
     }
 
     @Override
     @NotNull TreeSplit<T, Phantom> splitTree(final long index, final long accumulator) {
-        final var tag = tag();
-        final var prefixSplitPoint = findArraySplitPoint(tag, index, accumulator, prefix);
-        final var prefixSize = prefixSplitPoint.accumulator;
+        final var prefixSplitPoint = tag.findSplitPoint(prefix, index, accumulator);
+        final var prefixSize = prefixSplitPoint.accumulator();
         if (index < prefixSize) {
-            final var split = splitArray(tag, prefix, prefixSplitPoint.index);
-            final var left = ArrayOps.toSeq(tag, split.left);
-            final var right = fromUnknownPrefix(tag, split.right, middle, suffix);
-            return new TreeSplit<>(left, split.middle, right);
+            return splitTreeAtPrefix(accumulator, prefixSplitPoint);
         }
-        assert prefixSplitPoint.index == prefix.length;
-        final var leftSideSize = prefixSize + middle.exactSize();
-        if (index < leftSideSize) {
-            final var split = middle.splitTree(index, prefixSize);
-            final var nodeValues = split.middle().values();
-            final var splitPoint =
-                findArraySplitPoint(tag, index, prefixSize + split.left().exactSize(), nodeValues);
-            final var nodeSplit = splitArray(tag, nodeValues, splitPoint.index);
-            final var left = fromUnknownSuffix(tag, prefix, split.left(), nodeSplit.left);
-            final var right = fromUnknownPrefix(tag, nodeSplit.right, split.right(), suffix);
-            return new TreeSplit<>(left, nodeSplit.middle, right);
+        final var frontSize = prefixSize + middle.subtreeSize;
+        if (index < frontSize) {
+            return splitTreeRecursively(accumulator, index, prefixSize);
         }
-        final var splitPoint = findArraySplitPoint(tag, index, leftSideSize, suffix);
-        final var split = splitArray(tag, suffix, splitPoint.index);
-        final var left = fromUnknownSuffix(tag, prefix, middle, split.left);
-        final var right = ArrayOps.toSeq(tag, split.right);
-        return new TreeSplit<>(left, split.middle, right);
+        return splitTreeAtSuffix(accumulator, index, frontSize);
     }
 
-    boolean eligibleForInsertionSort() {
-        return exactSize() <= Node.maxLength && middle.isEmpty();
-    }
-
-    T @NotNull [] toSmallArray() {
-        assert eligibleForInsertionSort();
-        return ArrayOps.concat(tag(), prefix, suffix);
+    @NotNull Deep<T, Phantom> prependedShallow(final @NotNull Shallow<T, Phantom> other) {
+        if (other.isEmpty()) {
+            return this;
+        }
+        final var newSize = computeNewSize(other.subtreeSize);
+        final var lengthAfterConcat = other.values.length + prefix.length;
+        if (lengthAfterConcat <= maxAffixLength) {
+            return withNewFront(newSize, ArrayOps.concat(other.values, prefix), middle);
+        } else {
+            final var split = ArrayOps.concatSplitAt(other.values, prefix, lengthAfterConcat - maxChunkLength);
+            final var newMiddle = middle.prepended(makeChunk(split.back()));
+            return withNewFront(newSize, split.front(), newMiddle);
+        }
     }
 
     private @NotNull Deep<T, Phantom> prependedSimple(final long newSize, final T object) {
-        final var tag = tag();
-        return new Deep<>(tag, newSize, ArrayOps.prepended(tag, prefix, object), middle, suffix);
+        return withNewFront(newSize, ArrayOps.prepended(prefix, object), middle);
     }
 
     private @NotNull Deep<T, Phantom> prependedRecursive(final long newSize, final T object) {
         final var length = prefix.length;
-        final var splitPoint = length / 4;
-        final var tag = tag();
-        final var newPrefix = ArrayOps.prependedSlice(tag, prefix, splitPoint, object);
-        final var newNode = new Node<>(tag, Arrays.copyOfRange(prefix, splitPoint, length));
-        return new Deep<>(tag, newSize, newPrefix, middle.prepended(newNode), suffix);
+        final var newPrefix = ArrayOps.prependedSlice(prefix, object);
+        final var newChunk = makeChunk(Arrays.copyOfRange(prefix, length - maxChunkLength, length));
+        return withNewFront(newSize, newPrefix, middle.prepended(newChunk));
     }
 
     private @NotNull Deep<T, Phantom> appendedSimple(final long newSize, final T object) {
-        return new Deep<>(tag(), newSize, prefix, middle, ArrayOps.appended(suffix, object));
+        return withNewBack(newSize, middle, ArrayOps.appended(suffix, object));
     }
 
     private @NotNull Deep<T, Phantom> appendedRecursive(final long newSize, final T object) {
-        final var length = suffix.length;
-        final var splitPoint = 3 * length / 4;
-        final var tag = tag();
-        final var newSuffix = ArrayOps.appendedSlice(tag, suffix, splitPoint, object);
-        final var newNode = new Node<>(tag, Arrays.copyOf(suffix, splitPoint));
-        return new Deep<>(tag, newSize, prefix, middle.appended(newNode), newSuffix);
+        final var newSuffix = ArrayOps.appendedSlice(suffix, object);
+        final var newChunk = makeChunk(Arrays.copyOf(suffix, maxChunkLength));
+        return withNewBack(newSize, middle.appended(newChunk), newSuffix);
     }
 
     private @NotNull Deep<T, Phantom> withoutFirstSimple(final long newSize) {
-        return new Deep<>(tag(), newSize, Arrays.copyOfRange(prefix, 1, prefix.length), middle, suffix);
+        return withNewFront(newSize, Arrays.copyOfRange(prefix, 1, prefix.length), middle);
     }
 
     private @NotNull TaggedSeq<T, Phantom> withoutFirstNoPrefix(final long newSize) {
-        return fromEmptyPrefix(tag(), newSize, middle, suffix);
+        return fromEmptyPrefix(tag, newSize, middle, suffix);
     }
 
     private @NotNull Deep<T, Phantom> withoutLastSimple(final long newSize) {
-        return new Deep<>(tag(), newSize, prefix, middle, Arrays.copyOf(suffix, suffix.length - 1));
+        return withNewBack(newSize, middle, Arrays.copyOf(suffix, suffix.length - 1));
     }
 
     private @NotNull TaggedSeq<T, Phantom> withoutLastNoSuffix(final long newSize) {
-        return fromEmptySuffix(tag(), newSize, prefix, middle);
+        return fromEmptySuffix(tag, newSize, prefix, middle);
     }
 
-    private T getRecursive(final @NotNull IndexAccumulator accumulator) {
-        // We're storing nodes, need to iterate the affixes.
-        assert tag() == TypeTag.node();
-        return getAccumulatingSingle(accumulator, prefix, () -> {
-            final var middleSize = middle.exactSize();
-            final Supplier<T> fellThrough = () -> {
-                throw fellThroughTryingToIndex();
-            };
-            if (accumulator.remaining < middleSize) {
-                final var node = getRecursive(middle, accumulator);
-                return getAccumulatingSingle(accumulator, node.values(), fellThrough);
-            }
-            accumulator.subtract(middleSize);
-            return getAccumulatingSingle(accumulator, suffix, fellThrough);
-        });
-    }
-
-    private T getAccumulatingSingle(
-        final @NotNull IndexAccumulator accumulator,
-        final T @NotNull [] array,
-        final @NotNull Supplier<? extends T> fallback
-    ) {
-        final var tag = tag();
-        for (final var item : array) {
-            if (accumulator.subtract(tag.measureSingle(item))) {
-                return item;
-            }
+    private @NotNull Deep<T, Phantom> appendedShallow(final @NotNull Shallow<T, Phantom> other) {
+        if (other.isEmpty()) {
+            return this;
         }
-        return fallback.get();
+        final var newSize = computeNewSize(other.subtreeSize);
+        if (suffix.length + other.values.length <= maxAffixLength) {
+            return withNewBack(newSize, middle, ArrayOps.concat(suffix, other.values));
+        } else {
+            final var split = ArrayOps.concatSplitAt(suffix, other.values, maxChunkLength);
+            final var newMiddle = middle.appended(makeChunk(split.front()));
+            return withNewBack(newSize, newMiddle, split.back());
+        }
     }
 
-    private @NotNull Deep<T, Phantom> concatDeep(final @NotNull Deep<T, Phantom> other) {
-        final var newSize = computeNewSize(other.exactSize());
-        return (suffix.length + other.prefix.length >= Node.minLength)
+    private @NotNull Deep<T, Phantom> appendedDeep(final @NotNull Deep<T, Phantom> other) {
+        final var newSize = computeNewSize(other.subtreeSize);
+        return (suffix.length + other.prefix.length >= minChunkLength)
             ? concatAddingInfix(newSize, other)
-            : concatBalancing(newSize, other);
+            : concatPartial(newSize, other);
     }
 
     private @NotNull Deep<T, Phantom> concatAddingInfix(final long newSize, final @NotNull Deep<T, Phantom> other) {
-        // We can turn the infix into one or two nodes, adding them to either middle.
-        final var tag = tag();
-        final var infix = ArrayOps.concat(tag, suffix, other.prefix);
-        final var infixLength = infix.length;
-        if (infixLength <= Node.maxLength) {
-            // Just one node will do.
-            final var newMiddle = middle.appended(new Node<>(tag, infix)).concat(other.middle);
-            return new Deep<>(tag, newSize, prefix, newMiddle, other.suffix);
+        // The infix is long enough that it can be turned into one to three chunks.
+        final var infixLength = suffix.length + other.prefix.length;
+        if (infixLength <= maxChunkLength) {
+            // The infix is short enough that it only forms one chunk.
+            final var chunk = makeChunk(ArrayOps.concat(suffix, other.prefix));
+            final var newMiddle = middle.appended(chunk).concat(other.middle);
+            return withNewBack(newSize, newMiddle, other.suffix);
         }
-        // The infix is too big, need to split it into two.
-        final var splitPoint = infixLength / 2;
-        final var leftInfix = new Node<>(tag, Arrays.copyOf(infix, splitPoint));
-        final var rightInfix = new Node<>(tag, Arrays.copyOfRange(infix, splitPoint, infixLength));
-        final var newMiddle = middle.appended(leftInfix).concat(other.middle.prepended(rightInfix));
-        return new Deep<>(tag, newSize, prefix, newMiddle, other.suffix);
+        if (infixLength <= 2 * maxChunkLength) {
+            // The infix is too long for a single chunk, but still fits in two.
+            final var infix = ArrayOps.concatSplitAt(suffix, other.prefix, infixLength / 2);
+            final var newOurMiddle = middle.appended(makeChunk(infix.front()));
+            final var newTheirMiddle = other.middle.prepended(makeChunk(infix.back()));
+            return withNewBack(newSize, newOurMiddle.concat(newTheirMiddle), other.suffix);
+        }
+        // The infix is so long it has to be split into three chunks; can happen if at least one of the infix arrays
+        // is overlong, i.e. maxChunkLength < its length <= maxAffixLength.
+        final var firstSplit = ArrayOps.concatSplitAt(suffix, other.prefix, infixLength / 3);
+        final var secondSplit = ArrayOps.split(firstSplit.back());
+        final var newOurMiddle =
+            middle.appended(makeChunk(firstSplit.front())).appended(makeChunk(secondSplit.front()));
+        final var newTheirMiddle = other.middle.prepended(makeChunk(secondSplit.back()));
+        return withNewBack(newSize, newOurMiddle.concat(newTheirMiddle), other.suffix);
     }
 
-    private @NotNull Deep<T, Phantom> concatBalancing(final long newSize, final @NotNull Deep<T, Phantom> other) {
-        // The infix is not large enough to turn it into a node.
-        final var left = balanceSuffixForConcat();
-        final var right = other.balancePrefixForConcat();
-        final var newMiddle = left.middle.concat(right.middle);
-        return new Deep<>(tag(), newSize, left.affix, newMiddle, right.affix);
+    private @NotNull Deep<T, Phantom> concatPartial(final long newSize, final @NotNull Deep<T, Phantom> other) {
+        final var front = mergeShortSuffix();
+        final var back = other.mergeShortPrefix();
+        final var newMiddle = front.middle.concat(back.middle);
+        return new Deep<>(tag, newSize, front.prefix, newMiddle, back.suffix);
     }
 
-    private @NotNull PartialDeep<T, Phantom> balanceSuffixForConcat() {
-        return middle.isEmpty() ? balanceSuffixUsingPrefix() : balanceSuffixUsingMiddle();
+    private @NotNull PartialBack<T> mergeShortPrefix() {
+        return middle.isEmpty() ? mergeShortPrefixWithSuffix() : mergeShortPrefixWithMiddle();
     }
 
-    private @NotNull PartialDeep<T, Phantom> balancePrefixForConcat() {
-        return middle.isEmpty() ? balancePrefixUsingSuffix() : balancePrefixUsingMiddle();
+    private @NotNull PartialFront<T> mergeShortSuffix() {
+        return middle.isEmpty() ? mergeShortSuffixWithPrefix() : mergeShortSuffixWithMiddle();
     }
 
-    private @NotNull PartialDeep<T, Phantom> balanceSuffixUsingPrefix() {
-        // We know the middle is empty, time to join the prefix and suffix and see what we can do with that array.
+    private @NotNull PartialBack<T> mergeShortPrefixWithSuffix() {
         assert middle.isEmpty();
-        final var tag = tag();
-        final var joined = ArrayOps.concat(tag, prefix, suffix);
-        final var length = joined.length;
-        if (length <= maxAffixLength) {
-            return new PartialDeep<>(middle, joined);
+        final var totalLength = prefix.length + suffix.length;
+        if (totalLength <= maxChunkLength) {
+            return new PartialBack<>(Shallow.emptyChunk(), ArrayOps.concat(prefix, suffix));
         }
-        final var splitPoint = length / 2;
-        final var newPrefix = Arrays.copyOf(joined, splitPoint);
-        final var node = new Node<>(tag, Arrays.copyOfRange(joined, splitPoint, length));
-        final var newMiddle = middle.appended(node);
-        return new PartialDeep<>(newMiddle, newPrefix);
+        final var split = ArrayOps.concatSplitAt(prefix, suffix, totalLength / 2);
+        return new PartialBack<>(Shallow.ofChunk(makeChunk(split.front())), split.back());
     }
 
-    private @NotNull PartialDeep<T, Phantom> balanceSuffixUsingMiddle() {
-        // We can get a node from the middle and either steal some of its elements so that the suffix can become
-        // a node, or move the suffix to the node so that the suffix becomes empty.
-        final var nodeValues = middle.last().values();
-        final var tag = tag();
-        final var joined = ArrayOps.concat(tag, nodeValues, suffix);
-        final var length = joined.length;
-        if (length <= Node.maxLength) {
-            return new PartialDeep<>(middle.updatedLast(new Node<>(tag, joined)), prefix);
-        }
-        final var splitPoint = length / 2;
-        final var leftNode = new Node<>(tag, Arrays.copyOf(joined, splitPoint));
-        final var rightNode = new Node<>(tag, Arrays.copyOfRange(joined, splitPoint, length));
-        final var newMiddle = middle.updatedLast(leftNode).appended(rightNode);
-        return new PartialDeep<>(newMiddle, prefix);
-    }
-
-    private @NotNull PartialDeep<T, Phantom> balancePrefixUsingSuffix() {
-        // We know the middle is empty, time to join the prefix and suffix and see what we can do with that array.
+    private @NotNull PartialFront<T> mergeShortSuffixWithPrefix() {
         assert middle.isEmpty();
-        final var tag = tag();
-        final var joined = ArrayOps.concat(tag, prefix, suffix);
-        final var length = joined.length;
-        if (length <= maxAffixLength) {
-            return new PartialDeep<>(middle, joined);
+        final var totalLength = prefix.length + suffix.length;
+        if (totalLength <= maxChunkLength) {
+            return new PartialFront<>(ArrayOps.concat(prefix, suffix), Shallow.emptyChunk());
         }
-        final var splitPoint = length / 2;
-        final var node = new Node<>(tag, Arrays.copyOf(joined, splitPoint));
-        final var newSuffix = Arrays.copyOfRange(joined, splitPoint, length);
-        final var newMiddle = middle.prepended(node);
-        return new PartialDeep<>(newMiddle, newSuffix);
+        final var split = ArrayOps.concatSplitAt(prefix, suffix, totalLength / 2);
+        return new PartialFront<>(split.front(), Shallow.ofChunk(makeChunk(split.back())));
     }
 
-    private @NotNull PartialDeep<T, Phantom> balancePrefixUsingMiddle() {
-        // We can get a node from the middle and either steal some of its elements so that the prefix can become
-        // a node, or move the prefix to the node so that the prefix becomes empty.
-        final var nodeValues = middle.first().values();
-        final var tag = tag();
-        final var joined = ArrayOps.concat(tag, prefix, nodeValues);
-        final var length = joined.length;
-        if (length <= Node.maxLength) {
-            return new PartialDeep<>(middle.updatedFirst(new Node<>(tag, joined)), suffix);
+    private @NotNull PartialBack<T> mergeShortPrefixWithMiddle() {
+        final var firstChunk = middle.first().values;
+        final var totalLength = prefix.length + firstChunk.length;
+        if (totalLength <= maxChunkLength) {
+            final var newFirstChunk = makeChunk(ArrayOps.concat(prefix, firstChunk));
+            return new PartialBack<>(middle.updatedFirst(newFirstChunk), suffix);
         }
-        final var splitPoint = length / 2;
-        final var leftNode = new Node<>(tag, Arrays.copyOf(joined, splitPoint));
-        final var rightNode = new Node<>(tag, Arrays.copyOfRange(joined, splitPoint, length));
-        final var newMiddle = middle.updatedFirst(rightNode).prepended(leftNode);
-        return new PartialDeep<>(newMiddle, suffix);
+        final var split = ArrayOps.concatSplitAt(prefix, firstChunk, totalLength / 2);
+        final var newFirstChunk = makeChunk(split.front());
+        final var newSecondChunk = makeChunk(split.back());
+        final var newMiddle = middle.updatedFirst(newSecondChunk).prepended(newFirstChunk);
+        return new PartialBack<>(newMiddle, suffix);
+    }
+
+    private @NotNull PartialFront<T> mergeShortSuffixWithMiddle() {
+        final var lastChunk = middle.last().values;
+        final var totalLength = lastChunk.length + suffix.length;
+        if (totalLength <= maxChunkLength) {
+            final var newLastChunk = makeChunk(ArrayOps.concat(lastChunk, suffix));
+            return new PartialFront<>(prefix, middle.updatedLast(newLastChunk));
+        }
+        final var split = ArrayOps.concatSplitAt(lastChunk, suffix, totalLength / 2);
+        final var newPenultimateChunk = makeChunk(split.front());
+        final var newLastChunk = makeChunk(split.back());
+        final var newMiddle = middle.updatedLast(newPenultimateChunk).appended(newLastChunk);
+        return new PartialFront<>(prefix, newMiddle);
+    }
+
+    private @NotNull TreeSplit<T, Phantom> splitTreeAtPrefix(
+        final long initialAccumulator,
+        final @NotNull Tag.SplitPoint splitPoint
+    ) {
+        final var split = tag.splitArray(prefix, splitPoint.index());
+        final var middle = split.middle();
+        final var middleSize = tag.measureSingle(middle);
+        final var frontSize = splitPoint.accumulator() - initialAccumulator - middleSize;
+        final var front = fromSingleArray(tag, frontSize, split.front());
+        final var backSize = subtreeSize - frontSize - middleSize;
+        final var back = fromUnknownPrefix(tag, backSize, split.back(), this.middle, suffix);
+        return new TreeSplit<>(front, middle, back);
+    }
+
+    private @NotNull TreeSplit<T, Phantom> splitTreeRecursively(
+        final long initialAccumulator,
+        final long index,
+        final long prefixSize
+    ) {
+        final var split = middle.splitTree(index, prefixSize);
+        final var array = split.middle().values;
+        final var splitPoint = tag.findSplitPoint(array, index, prefixSize + split.front().subtreeSize);
+        final var arraySplit = tag.splitArray(array, splitPoint.index());
+        final var middle = arraySplit.middle();
+        final var middleSize = tag.measureSingle(middle);
+        final var frontSize = splitPoint.accumulator() - initialAccumulator - middleSize;
+        final var front = fromUnknownSuffix(tag, frontSize, prefix, split.front(), arraySplit.front());
+        final var backSize = subtreeSize - frontSize - middleSize;
+        final var back = fromUnknownPrefix(tag, backSize, arraySplit.back(), split.back(), suffix);
+        return new TreeSplit<>(front, middle, back);
+    }
+
+    private @NotNull TreeSplit<T, Phantom> splitTreeAtSuffix(
+        final long initialAccumulator,
+        final long index,
+        final long originalFrontSize
+    ) {
+        final var splitPoint = tag.findSplitPoint(suffix, index, originalFrontSize);
+        final var split = tag.splitArray(suffix, splitPoint.index());
+        final var middle = split.middle();
+        final var middleSize = tag.measureSingle(middle);
+        final var frontSize = splitPoint.accumulator() - initialAccumulator - middleSize;
+        final var front = fromUnknownSuffix(tag, frontSize, prefix, this.middle, split.front());
+        final var backSize = subtreeSize - frontSize - middleSize;
+        final var back = fromSingleArray(tag, backSize, split.back());
+        return new TreeSplit<>(front, middle, back);
     }
 
     private static <T, Phantom> @NotNull TaggedSeq<T, Phantom> fromEmptyPrefix(
-        final @NotNull TypeTag<T, Phantom> tag,
+        final @NotNull Tag<T, Phantom> tag,
         final long newSize,
-        final @NotNull TaggedSeq<@NotNull Node<T>, Node<Phantom>> middle,
+        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle,
         final T @NotNull [] suffix
     ) {
         if (middle.isEmpty()) {
-            // All that remains non-empty is the suffix, need to turn it into a sequence.
-            return ArrayOps.toSeq(tag, newSize, suffix);
+            return fromSingleArray(tag, newSize, suffix);
         }
-        final var node = middle.first();
+        final var newPrefix = middle.first().values;
         final var newMiddle = middle.withoutFirst();
-        return new Deep<>(tag, newSize, node.values(), newMiddle, suffix);
-    }
-
-    private static <T, Phantom> @NotNull TaggedSeq<T, Phantom> fromUnknownPrefix(
-        final @NotNull TypeTag<T, Phantom> tag,
-        final T @NotNull [] prefix,
-        final @NotNull TaggedSeq<@NotNull Node<T>, Node<Phantom>> middle,
-        final T @NotNull [] suffix
-    ) {
-        assert suffix.length > 0;
-        final var rightSideSize = middle.exactSize() + tag.measureArray(suffix);
-        if (prefix.length == 0) {
-            return fromEmptyPrefix(tag, rightSideSize, middle, suffix);
-        }
-        final var size = tag.measureArray(prefix) + rightSideSize;
-        return new Deep<>(tag, size, prefix, middle, suffix);
+        return new Deep<>(tag, newSize, newPrefix, newMiddle, suffix);
     }
 
     private static <T, Phantom> @NotNull TaggedSeq<T, Phantom> fromEmptySuffix(
-        final @NotNull TypeTag<T, Phantom> tag,
+        final @NotNull Tag<T, Phantom> tag,
         final long newSize,
         final T @NotNull [] prefix,
-        final @NotNull TaggedSeq<@NotNull Node<T>, Node<Phantom>> middle
+        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle
     ) {
         if (middle.isEmpty()) {
-            // All that remains non-empty is the prefix, need to turn it into a sequence.
-            return ArrayOps.toSeq(tag, newSize, prefix);
+            return fromSingleArray(tag, newSize, prefix);
         }
-        final var node = middle.last();
+        final var newSuffix = middle.last().values;
         final var newMiddle = middle.withoutLast();
-        return new Deep<>(tag, newSize, prefix, newMiddle, node.values());
+        return new Deep<>(tag, newSize, prefix, newMiddle, newSuffix);
+    }
+
+    private static <T, Phantom> @NotNull TaggedSeq<T, Phantom> fromUnknownPrefix(
+        final @NotNull Tag<T, Phantom> tag,
+        final long newSize,
+        final T @NotNull [] prefix,
+        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle,
+        final T @NotNull [] suffix
+    ) {
+        return (prefix.length == 0)
+            ? fromEmptyPrefix(tag, newSize, middle, suffix)
+            : new Deep<>(tag, newSize, prefix, middle, suffix);
     }
 
     private static <T, Phantom> @NotNull TaggedSeq<T, Phantom> fromUnknownSuffix(
-        final @NotNull TypeTag<T, Phantom> tag,
+        final @NotNull Tag<T, Phantom> tag,
+        final long newSize,
         final T @NotNull [] prefix,
-        final @NotNull TaggedSeq<@NotNull Node<T>, Node<Phantom>> middle,
+        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle,
         final T @NotNull [] suffix
     ) {
-        assert prefix.length > 0;
-        final var leftSideSize = tag.measureArray(prefix) + middle.exactSize();
-        if (suffix.length == 0) {
-            return fromEmptySuffix(tag, leftSideSize, prefix, middle);
-        }
-        final var size = leftSideSize + tag.measureArray(suffix);
-        return new Deep<>(tag, size, prefix, middle, suffix);
+        return (suffix.length == 0)
+            ? fromEmptySuffix(tag, newSize, prefix, middle)
+            : new Deep<>(tag, newSize, prefix, middle, suffix);
     }
 
-    private static <T> T getRecursive(final @NotNull TaggedSeq<T, ?> seq, final @NotNull IndexAccumulator accumulator) {
-        return (seq instanceof Deep<T, ?> deep) ? deep.getRecursive(accumulator) : seq.getImpl(accumulator.remaining);
+    private @NotNull Deep<T, Phantom> withNewFront(
+        final long newSize,
+        final T @NotNull [] newPrefix,
+        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> newMiddle
+    ) {
+        return new Deep<>(tag, newSize, newPrefix, newMiddle, suffix);
     }
 
-    private static <T> @NotNull ArraySplitPoint findArraySplitPoint(
-        final @NotNull TypeTag<T, ?> tag,
-        final long index,
-        final long initialAccumulator,
+    private @NotNull Deep<T, Phantom> withNewBack(
+        final long newSize,
+        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> newMiddle,
+        final T @NotNull [] newSuffix
+    ) {
+        return new Deep<>(tag, newSize, prefix, newMiddle, newSuffix);
+    }
+
+    private static <T, Phantom> @NotNull TaggedSeq<T, Phantom> fromSingleArray(
+        final @NotNull Tag<T, Phantom> tag,
+        final long newSize,
         final T @NotNull [] array
     ) {
-        final var length = array.length;
-        if (tag == TypeTag.unit()) {
-            final var distance = index - initialAccumulator;
-            final var inBounds = (distance < length) ? 1 : 0;
-            final var arrayIndex = (int) Math.min(length, index - initialAccumulator);
-            return new ArraySplitPoint(arrayIndex, initialAccumulator + arrayIndex + inBounds);
+        if (array.length <= maxElementsToShrink) {
+            return (array.length != 0) ? new Shallow<>(tag, newSize, array) : tag.emptySeq();
         }
-        var accumulator = initialAccumulator;
-        int i = 0;
-        for (; i < length; i += 1) {
-            accumulator += tag.measureSingle(array[i]);
-            if (index < accumulator) {
-                break;
-            }
-        }
-        return new ArraySplitPoint(i, accumulator);
+        final var split = ArrayOps.split(array);
+        return new Deep<>(tag, newSize, split.front(), Shallow.emptyChunk(), split.back());
     }
 
-    private static <T> @NotNull ArraySplit<T> splitArray(
-        final @NotNull TypeTag<T, ?> tag,
-        final T @NotNull [] array,
-        final int index
-    ) {
-        final var length = array.length;
-        final var i = Math.min(index, length - 1);
-        final var left = (i > 0) ? Arrays.copyOf(array, i) : tag.emptyArray();
-        final var right = (i < length - 1) ? Arrays.copyOfRange(array, i + 1, length) : tag.emptyArray();
-        return new ArraySplit<>(left, array[i], right);
+    private @NotNull Chunk<T> makeChunk(final T @NotNull [] array) {
+        return new Chunk<>(tag, array);
     }
+
+    // Should normally be only used in an assert statement.
+    @SuppressWarnings("SameReturnValue")
+    private boolean checkInvariants() {
+        assert prefix.length != 0 && prefix.length <= maxAffixLength;
+        assert suffix.length != 0 && suffix.length <= maxAffixLength;
+        assert subtreeSize > 0;
+        final var actualSize = tag.measureArray(prefix) + middle.subtreeSize + tag.measureArray(suffix);
+        assert subtreeSize == actualSize;
+        return true;
+    }
+
+    // Allow 4 more elements in affixes to ensure that almost all arrays in a sequence built by repeatedly
+    // appending/prepending are maxChunkLength elements long, and that the complexity requirements are met.
+    private static final int maxAffixLength = maxChunkLength + 4;
+    // The number of elements below which removals are allowed to turn deep sequences into shallow ones.
+    private static final int maxElementsToShrink = minChunkLength;
 
     private final T @NotNull [] prefix;
-    private final @NotNull TaggedSeq<@NotNull Node<T>, Node<Phantom>> middle;
+    private final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle;
     private final T @NotNull [] suffix;
 
-    final class Itr extends Seq.Itr<T> {
-        private Itr() {
+    static final class Itr<T> extends Seq.Itr<T> {
+        private Itr(final @NotNull Deep<T, ?> parent) {
+            array = parent.prefix;
+            this.parent = parent;
         }
 
         @Override
         public boolean hasNext() {
-            return index < array.length || stage < suffixStage;
+            return index < array.length || currentStage != Stage.SUFFIX;
         }
 
         @Override
+        @SuppressWarnings("IteratorNextCanNotThrowNoSuchElementException")
         public T next() {
-            if (index >= array.length) {
-                getNextArray();
-            }
-            final var result = array[index];
-            index += 1;
-            overallIndex += 1;
-            return result;
+            nextArrayIfNeeded();
+            final var idx = index;
+            index = idx + 1;
+            sequenceIndex += 1;
+            return array[idx];
         }
 
         @Override
         public long nextIndex() {
-            return overallIndex;
+            return sequenceIndex;
         }
 
         @Override
         void forEachRemainingImpl(final @NotNull Consumer<? super T> action) {
             while (true) {
                 ArrayOps.forEachFrom(array, index, action);
-                overallIndex += array.length - index;
-                if (stage == suffixStage) {
+                sequenceIndex += array.length - index;
+                if (currentStage == Stage.SUFFIX) {
                     break;
                 }
-                getNextArray();
+                nextArray();
             }
         }
 
-        private void getNextArray() {
-            switch (stage) {
-                case middleStage -> {
-                    assert nodeIterator != null;
-                    if (nodeIterator.hasNext()) {
-                        array = nodeIterator.next().values();
-                    } else {
-                        nodeIterator = null;
-                        setSuffixStage();
-                    }
-                }
-                case prefixStage -> {
-                    if (middle.isEmpty()) {
-                        setSuffixStage();
-                    } else {
-                        stage = middleStage;
-                        nodeIterator = middle.iterator();
-                        array = nodeIterator.next().values();
-                    }
-                }
-                case suffixStage -> throw noMoreElements();
+        private void nextArrayIfNeeded() {
+            if (index >= array.length) {
+                nextArray();
             }
+        }
+
+        private void nextArray() {
+            switch (currentStage) {
+                case PREFIX -> tryFirstChunk();
+                case MIDDLE -> tryNextChunk();
+                case SUFFIX -> throw noMoreElements();
+            }
+        }
+
+        private void tryFirstChunk() {
+            final var middle = parent.middle;
+            if (middle.isEmpty()) {
+                changeStage(Stage.SUFFIX, parent.suffix);
+            } else {
+                chunkIterator = middle.iterator();
+                changeStage(Stage.MIDDLE, chunkIterator.next().values);
+            }
+        }
+
+        private void tryNextChunk() {
+            assert chunkIterator != null;
+            if (chunkIterator.hasNext()) {
+                setArray(chunkIterator.next().values);
+            } else {
+                chunkIterator = null;
+                changeStage(Stage.SUFFIX, parent.suffix);
+            }
+        }
+
+        private void changeStage(final @NotNull Stage newStage, final T @NotNull [] newArray) {
+            currentStage = newStage;
+            setArray(newArray);
+        }
+
+        private void setArray(final T @NotNull [] newArray) {
+            array = newArray;
             index = 0;
         }
 
-        private void setSuffixStage() {
-            stage = suffixStage;
-            array = suffix;
-        }
-
-        private static final int prefixStage = 0;
-        private static final int middleStage = 1;
-        private static final int suffixStage = 2;
-
-        private long overallIndex = 0;
         private int index = 0;
-        private T @NotNull [] array = prefix;
-        private int stage = prefixStage;
-        private @Nullable Seq.Itr<@NotNull Node<T>> nodeIterator = null;
-    }
+        private T @NotNull [] array;
+        private long sequenceIndex = 0;
+        private @NotNull Stage currentStage = Stage.PREFIX;
+        private @Nullable Seq.Itr<@NotNull Chunk<T>> chunkIterator = null;
+        private final @NotNull Deep<T, ?> parent;
 
-    private record PartialDeep<T, Phantom>(
-        @NotNull TaggedSeq<@NotNull Node<T>, Node<Phantom>> middle,
-        T @NotNull [] affix
-    ) {
-    }
-
-    private record ArraySplitPoint(int index, long accumulator) {
-    }
-
-    private record ArraySplit<T>(T @NotNull [] left, T middle, T @NotNull [] right) {
-    }
-
-    private static final class IndexAccumulator {
-        private IndexAccumulator(final long remaining) {
-            this.remaining = remaining;
+        private enum Stage {
+            PREFIX,
+            MIDDLE,
+            SUFFIX,
         }
+    }
 
-        private boolean subtract(final long objectSize) {
-            final var newValue = remaining - objectSize;
-            if (newValue < 0) {
-                return true;
-            }
-            remaining = newValue;
-            return false;
-        }
+    private record PartialFront<T>(T @NotNull [] prefix, @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle) {
+    }
 
-        private long remaining;
+    private record PartialBack<T>(@NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle, T @NotNull [] suffix) {
     }
 }
