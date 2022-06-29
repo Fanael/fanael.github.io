@@ -5,7 +5,7 @@ import com.github.spotbugs.snom.Effort
 
 plugins {
     id "application"
-    id "com.github.spotbugs" version "5.0.6"
+    id "com.github.spotbugs" version "5.0.9"
 }
 
 repositories {
@@ -14,20 +14,20 @@ repositories {
 
 dependencies {
     compileOnly group: "org.jetbrains", name: "annotations", version: "23.0.0"
-    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.5.3"
+    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.1"
     compileOnly project(":auki")
     annotationProcessor project(":auki")
     testCompileOnly group: "org.jetbrains", name: "annotations", version: "23.0.0"
-    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.5.3"
+    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.1"
     testCompileOnly project(":auki")
     testAnnotationProcessor project(":auki")
     testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.8.2"
-    testImplementation group: "org.assertj", name: "assertj-core", version: "3.22.0"
+    testImplementation group: "org.assertj", name: "assertj-core", version: "3.23.1"
     testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.8.2"
 }
 
 spotbugs {
-    toolVersion.set "4.5.3"
+    toolVersion.set "4.7.1"
     showProgress.set true
     includeFilter.set file("spotbugs-include.xml")
     excludeFilter.set file("spotbugs-exclude.xml")
