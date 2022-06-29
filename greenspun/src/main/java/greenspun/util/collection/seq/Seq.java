@@ -795,10 +795,20 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
     public static final class Builder<T> {
         /**
          * Initializes a new, empty sequence builder.
+         * <p>
+         * Equivalent to calling {@link #Builder(Seq)} with {@link #empty()}.
+         */
+        public Builder() {
+            this(empty());
+        }
+
+        /**
+         * Initializes a new sequence builder with the given sequence as its initial contents.
          */
         @SuppressWarnings("unchecked")
-        public Builder() {
+        public Builder(final @NotNull Seq<T> sequence) {
             buffer = (T[]) new Object[maxChunkLength];
+            this.sequence = sequence;
         }
 
         /**
@@ -864,7 +874,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
 
         private final T @NotNull [] buffer;
         private int bufferIndex = 0;
-        private @NotNull Seq<T> sequence = empty();
+        private @NotNull Seq<T> sequence;
     }
 
     /**

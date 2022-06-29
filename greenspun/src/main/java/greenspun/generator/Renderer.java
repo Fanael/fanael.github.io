@@ -238,27 +238,27 @@ public final class Renderer {
     }
 
     private @NotNull Node.Element renderArticleBody(final @NotNull Article article) {
-        var contents = article.rootSection().body().prepended(renderArticleHeader(article));
+        final var contents = new Seq.Builder<>(article.rootSection().body().prepended(renderArticleHeader(article)));
         final var children = article.rootSection().children();
         if (!children.isEmpty() && !article.inhibitTableOfContents()) {
-            contents = contents.appended(renderTableOfContents(children));
+            contents.append(renderTableOfContents(children));
         }
         for (final var child : children) {
-            contents = contents.appended(renderSubsection(child, 2));
+            contents.append(renderSubsection(child, 2));
         }
-        return Node.simple(Tag.ARTICLE, contents);
+        return Node.simple(Tag.ARTICLE, contents.toSeq());
     }
 
     private @NotNull Node.Element renderArticleHeader(final @NotNull Article article) {
-        var contents = Seq.<Node>of(renderHeading(Tag.H1, "#main", article.title()));
+        final var contents = new Seq.Builder<Node>(Seq.of(renderHeading(Tag.H1, "#main", article.title())));
         if (headerRenderMode.shouldRender()) {
-            contents = contents.appended(renderPublicationDate(article.date()));
+            contents.append(renderPublicationDate(article.date()));
             final var topicsNode = renderArticleTopics(article.topics());
             if (topicsNode != null) {
-                contents = contents.appended(topicsNode);
+                contents.append(topicsNode);
             }
         }
-        return Node.simple(Tag.HEADER, contents);
+        return Node.simple(Tag.HEADER, contents.toSeq());
     }
 
     private static @NotNull Node.Element renderPublicationDate(final @NotNull LocalDate date) {
@@ -289,16 +289,16 @@ public final class Renderer {
         if (topics.isEmpty()) {
             return null;
         }
-        var contents = Seq.<Node>of(new Node.Text("Topics: "));
+        final var contents = new Seq.Builder<Node>(Seq.of(new Node.Text("Topics: ")));
         boolean needsSeparator = false;
         for (final String topicName : topics) {
             if (needsSeparator) {
-                contents = contents.appended(new Node.Text(", "));
+                contents.append(new Node.Text(", "));
             }
-            contents = contents.appended(renderSimpleLink(headerRenderMode.getTopicArchiveUri(topicName), topicName));
+            contents.append(renderSimpleLink(headerRenderMode.getTopicArchiveUri(topicName), topicName));
             needsSeparator = true;
         }
-        return Node.simple(Tag.P, contents);
+        return Node.simple(Tag.P, contents.toSeq());
     }
 
     private static @NotNull Node.Element renderTableOfContents(final @NotNull Seq<Section> childrenOfRoot) {
