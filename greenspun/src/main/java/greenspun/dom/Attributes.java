@@ -44,7 +44,7 @@ public final class Attributes {
         for (final var it = attributes.iterator(); it.hasNext(); ) {
             final var attr = it.next();
             if (name.equals(attr.name())) {
-                return attributes.updated(it.nextIndex() - 1, attribute);
+                return attributes.updated(it.previousIndex(), attribute);
             }
         }
         return attributes.appended(attribute);
@@ -64,7 +64,7 @@ public final class Attributes {
         for (final var it = attributes.iterator(); it.hasNext(); ) {
             final var attr = it.next();
             if ("class".equals(attr.name())) {
-                final var index = it.nextIndex() - 1;
+                final var index = it.previousIndex();
                 if (attr instanceof Attribute.String string) {
                     return attributes.updated(index, Attribute.of("class", string.value() + ' ' + className));
                 } else {

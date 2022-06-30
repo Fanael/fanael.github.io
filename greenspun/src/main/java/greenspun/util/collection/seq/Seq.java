@@ -675,13 +675,13 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
             if (comparator.compare(itemL, itemR) <= 0) {
                 builder.append(itemL);
                 if (!l.hasNext()) {
-                    return builder.toSeq().concat(right.splitAt(r.nextIndex() - 1).back);
+                    return builder.toSeq().concat(right.splitAt(r.previousIndex()).back);
                 }
                 itemL = l.next();
             } else {
                 builder.append(itemR);
                 if (!r.hasNext()) {
-                    return builder.toSeq().concat(left.splitAt(l.nextIndex() - 1).back);
+                    return builder.toSeq().concat(left.splitAt(l.previousIndex()).back);
                 }
                 itemR = r.next();
             }
@@ -755,6 +755,17 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
          * Complexity: constant time.
          */
         public abstract long nextIndex();
+
+        /**
+         * Returns the index of the element that was returned by the previous call to {@link #next()}.
+         * <p>
+         * If at the beginning of the sequence, returns {@code -1}.
+         * <p>
+         * Complexity: constant time.
+         */
+        public final long previousIndex() {
+            return nextIndex() - 1;
+        }
 
         /**
          * Performs the given action for all remaining elements.
