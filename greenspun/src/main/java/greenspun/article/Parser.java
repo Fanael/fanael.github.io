@@ -394,7 +394,7 @@ public final class Parser {
                     throw signalLinkingError("Section " + sectionId + " is unreachable from the root section");
                 } else if (referenceCount != 1) {
                     throw signalLinkingError(
-                        "Multiple references to section " + sectionId + " in sections" + referredFromSet);
+                        "Multiple references to section " + sectionId + " in sections " + referredFromSet);
                 }
             }
         }
