@@ -140,53 +140,7 @@ public final class Parser {
     private void verifySectionGraph() {
         try (final var trace = new Trace("Verifying section graph")) {
             trace.use();
-            verifySectionGraphImpl();
-        }
-    }
-
-    private void verifySectionGraphImpl() {
-        final var references = new HashMap<Sexp.Symbol, Set<Sexp.Symbol>>();
-        for (final var sectionId : sectionsById.keySet()) {
-            references.put(sectionId, new HashSet<>());
-        }
-        // Use depth-first search to walk the section graph to compute the referred-from set of each section.
-        final var seenSections = new HashSet<Sexp.Symbol>();
-        var stack = Seq.of(new SectionParent(rootSectionId, null));
-        while (!stack.isEmpty()) {
-            final var reference = stack.last();
-            stack = stack.withoutLast();
-            final var sectionId = reference.section;
-            final var parentId = reference.parent;
-            if (parentId != null) {
-                references.get(sectionId).add(parentId);
-            }
-            if (!seenSections.add(sectionId)) {
-                continue;
-            }
-            for (final var childId : sectionsById.get(sectionId).childIds) {
-                if (!sectionsById.containsKey(childId)) {
-                    throw signalLinkingError("Reference to undefined section " + childId + " found in " + sectionId);
-                }
-                stack = stack.appended(new SectionParent(childId, sectionId));
-            }
-        }
-        // Now we can look for potential errors.
-        for (final var sectionReferences : references.entrySet()) {
-            final var sectionId = sectionReferences.getKey();
-            final var referredFromSet = sectionReferences.getValue();
-            if (sectionId == rootSectionId) {
-                if (!referredFromSet.isEmpty()) {
-                    throw signalLinkingError("References to the root section found in sections " + referredFromSet);
-                }
-                continue;
-            }
-            final var referenceCount = referredFromSet.size();
-            if (referenceCount == 0) {
-                throw signalLinkingError("Section " + sectionId + " is unreachable from the root section");
-            } else if (referenceCount != 1) {
-                throw signalLinkingError(
-                    "Multiple references to section " + sectionId + " in sections" + referredFromSet);
-            }
+            SectionGraphVerifier.verify(sectionsById);
         }
     }
 
@@ -369,9 +323,6 @@ public final class Parser {
         }
     }
 
-    private record SectionParent(@NotNull Sexp.Symbol section, @Nullable Sexp.Symbol parent) {
-    }
-
     private record PartialArticle(
         @NotNull String title,
         @NotNull String description,
@@ -388,5 +339,70 @@ public final class Parser {
         @NotNull Seq<Sexp.Symbol> childIds,
         @NotNull Seq<Node> body
     ) {
+    }
+
+    private static final class SectionGraphVerifier {
+        private SectionGraphVerifier(final @NotNull Map<Sexp.@NotNull Symbol, @NotNull PartialSection> sectionsById) {
+            this.sectionsById = sectionsById;
+            for (final var sectionId : sectionsById.keySet()) {
+                references.put(sectionId, new HashSet<>());
+            }
+        }
+
+        private static void verify(final @NotNull Map<Sexp.@NotNull Symbol, @NotNull PartialSection> sectionsById) {
+            final var verifier = new SectionGraphVerifier(sectionsById);
+            verifier.computeReferredFromSets();
+            verifier.findReferenceErrors();
+        }
+
+        private void computeReferredFromSets() {
+            final var seenSections = new HashSet<Sexp.Symbol>();
+            var stack = Seq.of(new SectionParent(rootSectionId, null));
+            while (!stack.isEmpty()) {
+                final var reference = stack.last();
+                stack = stack.withoutLast();
+                final var sectionId = reference.section;
+                final var parentId = reference.parent;
+                if (parentId != null) {
+                    references.get(sectionId).add(parentId);
+                }
+                if (!seenSections.add(sectionId)) {
+                    continue;
+                }
+                for (final var childId : sectionsById.get(sectionId).childIds) {
+                    if (!sectionsById.containsKey(childId)) {
+                        throw signalLinkingError(
+                            "Reference to undefined section " + childId + " found in " + sectionId);
+                    }
+                    stack = stack.appended(new SectionParent(childId, sectionId));
+                }
+            }
+        }
+
+        private void findReferenceErrors() {
+            for (final var sectionReferences : references.entrySet()) {
+                final var sectionId = sectionReferences.getKey();
+                final var referredFromSet = sectionReferences.getValue();
+                if (sectionId == rootSectionId) {
+                    if (!referredFromSet.isEmpty()) {
+                        throw signalLinkingError("References to the root section found in sections " + referredFromSet);
+                    }
+                    continue;
+                }
+                final var referenceCount = referredFromSet.size();
+                if (referenceCount == 0) {
+                    throw signalLinkingError("Section " + sectionId + " is unreachable from the root section");
+                } else if (referenceCount != 1) {
+                    throw signalLinkingError(
+                        "Multiple references to section " + sectionId + " in sections" + referredFromSet);
+                }
+            }
+        }
+
+        private final @NotNull Map<Sexp.@NotNull Symbol, @NotNull PartialSection> sectionsById;
+        private final HashMap<Sexp.@NotNull Symbol, @NotNull HashSet<Sexp.Symbol>> references = new HashMap<>();
+
+        private record SectionParent(@NotNull Sexp.Symbol section, @Nullable Sexp.Symbol parent) {
+        }
     }
 }
