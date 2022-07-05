@@ -9,13 +9,12 @@ import java.nio.file.Path;
 import greenspun.util.Trace;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.exception.IOExceptionCondition;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Temporary file containing the Pygments server source code, as an {@link AutoCloseable} resource.
  */
 public final class ServerCodeTemporaryFile implements AutoCloseable {
-    private ServerCodeTemporaryFile(final @NotNull Path path) {
+    private ServerCodeTemporaryFile(final Path path) {
         this.path = path;
     }
 
@@ -24,7 +23,7 @@ public final class ServerCodeTemporaryFile implements AutoCloseable {
      * <p>
      * If an I/O error of any kind occurs, {@link IOExceptionCondition} is signaled as a fatal condition.
      */
-    public static @NotNull ServerCodeTemporaryFile save() {
+    public static ServerCodeTemporaryFile save() {
         try (final var trace = new Trace("Saving the pygments server code to a temporary file")) {
             trace.use();
             try (final var input = openInputStream()) {
@@ -53,11 +52,11 @@ public final class ServerCodeTemporaryFile implements AutoCloseable {
         }
     }
 
-    @NotNull Path path() {
+    Path path() {
         return path;
     }
 
-    private static @NotNull InputStream openInputStream() throws IOException {
+    private static InputStream openInputStream() throws IOException {
         final var resourceStream = ServerCodeTemporaryFile.class.getResourceAsStream(resourcePath);
         if (resourceStream != null) {
             return resourceStream;
@@ -65,7 +64,7 @@ public final class ServerCodeTemporaryFile implements AutoCloseable {
         return Files.newInputStream(Path.of(filePath));
     }
 
-    private final @NotNull Path path;
+    private final Path path;
 
     private static final String resourcePath = "/pygments_server.py";
     private static final String filePath = "resources" + resourcePath;

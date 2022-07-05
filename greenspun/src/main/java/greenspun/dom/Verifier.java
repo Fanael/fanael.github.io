@@ -5,10 +5,9 @@ package greenspun.dom;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
+import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The DOM verifier.
@@ -26,32 +25,32 @@ public final class Verifier {
      * If the DOM tree is valid, this method simply returns. Otherwise, if any verification errors have been found,
      * a fatal condition of type {@link VerificationErrorCondition} is signaled.
      */
-    public static void verify(final @NotNull Node rootNode) {
+    public static void verify(final Node rootNode) {
         final var verifier = new Verifier();
         verifier.verifyRoot(rootNode);
     }
 
-    private void verifyRoot(final @NotNull Node rootNode) {
+    private void verifyRoot(final Node rootNode) {
         verify(rootNode, Context.ROOT);
         if (!verificationErrors.isEmpty()) {
             throw ConditionContext.error(new VerificationErrorCondition(verificationErrors));
         }
     }
 
-    private void verify(final @NotNull Node node, final @NotNull Context context) {
+    private void verify(final Node node, final Context context) {
         switch (node) {
             case Node.Text ignored -> verifyTextNode(context);
             case Node.Element element -> verifyElement(element, context);
         }
     }
 
-    private void verifyTextNode(final @NotNull Context context) {
+    private void verifyTextNode(final Context context) {
         if (!rawTextContexts.contains(context)) {
             recordNestingError(null, context, rawTextContexts.toString());
         }
     }
 
-    private void verifyElement(final @NotNull Node.Element element, final @NotNull Context context) {
+    private void verifyElement(final Node.Element element, final Context context) {
         final var tag = element.tag();
         if (ancestors.contains(element)) {
             recordError("Element '" + tag.htmlName() + "' appears to be its own ancestor");
@@ -62,7 +61,7 @@ public final class Verifier {
         verifyChildren(element, getEffectiveChildContext(tag, context));
     }
 
-    private void verifyAttributes(final @NotNull Node.Element element) {
+    private void verifyAttributes(final Node.Element element) {
         final var tag = element.tag();
         for (final var attribute : element.attributes()) {
             final var verifier = findAttributeVerifier(attribute, tag);
@@ -87,10 +86,7 @@ public final class Verifier {
         }
     }
 
-    private static @Nullable AttributeVerifier findAttributeVerifier(
-        final @NotNull Attribute attribute,
-        final @NotNull Tag tag
-    ) {
+    private static @Nullable AttributeVerifier findAttributeVerifier(final Attribute attribute, final Tag tag) {
         final var name = attribute.name();
         final var globalVerifier = globalAttributeTypes.get(name);
         if (globalVerifier != null) {
@@ -99,10 +95,7 @@ public final class Verifier {
         return tag.allowedAttributes().get(name);
     }
 
-    private void verifyChildren(
-        final @NotNull Node.Element element,
-        final @Nullable Context childContext
-    ) {
+    private void verifyChildren(final Node.Element element, final @Nullable Context childContext) {
         if (childContext == null) {
             if (!element.children().isEmpty()) {
                 final var tagName = element.tag().htmlName();
@@ -121,24 +114,20 @@ public final class Verifier {
         }
     }
 
-    private void verifyTagContext(final @NotNull Tag tag, final @NotNull Context context) {
+    private void verifyTagContext(final Tag tag, final Context context) {
         if (!tag.allowedIn(context)) {
             recordNestingError(tag, context, tag.allowedContextsString());
         }
     }
 
-    private void recordAttributeError(
-        final @NotNull Tag tag,
-        final @NotNull String attributeName,
-        final @NotNull String message
-    ) {
+    private void recordAttributeError(final Tag tag, final String attributeName, final String message) {
         recordError("Attribute '" + attributeName + "' of element '" + tag.htmlName() + "': " + message);
     }
 
     private void recordNestingError(
         final @Nullable Tag tag,
-        final @NotNull Context actualContext,
-        final @NotNull String allowedContexts
+        final Context actualContext,
+        final String allowedContexts
     ) {
         final var tagName = (tag == null)
             ? "A text node"
@@ -148,15 +137,15 @@ public final class Verifier {
         recordError(message);
     }
 
-    private void recordError(final @NotNull String message) {
+    private void recordError(final String message) {
         verificationErrors = verificationErrors.appended(new VerificationError(message, getAncestorTags()));
     }
 
-    private @NotNull Seq<Tag> getAncestorTags() {
+    private Seq<Tag> getAncestorTags() {
         return ancestors.map(Node.Element::tag);
     }
 
-    private static @Nullable Context getEffectiveChildContext(final @NotNull Tag tag, final @NotNull Context context) {
+    private static @Nullable Context getEffectiveChildContext(final Tag tag, final Context context) {
         return switch (tag.childContext()) {
             case Context c -> c;
             case ChildContext.None ignored -> null;
@@ -182,30 +171,23 @@ public final class Verifier {
     private static final EnumSet<Context> rawTextContexts =
         EnumSet.of(Context.FLOW, Context.PHRASING, Context.TEXT_ONLY);
 
-    private @NotNull Seq<@NotNull VerificationError> verificationErrors = Seq.empty();
-    private @NotNull Seq<Node.@NotNull Element> ancestors = Seq.empty();
+    private Seq<VerificationError> verificationErrors = Seq.empty();
+    private Seq<Node.Element> ancestors = Seq.empty();
     private final HashSet<String> foundIds = new HashSet<>();
 
     interface AttributeVerifier {
-        void verify(@NotNull AttributeVerificationContext context);
+        void verify(AttributeVerificationContext context);
     }
 
-    record AttributeVerificationContext(
-        @NotNull Verifier verifier,
-        @NotNull Tag tag,
-        @NotNull Attribute attribute
-    ) {
-        void recordError(final @NotNull String message) {
+    record AttributeVerificationContext(Verifier verifier, Tag tag, Attribute attribute) {
+        void recordError(final String message) {
             verifier.recordAttributeError(tag, attribute.name(), message);
         }
     }
 
-    private record AttributeTypeVerifier(
-        @NotNull Class<? extends Attribute> type,
-        @NotNull String message
-    ) implements AttributeVerifier {
+    private record AttributeTypeVerifier(Class<? extends Attribute> type, String message) implements AttributeVerifier {
         @Override
-        public void verify(final @NotNull AttributeVerificationContext context) {
+        public void verify(final AttributeVerificationContext context) {
             if (!type.isInstance(context.attribute)) {
                 context.recordError(message);
             }
@@ -214,7 +196,7 @@ public final class Verifier {
 
     private static final class AriaHiddenVerifier implements AttributeVerifier {
         @Override
-        public void verify(@NotNull final AttributeVerificationContext context) {
+        public void verify(final AttributeVerificationContext context) {
             if (!(context.attribute instanceof Attribute.String string) || !"true".equals(string.value())) {
                 context.recordError("aria-hidden only accepts value of \"true\"");
             }

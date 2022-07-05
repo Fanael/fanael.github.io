@@ -7,17 +7,16 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import greenspun.auki.annotations.Open;
 import greenspun.util.condition.Condition;
-import org.jetbrains.annotations.NotNull;
 
 abstract class ExceptionCondition<E extends Exception> extends Condition {
-    ExceptionCondition(final @NotNull E exception) {
+    ExceptionCondition(final E exception) {
         super(String.valueOf(exception.getMessage()));
         this.exception = exception;
     }
 
     @Open
     @Override
-    public @NotNull String detailedMessage() {
+    public String detailedMessage() {
         final var charset = StandardCharsets.UTF_8;
         final var stream = new ByteArrayOutputStream();
         final var printStream = new PrintStream(stream, false, charset);
@@ -28,9 +27,9 @@ abstract class ExceptionCondition<E extends Exception> extends Condition {
 
     @Open
     @Override
-    public @NotNull String toString() {
+    public String toString() {
         return getClass().getName() + ": " + exception;
     }
 
-    private final @NotNull E exception;
+    private final E exception;
 }

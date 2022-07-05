@@ -4,7 +4,6 @@ package greenspun.sexp;
 
 import java.math.BigInteger;
 import greenspun.util.collection.seq.Seq;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Marker interface serving as the base type of S-expression objects.
@@ -21,13 +20,13 @@ public sealed interface Sexp {
         /**
          * Retrieves the name of this symbol.
          */
-        @NotNull java.lang.String symbolName();
+        java.lang.String symbolName();
     }
 
     /**
      * An S-expression integer object.
      */
-    record Integer(@NotNull BigInteger value) implements Sexp {
+    record Integer(BigInteger value) implements Sexp {
     }
 
     /**
@@ -35,13 +34,13 @@ public sealed interface Sexp {
      * <p>
      * Dotted lists are unsupported.
      */
-    record List(@NotNull Seq<@NotNull Sexp> value) implements Sexp {
+    record List(Seq<Sexp> value) implements Sexp {
     }
 
     /**
      * An S-expression string object.
      */
-    record String(@NotNull java.lang.String value) implements Sexp {
+    record String(java.lang.String value) implements Sexp {
     }
 
     /**
@@ -54,21 +53,21 @@ public sealed interface Sexp {
          * Direct used of this constructor is usually not needed, prefer {@link SymbolTable#intern(java.lang.String)}
          * instead.
          */
-        public RegularSymbol(final @NotNull java.lang.String name) {
+        public RegularSymbol(final java.lang.String name) {
             this.name = name;
         }
 
         @Override
-        public @NotNull java.lang.String symbolName() {
+        public java.lang.String symbolName() {
             return name;
         }
 
         @Override
-        public @NotNull java.lang.String toString() {
+        public java.lang.String toString() {
             return name;
         }
 
-        private final @NotNull java.lang.String name;
+        private final java.lang.String name;
     }
 
     /**
@@ -98,20 +97,20 @@ public sealed interface Sexp {
         KW_DIFF(":diff"),
         KW_JAVA(":java");
 
-        KnownSymbol(final @NotNull java.lang.String name) {
+        KnownSymbol(final java.lang.String name) {
             this.name = name;
         }
 
         @Override
-        public @NotNull java.lang.String symbolName() {
+        public java.lang.String symbolName() {
             return name;
         }
 
         @Override
-        public @NotNull java.lang.String toString() {
+        public java.lang.String toString() {
             return name;
         }
 
-        private final @NotNull java.lang.String name;
+        private final java.lang.String name;
     }
 }

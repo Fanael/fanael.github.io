@@ -4,4 +4,7 @@
 /**
  * Implementation of the command line interface of the program.
  */
+@NonNullByDefault
 package greenspun.cli;
+
+import greenspun.util.annotation.NonNullByDefault;

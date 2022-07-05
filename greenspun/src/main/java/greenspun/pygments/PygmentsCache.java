@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import greenspun.dom.Node;
 import greenspun.generator.Renderer;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A concurrent cache of syntax-highlighted code snippets in DOM node form.
@@ -25,7 +24,7 @@ public final class PygmentsCache {
     /**
      * Initializes a new, empty Pygments cache that will use the given Pygments server for highlighting.
      */
-    public PygmentsCache(final @NotNull PygmentsServer server) {
+    public PygmentsCache(final PygmentsServer server) {
         this.server = server;
     }
 
@@ -51,11 +50,7 @@ public final class PygmentsCache {
      * On error, a fatal condition is signaled, following the same contract as
      * {@link PygmentsServer#highlightCode(String, String)}.
      */
-    public @NotNull Node highlightCode(
-        final @NotNull String code,
-        final @NotNull String languageName,
-        final @NotNull String prettyName
-    ) {
+    public Node highlightCode(final String code, final String languageName, final String prettyName) {
         final var key = new CacheKey(code, languageName, prettyName);
         final var cachedNode = map.get(key);
         if (cachedNode != null) {
@@ -69,20 +64,20 @@ public final class PygmentsCache {
         return (newCachedNode != null) ? newCachedNode.node : node;
     }
 
-    private final @NotNull PygmentsServer server;
+    private final PygmentsServer server;
     private final ConcurrentHashMap<CacheKey, CacheValue> map = new ConcurrentHashMap<>();
     private final AtomicInteger currentGeneration = new AtomicInteger(0);
 
-    private record CacheKey(@NotNull String code, @NotNull String languageName, @NotNull String prettyName) {
+    private record CacheKey(String code, String languageName, String prettyName) {
     }
 
     private static final class CacheValue {
-        private CacheValue(final @NotNull Node node, final int generation) {
+        private CacheValue(final Node node, final int generation) {
             this.node = node;
             this.generation = generation;
         }
 
-        private final @NotNull Node node;
+        private final Node node;
         private volatile int generation;
     }
 }

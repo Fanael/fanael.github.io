@@ -12,18 +12,17 @@ import greenspun.util.condition.HandlerProcedure;
 import greenspun.util.condition.Restart;
 import greenspun.util.condition.SignaledCondition;
 import greenspun.util.condition.SuppressedExceptionCondition;
-import org.jetbrains.annotations.NotNull;
 
 final class FallbackHandler implements HandlerProcedure.ThreadSafe {
     private FallbackHandler() {
     }
 
-    static @NotNull FallbackHandler instance() {
+    static FallbackHandler instance() {
         return instance;
     }
 
     @Override
-    public void handle(final @NotNull SignaledCondition condition) {
+    public void handle(final SignaledCondition condition) {
         if (!condition.isFatal()) {
             if (condition.condition() instanceof SuppressedExceptionCondition c) {
                 showSuppressedExceptionCondition(c);
@@ -37,16 +36,16 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
         }
     }
 
-    private static void showSuppressedExceptionCondition(final @NotNull SuppressedExceptionCondition condition) {
+    private static void showSuppressedExceptionCondition(final SuppressedExceptionCondition condition) {
         try (final var streams = Streams.acquire()) {
             showCondition(streams, condition, "A condition");
         }
     }
 
     private static void showCondition(
-        final @NotNull Streams streams,
-        final @NotNull Condition condition,
-        final @NotNull String prefix
+        final Streams streams,
+        final Condition condition,
+        final String prefix
     ) {
         final var err = streams.err();
         err.println(prefix + " of type " + condition.getClass().getName() + " has been signaled.");
@@ -59,9 +58,9 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
         err.println();
     }
 
-    private static @NotNull Restart chooseRestart(
-        final @NotNull Streams streams,
-        final @NotNull Seq<Restart> restarts
+    private static Restart chooseRestart(
+        final Streams streams,
+        final Seq<Restart> restarts
     ) {
         if (restarts.isEmpty()) {
             throw new RuntimeException("No restarts available");
@@ -93,7 +92,7 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
         }
     }
 
-    private static void showRestarts(final @NotNull PrintStream stream, final @NotNull Seq<Restart> restarts) {
+    private static void showRestarts(final PrintStream stream, final Seq<Restart> restarts) {
         long index = 1;
         stream.println("Available restarts:");
         for (final var restart : restarts) {

@@ -3,18 +3,17 @@
 package greenspun.generator;
 
 import greenspun.util.UnreachableCodeReachedError;
-import org.jetbrains.annotations.NotNull;
 
 interface HeaderRenderMode {
     boolean shouldRender();
 
-    @NotNull String getTopicArchiveUri(@NotNull String topicName);
+    String getTopicArchiveUri(String topicName);
 
     final class Skip implements HeaderRenderMode {
         private Skip() {
         }
 
-        static @NotNull Skip instance() {
+        static Skip instance() {
             return instance;
         }
 
@@ -24,7 +23,7 @@ interface HeaderRenderMode {
         }
 
         @Override
-        public @NotNull String getTopicArchiveUri(final @NotNull String topicName) {
+        public String getTopicArchiveUri(final String topicName) {
             throw new UnreachableCodeReachedError("Article topics aren't supposed to be rendered at all");
         }
 

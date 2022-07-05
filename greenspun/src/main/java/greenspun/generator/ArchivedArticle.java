@@ -3,7 +3,6 @@
 package greenspun.generator;
 
 import greenspun.article.Article;
-import org.jetbrains.annotations.NotNull;
 
-record ArchivedArticle(@NotNull Article article, @NotNull String identifier, @NotNull DomainRelativeUri uri) {
+record ArchivedArticle(Article article, String identifier, DomainRelativeUri uri) {
 }

@@ -3,7 +3,6 @@
 package greenspun.util.condition;
 
 import greenspun.auki.annotations.Open;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * The base type for all conditions.
@@ -16,14 +15,14 @@ public abstract class Condition {
     /**
      * Initializes a new condition with the given user-readable message.
      */
-    protected Condition(final @NotNull String message) {
+    protected Condition(final String message) {
         this.message = message;
     }
 
     /**
      * Retrieves the user-readable message representing this condition.
      */
-    public final @NotNull String message() {
+    public final String message() {
         return message;
     }
 
@@ -31,15 +30,15 @@ public abstract class Condition {
      * Retrieves the full, detailed, user-readable message representing this condition.
      */
     @Open
-    public @NotNull String detailedMessage() {
+    public String detailedMessage() {
         return message;
     }
 
     @Open
     @Override
-    public @NotNull String toString() {
+    public String toString() {
         return getClass().getName() + ": " + message;
     }
 
-    private final @NotNull String message;
+    private final String message;
 }

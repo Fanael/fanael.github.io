@@ -5,8 +5,7 @@ package greenspun.util.condition;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import greenspun.util.SneakyThrow;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import greenspun.util.annotation.Nullable;
 
 /**
  * A condition context keeps track of currently registered handlers and restart points.
@@ -32,7 +31,7 @@ public final class ConditionContext {
      * <p>
      * Since handlers are allowed to unwind to a restart point, this method may throw {@link Unwind}.
      */
-    public static void signal(final @NotNull Condition condition) {
+    public static void signal(final Condition condition) {
         localContext().signal(new SignaledCondition(condition, false));
     }
 
@@ -42,7 +41,7 @@ public final class ConditionContext {
      * As this method is sometimes called as a part of cleanup process during stack unwinding, handlers are
      * <strong>not allowed</strong> to unwind to a restart point as a response to that condition.
      */
-    public static void signalSuppressedException(final @NotNull Exception exception) {
+    public static void signalSuppressedException(final Exception exception) {
         try {
             SneakyThrow.<Unwind>pretendThrows();
             signal(new SuppressedExceptionCondition(exception));
@@ -62,7 +61,7 @@ public final class ConditionContext {
      * Since this method never returns normally, it's declared to return {@link UnhandledErrorError} that can be
      * "thrown" at call sites to help the compiler's control flow analysis.
      */
-    public static @NotNull UnhandledErrorError error(final @NotNull Condition condition) {
+    public static UnhandledErrorError error(final Condition condition) {
         localContext().signal(new SignaledCondition(condition, true));
         throw new UnhandledErrorError(condition);
     }
@@ -76,7 +75,7 @@ public final class ConditionContext {
      * As this method is sometimes called as a part of cleanup process during stack unwinding, handlers are
      * <strong>not allowed</strong> to unwind to a restart point as a response to that condition.
      */
-    public static void withSuppressedExceptions(final @NotNull ThrowingCallback callback) {
+    public static void withSuppressedExceptions(final ThrowingCallback callback) {
         try {
             callback.run();
         } catch (final Exception e) {
@@ -94,8 +93,8 @@ public final class ConditionContext {
      * {@code null} instead.
      */
     public static <T> @Nullable T withRestart(
-        final @NotNull String restartName,
-        final @NotNull RestartCallback<? extends T> callback
+        final String restartName,
+        final RestartCallback<? extends T> callback
     ) {
         final var restart = new Restart(restartName);
         try {
@@ -113,7 +112,7 @@ public final class ConditionContext {
     /**
      * Returns an iterable containing all active restart points, ordered from the newest one to the oldest.
      */
-    public static @NotNull Iterable<@NotNull Restart> restarts() {
+    public static Iterable<Restart> restarts() {
         return localContext().new RestartIterable();
     }
 
@@ -123,7 +122,7 @@ public final class ConditionContext {
      *
      * @see #inheritState(InheritedState)
      */
-    public static @NotNull InheritedState saveInheritableState() {
+    public static InheritedState saveInheritableState() {
         final var context = localContext();
         // We can just use the regular handler chain unchanged, because signal() checks if the handler is usable in
         // the calling thread.
@@ -138,7 +137,7 @@ public final class ConditionContext {
      * @return The state before inheritance, to be restored by {@link #restoreState(PreviousState)}.
      * @see #saveInheritableState()
      */
-    public static @NotNull PreviousState inheritState(final @NotNull InheritedState inheritedState) {
+    public static PreviousState inheritState(final InheritedState inheritedState) {
         final var context = localContext();
         assert context.firstHandler == null : "Attempted to inherit state into a thread that already has handlers";
         assert context.firstRestart == null : "Attempted to inherit state into a thread that already has restarts";
@@ -150,17 +149,17 @@ public final class ConditionContext {
     /**
      * Restores the original state of the current thread's condition context.
      */
-    public static void restoreState(@SuppressWarnings("unused") final @NotNull PreviousState previousState) {
+    public static void restoreState(@SuppressWarnings("unused") final PreviousState previousState) {
         final var context = localContext();
         context.firstHandler = null;
         context.firstRestart = null;
     }
 
-    static @NotNull ConditionContext localContext() {
+    static ConditionContext localContext() {
         return localContext.get();
     }
 
-    private void signal(final @NotNull SignaledCondition condition) {
+    private void signal(final SignaledCondition condition) {
         for (var handler = findFirstHandler(); handler != null; handler = handler.next) {
             if (!handler.usableIn(this)) {
                 continue;
@@ -185,7 +184,7 @@ public final class ConditionContext {
     @Nullable Restart firstRestart = null;
     private @Nullable Handler currentHandler = null;
 
-    private static final ThreadLocal<@NotNull ConditionContext> localContext =
+    private static final ThreadLocal<ConditionContext> localContext =
         ThreadLocal.withInitial(ConditionContext::new);
 
     /**
@@ -221,14 +220,14 @@ public final class ConditionContext {
         private static final PreviousState instance = new PreviousState();
     }
 
-    private final class RestartIterable implements Iterable<@NotNull Restart> {
+    private final class RestartIterable implements Iterable<Restart> {
         @Override
-        public @NotNull Iterator<@NotNull Restart> iterator() {
+        public Iterator<Restart> iterator() {
             return new RestartIterator(firstRestart);
         }
     }
 
-    private static final class RestartIterator implements Iterator<@NotNull Restart> {
+    private static final class RestartIterator implements Iterator<Restart> {
         private RestartIterator(final @Nullable Restart firstRestart) {
             current = firstRestart;
         }
@@ -239,7 +238,7 @@ public final class ConditionContext {
         }
 
         @Override
-        public @NotNull Restart next() {
+        public Restart next() {
             final var result = current;
             if (result == null) {
                 throw new NoSuchElementException("No more restarts left");

@@ -15,7 +15,6 @@ import greenspun.util.Trace;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * The HTSL converter: the primary means of converting HTSL forms into DOM tree nodes.
@@ -27,7 +26,7 @@ public final class HtslConverter {
     /**
      * Initializes a new HTSL converter that will use the given Pygments cache for highlighting code snippets.
      */
-    public HtslConverter(final @NotNull PygmentsCache pygmentsCache) {
+    public HtslConverter(final PygmentsCache pygmentsCache) {
         this.pygmentsCache = pygmentsCache;
     }
 
@@ -42,11 +41,11 @@ public final class HtslConverter {
      * occurs in syntax highlighting during the macro-expansion of {@code highlighted-code} tag macro.
      * </ul>
      */
-    public @NotNull Seq<@NotNull Node> convert(final @NotNull Seq<@NotNull Sexp> forms) {
+    public Seq<Node> convert(final Seq<Sexp> forms) {
         return forms.map(this::convertForm);
     }
 
-    private @NotNull Node convertForm(final @NotNull Sexp form) {
+    private Node convertForm(final Sexp form) {
         if (form instanceof Sexp.String string) {
             return new Node.Text(string.value());
         }
@@ -67,10 +66,10 @@ public final class HtslConverter {
         }
     }
 
-    private @NotNull Node.Element convertElement(
-        final @NotNull Sexp.Symbol tagName,
-        final @NotNull Seq<Sexp> attributes,
-        final @NotNull Seq<Sexp> children
+    private Node.Element convertElement(
+        final Sexp.Symbol tagName,
+        final Seq<Sexp> attributes,
+        final Seq<Sexp> children
     ) {
         final var tag = Tag.byHtmlName(tagName.symbolName());
         if (tag == null) {
@@ -81,8 +80,8 @@ public final class HtslConverter {
         return new Node.Element(tag, convertedAttributes, convertedChildren);
     }
 
-    private static @NotNull Seq<Attribute> convertAttributes(final @NotNull Seq<Sexp> attributes) {
-        @NotNull Seq<Attribute> result = Seq.empty();
+    private static Seq<Attribute> convertAttributes(final Seq<Sexp> attributes) {
+        Seq<Attribute> result = Seq.empty();
         for (final var it = attributes.iterator(); it.hasNext(); ) {
             final var keyForm = it.next();
             final var key = Sexps.asKeyword(keyForm);
@@ -109,7 +108,7 @@ public final class HtslConverter {
         return result;
     }
 
-    private static @NotNull TagHead extractTagHead(final @NotNull Sexp form) {
+    private static TagHead extractTagHead(final Sexp form) {
         final var symbol = Sexps.asSymbol(form);
         if (symbol != null) {
             return new TagHead(symbol, Seq.empty());
@@ -126,10 +125,7 @@ public final class HtslConverter {
         return new TagHead(tagName, list.withoutFirst());
     }
 
-    private @NotNull Node expandCodeBlock(
-        final @NotNull Seq<Sexp> attributes,
-        final @NotNull Seq<Sexp> children
-    ) {
+    private Node expandCodeBlock(final Seq<Sexp> attributes, final Seq<Sexp> children) {
         if (attributes.exactSize() != 2 || attributes.first() != Sexp.KnownSymbol.KW_LANGUAGE) {
             throw signalError("code-block accepts exactly one attribute, :language");
         }
@@ -140,10 +136,7 @@ public final class HtslConverter {
         return Renderer.wrapCodeBlock(children.map(this::convertForm), languageName.value());
     }
 
-    private @NotNull Node expandHighlightedCode(
-        final @NotNull Seq<Sexp> attributes,
-        final @NotNull Seq<Sexp> children
-    ) {
+    private Node expandHighlightedCode(final Seq<Sexp> attributes, final Seq<Sexp> children) {
         if (children.exactSize() != 1 || !(children.first() instanceof Sexp.String codeNode)) {
             throw signalError("highlighted-code accepts exactly one string child");
         }
@@ -164,10 +157,7 @@ public final class HtslConverter {
         return pygmentsCache.highlightCode(code, pygmentsLanguageName, prettyLanguageName);
     }
 
-    private @NotNull Node.Element expandImageFigure(
-        final @NotNull Seq<Sexp> attributes,
-        final @NotNull Seq<Sexp> children
-    ) {
+    private Node.Element expandImageFigure(final Seq<Sexp> attributes, final Seq<Sexp> children) {
         return Node.simple(
             Tag.FIGURE,
             Seq.of(
@@ -177,10 +167,7 @@ public final class HtslConverter {
                     Seq.of(Node.empty(Tag.IMG, convertAttributes(attributes))))));
     }
 
-    private @NotNull Node.Element expandSidenote(
-        final @NotNull Seq<Sexp> attributes,
-        final @NotNull Seq<Sexp> children
-    ) {
+    private Node.Element expandSidenote(final Seq<Sexp> attributes, final Seq<Sexp> children) {
         return new Node.Element(
             Tag.DIV,
             Attributes.updated(
@@ -191,17 +178,11 @@ public final class HtslConverter {
         );
     }
 
-    private @NotNull Node.Element expandFigcontent(
-        final @NotNull Seq<Sexp> attributes,
-        final @NotNull Seq<Sexp> children
-    ) {
+    private Node.Element expandFigcontent(final Seq<Sexp> attributes, final Seq<Sexp> children) {
         return makeFigureContent(convertAttributes(attributes), children.map(this::convertForm));
     }
 
-    private @NotNull Node.Element expandInfoBox(
-        final @NotNull Seq<Sexp> attributes,
-        final @NotNull Seq<Sexp> children
-    ) {
+    private Node.Element expandInfoBox(final Seq<Sexp> attributes, final Seq<Sexp> children) {
         return new Node.Element(
             Tag.DIV,
             Attributes.addedClass(convertAttributes(attributes), "info"),
@@ -209,14 +190,11 @@ public final class HtslConverter {
         );
     }
 
-    private static @NotNull Node.Element makeFigureContent(
-        final @NotNull Seq<@NotNull Attribute> attributes,
-        final @NotNull Seq<@NotNull Node> children
-    ) {
+    private static Node.Element makeFigureContent(final Seq<Attribute> attributes, final Seq<Node> children) {
         return new Node.Element(Tag.DIV, Attributes.addedClass(attributes, "holder"), children);
     }
 
-    private static @NotNull UnhandledErrorError signalError(final @NotNull String message) {
+    private static UnhandledErrorError signalError(final String message) {
         return ConditionContext.error(new HtslConversionErrorCondition(message));
     }
 
@@ -235,17 +213,13 @@ public final class HtslConverter {
         Sexp.KnownSymbol.KW_JAVA, "Java"
     );
 
-    private final @NotNull PygmentsCache pygmentsCache;
+    private final PygmentsCache pygmentsCache;
 
     @FunctionalInterface
     private interface TagMacroExpander {
-        @NotNull Node expand(
-            @NotNull HtslConverter converter,
-            @NotNull Seq<Sexp> attributes,
-            @NotNull Seq<Sexp> children
-        );
+        Node expand(HtslConverter converter, Seq<Sexp> attributes, Seq<Sexp> children);
     }
 
-    private record TagHead(@NotNull Sexp.Symbol tagName, @NotNull Seq<Sexp> attributes) {
+    private record TagHead(Sexp.Symbol tagName, Seq<Sexp> attributes) {
     }
 }

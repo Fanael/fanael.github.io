@@ -4,4 +4,7 @@
 /**
  * Assorted miscellaneous utilities.
  */
+@NonNullByDefault
 package greenspun.util;
+
+import greenspun.util.annotation.NonNullByDefault;

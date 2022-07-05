@@ -4,4 +4,7 @@
 /**
  * Condition wrappers for common exception types.
  */
+@NonNullByDefault
 package greenspun.util.condition.exception;
+
+import greenspun.util.annotation.NonNullByDefault;

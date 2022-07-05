@@ -1,2 +1,3 @@
 rootProject.name = "greenspun"
 include("auki")
+include("minijsr305")

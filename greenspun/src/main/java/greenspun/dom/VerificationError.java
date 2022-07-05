@@ -3,7 +3,6 @@
 package greenspun.dom;
 
 import greenspun.util.collection.seq.Seq;
-import org.jetbrains.annotations.NotNull;
 
-record VerificationError(@NotNull String message, @NotNull Seq<@NotNull Tag> ancestorTags) {
+record VerificationError(String message, Seq<Tag> ancestorTags) {
 }

@@ -11,7 +11,6 @@ import java.util.function.Function;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A wrapper around {@link ExecutorService} providing convenient methods for concurrent operations on collections.
@@ -20,7 +19,7 @@ public final class CollectionExecutorService {
     /**
      * Initializes a new collection executor service that will submit tasks to the given executor service.
      */
-    public CollectionExecutorService(final @NotNull ExecutorService executorService) {
+    public CollectionExecutorService(final ExecutorService executorService) {
         this.executorService = executorService;
     }
 
@@ -34,9 +33,9 @@ public final class CollectionExecutorService {
      * <p>
      * This method waits for all the submitted tasks to finish before returning.
      */
-    public <T, R> @NotNull Seq<R> map(
-        final @NotNull Iterable<? extends T> iterable,
-        final @NotNull Function<? super T, ? extends R> function
+    public <T, R> Seq<R> map(
+        final Iterable<? extends T> iterable,
+        final Function<? super T, ? extends R> function
     ) {
         return collectResults(submitTasks(iterable, function));
     }
@@ -51,8 +50,8 @@ public final class CollectionExecutorService {
      * This method waits for all the submitted tasks to finish before returning.
      */
     public <T> void forEach(
-        final @NotNull Iterable<? extends T> iterable,
-        final @NotNull Consumer<? super T> consumer
+        final Iterable<? extends T> iterable,
+        final Consumer<? super T> consumer
     ) {
         waitForResults(submitTasks(iterable, value -> {
             consumer.accept(value);
@@ -60,9 +59,9 @@ public final class CollectionExecutorService {
         }));
     }
 
-    private <T, R> @NotNull Seq<@NotNull Future<R>> submitTasks(
-        final @NotNull Iterable<? extends T> iterable,
-        final @NotNull Function<? super T, ? extends R> function
+    private <T, R> Seq<Future<R>> submitTasks(
+        final Iterable<? extends T> iterable,
+        final Function<? super T, ? extends R> function
     ) {
         final var inheritedState = ConditionContext.saveInheritableState();
         return Seq.mapIterable(iterable, (item) -> executorService.submit(() -> {
@@ -76,23 +75,23 @@ public final class CollectionExecutorService {
         }));
     }
 
-    private static <T> @NotNull Seq<T> collectResults(final @NotNull Seq<@NotNull Future<T>> futures) {
+    private static <T> Seq<T> collectResults(final Seq<Future<T>> futures) {
         final var builder = new Seq.Builder<T>();
         new AwaitImpl<>(futures.iterator(), builder::append).awaitAll();
         return builder.toSeq();
     }
 
-    private static void waitForResults(final @NotNull Seq<? extends @NotNull Future<?>> futures) {
+    private static void waitForResults(final Seq<? extends Future<?>> futures) {
         new AwaitImpl<>(futures.iterator(), (value) -> {
         }).awaitAll();
     }
 
-    private final @NotNull ExecutorService executorService;
+    private final ExecutorService executorService;
 
     private static final class AwaitImpl<T> {
         private AwaitImpl(
-            final @NotNull Iterator<? extends @NotNull Future<? extends T>> iterator,
-            final @NotNull Consumer<? super T> consumer
+            final Iterator<? extends Future<? extends T>> iterator,
+            final Consumer<? super T> consumer
         ) {
             this.iterator = iterator;
             this.consumer = consumer;
@@ -123,7 +122,7 @@ public final class CollectionExecutorService {
             }
         }
 
-        private void awaitOne(final @NotNull Future<? extends T> future) {
+        private void awaitOne(final Future<? extends T> future) {
             try {
                 consumer.accept(future.get());
             } catch (final InterruptedException e) {
@@ -133,7 +132,7 @@ public final class CollectionExecutorService {
             }
         }
 
-        private void recover(final @NotNull ExecutionException executionException) {
+        private void recover(final ExecutionException executionException) {
             needsCancellation = true;
             final var cause = executionException.getCause();
             switch (cause) {
@@ -147,8 +146,8 @@ public final class CollectionExecutorService {
             }
         }
 
-        private final @NotNull Iterator<? extends @NotNull Future<? extends T>> iterator;
-        private final @NotNull Consumer<? super T> consumer;
+        private final Iterator<? extends Future<? extends T>> iterator;
+        private final Consumer<? super T> consumer;
         private boolean foundInterrupt = false;
         private boolean needsCancellation = false;
     }

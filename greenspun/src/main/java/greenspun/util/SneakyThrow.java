@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util;
 
-import org.jetbrains.annotations.NotNull;
-
 /**
  * Facilities for bypassing the checked exception mechanism.
  */
@@ -25,7 +23,7 @@ public final class SneakyThrow {
      * Since this method never returns normally, it's declared to return {@link UnreachableCodeReachedError} that can
      * be "thrown" at call sites to help the compiler's control flow analysis.
      */
-    public static @NotNull UnreachableCodeReachedError doThrow(final @NotNull Throwable throwable) {
+    public static UnreachableCodeReachedError doThrow(final Throwable throwable) {
         throw doThrowImpl(throwable);
     }
 
@@ -45,8 +43,8 @@ public final class SneakyThrow {
     // guide type inference, so callers that don't explicitly specify E effectively get the signature:
     // UnreachableCodeReachedError doThrowImpl(Throwable) throws RuntimeException.
     @SuppressWarnings("unchecked")
-    private static <E extends Throwable> @NotNull UnreachableCodeReachedError doThrowImpl(
-        final @NotNull Throwable throwable
+    private static <E extends Throwable> UnreachableCodeReachedError doThrowImpl(
+        final Throwable throwable
     ) throws E {
         throw (E) throwable;
     }

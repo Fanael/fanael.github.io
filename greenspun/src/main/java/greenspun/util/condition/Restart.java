@@ -3,8 +3,7 @@
 package greenspun.util.condition;
 
 import greenspun.util.SneakyThrow;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import greenspun.util.annotation.Nullable;
 
 /**
  * A restart point.
@@ -13,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link ConditionContext#restarts()}.
  */
 public final class Restart {
-    Restart(final @NotNull String name) {
+    Restart(final String name) {
         final var context = ConditionContext.localContext();
         next = context.firstRestart;
         this.name = name;
@@ -24,7 +23,7 @@ public final class Restart {
     /**
      * Retrieves the user-readable name of this restart point.
      */
-    public @NotNull String name() {
+    public String name() {
         return name;
     }
 
@@ -52,6 +51,6 @@ public final class Restart {
     }
 
     final @Nullable Restart next;
-    private final @NotNull String name;
-    private final @NotNull ConditionContext ownerContext;
+    private final String name;
+    private final ConditionContext ownerContext;
 }

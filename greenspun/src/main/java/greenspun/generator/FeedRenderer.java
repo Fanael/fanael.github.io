@@ -18,7 +18,6 @@ import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.exception.ParserConfigurationExceptionCondition;
 import greenspun.util.condition.exception.TransformerExceptionCondition;
-import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -32,7 +31,7 @@ final class FeedRenderer {
         }
     }
 
-    void createDom(final @NotNull Seq<ArchivedArticle> articles, final @NotNull Instant buildTime) {
+    void createDom(final Seq<ArchivedArticle> articles, final Instant buildTime) {
         final var utcTime = buildTime.atOffset(ZoneOffset.UTC);
         document.appendChild(build("rss", rss -> {
             rss.set("version", "2.0");
@@ -58,7 +57,7 @@ final class FeedRenderer {
         }));
     }
 
-    void serialize(final @NotNull Writer writer) {
+    void serialize(final Writer writer) {
         try {
             final var transformer = TransformerFactory.newInstance().newTransformer();
             transformer.setOutputProperty(OutputKeys.METHOD, "xml");
@@ -70,7 +69,7 @@ final class FeedRenderer {
         }
     }
 
-    private void createItems(final @NotNull ElementBuilder parent, final @NotNull Seq<ArchivedArticle> articles) {
+    private void createItems(final ElementBuilder parent, final Seq<ArchivedArticle> articles) {
         for (final var article : articles) {
             final var fullUrl = siteUri.resolve(article.uri().toString());
             final var innerArticle = article.article();
@@ -89,13 +88,13 @@ final class FeedRenderer {
         }
     }
 
-    private @NotNull Element build(final @NotNull String tagName, final @NotNull BuildFunction buildFunction) {
+    private Element build(final String tagName, final BuildFunction buildFunction) {
         final var builder = new ElementBuilder(document.createElement(tagName));
         buildFunction.build(builder);
         return builder.element;
     }
 
-    private @NotNull Element createElementWithText(final @NotNull String tagName, final @NotNull String content) {
+    private Element createElementWithText(final String tagName, final String content) {
         return build(tagName, element -> element.appendText(content));
     }
 
@@ -103,33 +102,33 @@ final class FeedRenderer {
     private static final String atomNamespace = "http://www.w3.org/2005/Atom";
     private static final String syNamespace = "http://purl.org/rss/1.0/modules/syndication/";
 
-    private final @NotNull Document document;
+    private final Document document;
 
     private interface BuildFunction {
-        void build(@NotNull ElementBuilder builder);
+        void build(ElementBuilder builder);
     }
 
     private final class ElementBuilder {
-        private ElementBuilder(final @NotNull Element element) {
+        private ElementBuilder(final Element element) {
             this.element = element;
         }
 
-        private void append(final @NotNull Node child) {
+        private void append(final Node child) {
             element.appendChild(child);
         }
 
-        private void appendText(final @NotNull String text) {
+        private void appendText(final String text) {
             append(document.createTextNode(text));
         }
 
-        private void appendBuild(final @NotNull String tagName, final @NotNull BuildFunction buildFunction) {
+        private void appendBuild(final String tagName, final BuildFunction buildFunction) {
             append(build(tagName, buildFunction));
         }
 
-        private void set(final @NotNull String name, final @NotNull String value) {
+        private void set(final String name, final String value) {
             element.setAttribute(name, value);
         }
 
-        private final @NotNull Element element;
+        private final Element element;
     }
 }

@@ -1,0 +1,9 @@
+// Copyright © 2022  Fanael Linithien
+// SPDX-License-Identifier: CC0-1.0
+plugins {
+    id "java-library"
+}
+
+java.toolchain {
+    languageVersion = JavaLanguageVersion.of(18)
+}

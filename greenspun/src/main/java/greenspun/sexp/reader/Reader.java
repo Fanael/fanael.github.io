@@ -14,12 +14,11 @@ import java.util.Arrays;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.SymbolTable;
 import greenspun.util.UnreachableCodeReachedError;
+import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.exception.IOExceptionCondition;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The S-expression reader: the primary means of converting a stream of bytes into a stream of {@link Sexp} objects.
@@ -30,7 +29,7 @@ public final class Reader {
      * <p>
      * All symbols read will be interned into the given symbol table.
      */
-    public Reader(final @NotNull ByteStream stream, final @NotNull SymbolTable symbolTable) {
+    public Reader(final ByteStream stream, final SymbolTable symbolTable) {
         this.stream = stream;
         this.symbolTable = symbolTable;
     }
@@ -55,7 +54,7 @@ public final class Reader {
         return readForm();
     }
 
-    private @NotNull HitEof skipSkippables() {
+    private HitEof skipSkippables() {
         while (true) {
             if (stream.reachedEnd()) {
                 return HitEof.YES;
@@ -105,8 +104,8 @@ public final class Reader {
         }
     }
 
-    private @NotNull Sexp.List readList() {
-        final var list = new Seq.Builder<@NotNull Sexp>();
+    private Sexp.List readList() {
+        final var list = new Seq.Builder<Sexp>();
         while (true) {
             if (skipSkippables().hitEof()) {
                 throw signalUnterminatedListError();
@@ -128,7 +127,7 @@ public final class Reader {
         return new Sexp.List(list.toSeq());
     }
 
-    private @NotNull Sexp.String readString() {
+    private Sexp.String readString() {
         final var contentsBytes = new ByteArrayOutputStream(initialStringCapacity);
         var inEscapeSequence = false;
         outerLoop:
@@ -158,7 +157,7 @@ public final class Reader {
         return new Sexp.String(convertUtf8(contentsBytes.toByteArray()));
     }
 
-    private @NotNull Sexp readSymbol(final byte firstByte) {
+    private Sexp readSymbol(final byte firstByte) {
         final var symbolNameBytes = new ByteArrayOutputStream(initialSymbolCapacity);
         symbolNameBytes.write(firstByte);
         while (true) {
@@ -176,7 +175,7 @@ public final class Reader {
         return resolveSymbol(symbolName);
     }
 
-    private @NotNull Sexp resolveSymbol(final @NotNull String symbolName) {
+    private Sexp resolveSymbol(final String symbolName) {
         final var isNumeric = (symbolName.startsWith("+") || symbolName.startsWith("-"))
             ? allAsciiDigits(symbolName, 1)
             : allAsciiDigits(symbolName, 0);
@@ -193,7 +192,7 @@ public final class Reader {
         }
     }
 
-    private @NotNull String convertUtf8(final byte[] bytes) {
+    private String convertUtf8(final byte[] bytes) {
         try {
             return utf8Decoder.decode(ByteBuffer.wrap(bytes)).toString();
         } catch (final CharacterCodingException e) {
@@ -201,22 +200,22 @@ public final class Reader {
         }
     }
 
-    private @NotNull UnhandledErrorError signalUnterminatedListError() {
+    private UnhandledErrorError signalUnterminatedListError() {
         throw signalReadError("Expected closing ')' but found end of input instead");
     }
 
-    private @NotNull UnhandledErrorError signalReservedCharacterError(final byte b) {
+    private UnhandledErrorError signalReservedCharacterError(final byte b) {
         final var message = (b <= lastControlByte)
             ? String.format("Reserved control character U+%04X found", b)
             : ("Reserved character '" + (char) b + "' found");
         throw signalReadError(message);
     }
 
-    private @NotNull UnhandledErrorError signalReadError(final @NotNull String message) {
+    private UnhandledErrorError signalReadError(final String message) {
         throw ConditionContext.error(new ReadErrorCondition(message, new SourceLocation(lineNumber, topLevelFormLine)));
     }
 
-    private static boolean allAsciiDigits(final @NotNull String string, final int startIndex) {
+    private static boolean allAsciiDigits(final String string, final int startIndex) {
         final var length = string.length();
         for (int i = startIndex; i < length; i += 1) {
             final var ch = string.charAt(i);
@@ -227,7 +226,7 @@ public final class Reader {
         return true;
     }
 
-    private static @NotNull CharsetDecoder newUtf8Decoder() {
+    private static CharsetDecoder newUtf8Decoder() {
         final var decoder = StandardCharsets.UTF_8.newDecoder();
         decoder.onMalformedInput(CodingErrorAction.REPORT);
         decoder.onUnmappableCharacter(CodingErrorAction.REPORT);
@@ -239,9 +238,9 @@ public final class Reader {
     private static final int initialSymbolCapacity = 16;
     private static final int maxDepth = 150;
 
-    private final @NotNull ByteStream stream;
-    private final @NotNull SymbolTable symbolTable;
-    private final @NotNull CharsetDecoder utf8Decoder = newUtf8Decoder();
+    private final ByteStream stream;
+    private final SymbolTable symbolTable;
+    private final CharsetDecoder utf8Decoder = newUtf8Decoder();
     private int lineNumber = 1;
     private int topLevelFormLine = 0;
     private int currentDepth = 0;
@@ -252,11 +251,11 @@ public final class Reader {
         SEPARATOR,
         RESERVED;
 
-        private static @NotNull ByteClass of(final byte b) {
+        private static ByteClass of(final byte b) {
             return byteClasses[Byte.toUnsignedInt(b)];
         }
 
-        private static final @NotNull ByteClass[] byteClasses;
+        private static final ByteClass[] byteClasses;
 
         static {
             final var classes = new ByteClass[256];

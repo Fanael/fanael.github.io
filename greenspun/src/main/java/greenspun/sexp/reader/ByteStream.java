@@ -4,10 +4,9 @@ package greenspun.sexp.reader;
 
 import java.io.IOException;
 import java.io.InputStream;
+import greenspun.util.annotation.Nullable;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.exception.IOExceptionCondition;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * An input stream of bytes with single-byte lookahead.
@@ -21,7 +20,7 @@ public final class ByteStream {
      * The stream is buffered internally in order to provide lookahead, so the passed stream does not need to be
      * buffered for performance.
      */
-    public ByteStream(final @NotNull InputStream stream) {
+    public ByteStream(final InputStream stream) {
         this.stream = stream;
         buffer = new byte[streamBufferCapacity];
         position = 0;
@@ -63,7 +62,7 @@ public final class ByteStream {
         position += 1;
     }
 
-    @NotNull HitEof skipToLineFeed() {
+    HitEof skipToLineFeed() {
         while (true) {
             if (position < bufferSize) {
                 final var lineFeedPosition = findLineFeed();
@@ -88,7 +87,7 @@ public final class ByteStream {
     }
 
     @SuppressWarnings("ArrayEquality")
-    private @NotNull HitEof refill() {
+    private HitEof refill() {
         // Don't try to refill if we've reached end of input already.
         if (buffer == endOfInputMarker) {
             return HitEof.YES;
@@ -120,7 +119,7 @@ public final class ByteStream {
     private static final byte[] endOfInputMarker = new byte[0];
 
     private @Nullable InputStream stream;
-    private byte @NotNull [] buffer;
+    private byte[] buffer;
     private int position;
     private int bufferSize;
 }

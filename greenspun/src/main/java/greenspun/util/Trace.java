@@ -4,9 +4,8 @@ package greenspun.util;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import greenspun.util.annotation.Nullable;
 import greenspun.util.condition.MessageSupplier;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A trace message, intended to be used within try-with-resources.
@@ -23,7 +22,7 @@ public final class Trace implements AutoCloseable {
      * <p>
      * The message supplier is called at most once.
      */
-    public Trace(final @NotNull MessageSupplier supplier) {
+    public Trace(final MessageSupplier supplier) {
         this((Object) supplier);
     }
 
@@ -31,11 +30,11 @@ public final class Trace implements AutoCloseable {
      * Initializes a new trace with the given message. The trace is automatically registered as the first active trace
      * in the calling thread.
      */
-    public Trace(final @NotNull String message) {
+    public Trace(final String message) {
         this((Object) message);
     }
 
-    private Trace(final @NotNull Object object) {
+    private Trace(final Object object) {
         final var context = localContext();
         next = context.firstTrace;
         messageOrSupplier = object;
@@ -47,7 +46,7 @@ public final class Trace implements AutoCloseable {
      * Returns an iterable over the calling thread's active trace messages. Traces are returned in the order of their
      * construction, starting with the most recently established one.
      */
-    public static @NotNull Iterable<@NotNull String> activeTraces() {
+    public static Iterable<String> activeTraces() {
         return IterableImpl.instance;
     }
 
@@ -70,11 +69,11 @@ public final class Trace implements AutoCloseable {
     }
 
     @SuppressWarnings("MethodOnlyUsedFromInnerClass")
-    private @NotNull String message() {
+    private String message() {
         return (messageOrSupplier instanceof String string) ? string : runSupplier();
     }
 
-    private @NotNull String runSupplier() {
+    private String runSupplier() {
         assert messageOrSupplier instanceof MessageSupplier : "runSupplier called with no supplier present";
         final var supplier = (MessageSupplier) messageOrSupplier;
         final var string = supplier.get();
@@ -87,31 +86,31 @@ public final class Trace implements AutoCloseable {
         assert ownerContext.firstTrace == this : "Trace chain corrupt";
     }
 
-    private static @NotNull Context localContext() {
+    private static Context localContext() {
         return context.get();
     }
 
-    private static final ThreadLocal<@NotNull Context> context = ThreadLocal.withInitial(Context::new);
+    private static final ThreadLocal<Context> context = ThreadLocal.withInitial(Context::new);
 
     private final @Nullable Trace next;
     // If a String, it's a message, otherwise it's assumed to be a MessageSupplier.
-    private @NotNull Object messageOrSupplier;
-    private final @NotNull Context ownerContext;
+    private Object messageOrSupplier;
+    private final Context ownerContext;
 
     private static final class Context {
         private @Nullable Trace firstTrace = null;
     }
 
-    private static final class IterableImpl implements Iterable<@NotNull String> {
+    private static final class IterableImpl implements Iterable<String> {
         @Override
-        public @NotNull Iterator<@NotNull String> iterator() {
+        public Iterator<String> iterator() {
             return new IteratorImpl(localContext().firstTrace);
         }
 
         private static final IterableImpl instance = new IterableImpl();
     }
 
-    private static final class IteratorImpl implements Iterator<@NotNull String> {
+    private static final class IteratorImpl implements Iterator<String> {
         private IteratorImpl(final @Nullable Trace firstTrace) {
             current = firstTrace;
         }
@@ -122,7 +121,7 @@ public final class Trace implements AutoCloseable {
         }
 
         @Override
-        public @NotNull String next() {
+        public String next() {
             final var result = current;
             if (result == null) {
                 throw new NoSuchElementException("No more traces left");

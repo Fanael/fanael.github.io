@@ -11,9 +11,8 @@ import greenspun.dom.Attribute;
 import greenspun.dom.Attributes;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
+import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The renderer: the primary means of turning article and archive page data structures into complete DOM trees.
@@ -24,27 +23,21 @@ import org.jetbrains.annotations.Nullable;
  * at the same time with no external synchronization.
  */
 public final class Renderer {
-    Renderer(final @NotNull HeaderRenderMode headerRenderMode) {
+    Renderer(final HeaderRenderMode headerRenderMode) {
         this.headerRenderMode = headerRenderMode;
     }
 
     /**
      * Wraps the given list of DOM nodes representing highlighted code into a single node.
      */
-    public static @NotNull Node wrapHighlightedCode(
-        final @NotNull Seq<@NotNull Node> nodes,
-        final @NotNull String prettyLanguageName
-    ) {
+    public static Node wrapHighlightedCode(final Seq<Node> nodes, final String prettyLanguageName) {
         return wrapCodeBlock(Seq.of(Node.simple(Tag.CODE, nodes)), prettyLanguageName);
     }
 
     /**
      * Wraps the given list of DOM nodes representing a code block into a single node.
      */
-    public static @NotNull Node wrapCodeBlock(
-        final @NotNull Seq<@NotNull Node> nodes,
-        final @NotNull String prettyLanguageName
-    ) {
+    public static Node wrapCodeBlock(final Seq<Node> nodes, final String prettyLanguageName) {
         final var language = new Node.Element(
             Tag.SPAN,
             Seq.of(Attribute.of("class", "cx-language")),
@@ -57,10 +50,10 @@ public final class Renderer {
         );
     }
 
-    static @NotNull Node.Element renderArchiveIndex(
-        final @NotNull Seq<@NotNull ArchivedQuarter> quarters,
-        final @NotNull Seq<@NotNull ArchivedTopic> topics,
-        final @NotNull Seq<@NotNull ArchivedArticle> articles
+    static Node.Element renderArchiveIndex(
+        final Seq<ArchivedQuarter> quarters,
+        final Seq<ArchivedTopic> topics,
+        final Seq<ArchivedArticle> articles
     ) {
         return renderDocument(
             renderHead("Blog archive index", "Main page of blog archives"),
@@ -69,7 +62,7 @@ public final class Renderer {
         );
     }
 
-    @NotNull Node.Element renderFrontPage(final @NotNull Seq<@NotNull ArchivedArticle> articles) {
+    Node.Element renderFrontPage(final Seq<ArchivedArticle> articles) {
         final var header = Node.simple(Tag.HEADER, Node.simple(Tag.H1, new Node.Text("Latest articles")));
         return renderDocument(
             renderHead(null, "Latest posts on " + RenderConstants.siteTitle),
@@ -80,10 +73,7 @@ public final class Renderer {
         );
     }
 
-    @NotNull Node.Element renderTopicArchive(
-        final @NotNull String topicName,
-        final @NotNull Seq<@NotNull ArchivedArticle> articles
-    ) {
+    Node.Element renderTopicArchive(final String topicName, final Seq<ArchivedArticle> articles) {
         return renderArchive(
             "Blog archives for topic " + topicName,
             "Archives for topic " + topicName,
@@ -91,10 +81,7 @@ public final class Renderer {
         );
     }
 
-    @NotNull Node.Element renderQuarterlyArchive(
-        final @NotNull Quarter quarter,
-        final @NotNull Seq<@NotNull ArchivedArticle> articles
-    ) {
+    Node.Element renderQuarterlyArchive(final Quarter quarter, final Seq<ArchivedArticle> articles) {
         return renderArchive(
             "Blog archives for the " + quarter,
             "Archives for the " + quarter,
@@ -102,7 +89,7 @@ public final class Renderer {
         );
     }
 
-    @NotNull Node.Element renderArticle(final @NotNull ArticleToRender article) {
+    Node.Element renderArticle(final ArticleToRender article) {
         return renderDocument(
             renderHead(article.article().title(), article.article().description()),
             renderBottomNav(article.predecessorUri(), article.successorUri()),
@@ -110,16 +97,16 @@ public final class Renderer {
         );
     }
 
-    private static @NotNull Seq<@NotNull Node> renderLineNumbers(final @NotNull Seq<@NotNull Node> nodes) {
+    private static Seq<Node> renderLineNumbers(final Seq<Node> nodes) {
         return (nodes.exactSize() == 1 && nodes.first() instanceof Node.Element parent)
             ? Seq.of(new LineNumberRenderer(parent).render())
             : nodes;
     }
 
-    private static @NotNull Seq<@NotNull Node> renderArchiveIndexBody(
-        final @NotNull Seq<ArchivedQuarter> quarters,
-        final @NotNull Seq<ArchivedTopic> topics,
-        final @NotNull Seq<ArchivedArticle> articles
+    private static Seq<Node> renderArchiveIndexBody(
+        final Seq<ArchivedQuarter> quarters,
+        final Seq<ArchivedTopic> topics,
+        final Seq<ArchivedArticle> articles
     ) {
         return Seq.of(
             Node.simple(Tag.HEADER, Node.simple(Tag.H1, new Node.Text("Blog archives"))),
@@ -134,10 +121,10 @@ public final class Renderer {
         );
     }
 
-    private static <T> Node.@NotNull Element renderArchiveIndexSection(
-        final @NotNull String name,
-        final @NotNull Seq<? extends T> elements,
-        final @NotNull Function<? super T, ? extends Node> linkFormatter
+    private static <T> Node.Element renderArchiveIndexSection(
+        final String name,
+        final Seq<? extends T> elements,
+        final Function<? super T, ? extends Node> linkFormatter
     ) {
         return Node.simple(Tag.SECTION, Seq.of(
             Node.simple(Tag.H2, new Node.Text(name)),
@@ -145,11 +132,7 @@ public final class Renderer {
         ));
     }
 
-    private @NotNull Node.Element renderArchive(
-        final @NotNull String title,
-        final @NotNull String header,
-        final @NotNull Seq<ArchivedArticle> articles
-    ) {
+    private Node.Element renderArchive(final String title, final String header, final Seq<ArchivedArticle> articles) {
         return renderDocument(
             renderHead(title, title),
             Constants.simpleBottomNav,
@@ -159,10 +142,10 @@ public final class Renderer {
         );
     }
 
-    private static @NotNull Node.Element renderDocument(
-        final @NotNull Node.Element head,
-        final @NotNull Node.Element bottomNav,
-        final @NotNull Seq<@NotNull Node> mainContent
+    private static Node.Element renderDocument(
+        final Node.Element head,
+        final Node.Element bottomNav,
+        final Seq<Node> mainContent
     ) {
         return new Node.Element(
             Tag.HTML,
@@ -177,7 +160,7 @@ public final class Renderer {
         );
     }
 
-    private static @NotNull Node.Element renderArchiveTableOfContents(final @NotNull Seq<ArchivedArticle> articles) {
+    private static Node.Element renderArchiveTableOfContents(final Seq<ArchivedArticle> articles) {
         return new Node.Element(
             Tag.NAV,
             Seq.of(Attribute.of("class", "toc"), Attribute.of("aria-labelledby", "toc-label")),
@@ -187,8 +170,8 @@ public final class Renderer {
                     Node.simple(Tag.LI, renderSimpleLink('#' + article.identifier(), article.article().title()))))));
     }
 
-    private @NotNull Seq<@NotNull Node> renderExcerpts(final @NotNull Seq<ArchivedArticle> articles) {
-        final var result = new Seq.Builder<@NotNull Node>();
+    private Seq<Node> renderExcerpts(final Seq<ArchivedArticle> articles) {
+        final var result = new Seq.Builder<Node>();
         for (final var article : articles) {
             final var innerArticle = article.article();
             final var title = innerArticle.title();
@@ -219,10 +202,7 @@ public final class Renderer {
         return result.toSeq();
     }
 
-    private static @NotNull Node.Element renderHead(
-        final @Nullable String title,
-        final @NotNull String description
-    ) {
+    private static Node.Element renderHead(final @Nullable String title, final String description) {
         final var effectiveTitle =
             (title != null) ? (title + " - " + RenderConstants.siteTitle) : RenderConstants.siteTitle;
         return Node.simple(
@@ -237,7 +217,7 @@ public final class Renderer {
         );
     }
 
-    private @NotNull Node.Element renderArticleBody(final @NotNull Article article) {
+    private Node.Element renderArticleBody(final Article article) {
         final var contents = new Seq.Builder<>(article.rootSection().body().prepended(renderArticleHeader(article)));
         final var children = article.rootSection().children();
         if (!children.isEmpty() && !article.inhibitTableOfContents()) {
@@ -249,7 +229,7 @@ public final class Renderer {
         return Node.simple(Tag.ARTICLE, contents.toSeq());
     }
 
-    private @NotNull Node.Element renderArticleHeader(final @NotNull Article article) {
+    private Node.Element renderArticleHeader(final Article article) {
         final var contents = new Seq.Builder<Node>(Seq.of(renderHeading(Tag.H1, "#main", article.title())));
         if (headerRenderMode.shouldRender()) {
             contents.append(renderPublicationDate(article.date()));
@@ -261,7 +241,7 @@ public final class Renderer {
         return Node.simple(Tag.HEADER, contents.toSeq());
     }
 
-    private static @NotNull Node.Element renderPublicationDate(final @NotNull LocalDate date) {
+    private static Node.Element renderPublicationDate(final LocalDate date) {
         final var day = date.getDayOfMonth();
         final var daySuffix = switch (day % 10) {
             case 1 -> (day == 11) ? "th" : "st";
@@ -281,11 +261,11 @@ public final class Renderer {
         ));
     }
 
-    private static @NotNull String renderIsoDate(final @NotNull LocalDate date) {
+    private static String renderIsoDate(final LocalDate date) {
         return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
     }
 
-    private @Nullable Node.Element renderArticleTopics(final @NotNull Seq<String> topics) {
+    private @Nullable Node.Element renderArticleTopics(final Seq<String> topics) {
         if (topics.isEmpty()) {
             return null;
         }
@@ -301,7 +281,7 @@ public final class Renderer {
         return Node.simple(Tag.P, contents.toSeq());
     }
 
-    private static @NotNull Node.Element renderTableOfContents(final @NotNull Seq<Section> childrenOfRoot) {
+    private static Node.Element renderTableOfContents(final Seq<Section> childrenOfRoot) {
         return new Node.Element(
             Tag.NAV,
             Seq.of(Attribute.of("class", "toc"), Attribute.of("aria-labelledby", "toc-label")),
@@ -309,7 +289,7 @@ public final class Renderer {
         );
     }
 
-    private static @NotNull Node.Element renderTableOfContentsList(final @NotNull Seq<Section> children) {
+    private static Node.Element renderTableOfContentsList(final Seq<Section> children) {
         return Node.simple(Tag.OL, children.map(child -> {
             final var grandchildren = child.children();
             final var link = renderSimpleLink('#' + child.identifier().symbolName(), child.header());
@@ -320,7 +300,7 @@ public final class Renderer {
         }));
     }
 
-    private static @NotNull Node.Element renderSubsection(final @NotNull Section section, final int nestingLevel) {
+    private static Node.Element renderSubsection(final Section section, final int nestingLevel) {
         return new Node.Element(
             Tag.SECTION,
             Seq.of(Attribute.of("id", section.identifier().symbolName())),
@@ -330,17 +310,13 @@ public final class Renderer {
         );
     }
 
-    private static @NotNull Node.Element renderSectionHeader(final @NotNull Section section, final int nestingLevel) {
+    private static Node.Element renderSectionHeader(final Section section, final int nestingLevel) {
         final var headingTag = Tag.byHtmlName("h" + Math.min(nestingLevel, 6));
         assert headingTag != null;
         return renderHeading(headingTag, '#' + section.identifier().symbolName(), section.header());
     }
 
-    private static @NotNull Node.Element renderHeading(
-        final @NotNull Tag tag,
-        final @NotNull String target,
-        final @NotNull String text
-    ) {
+    private static Node.Element renderHeading(final Tag tag, final String target, final String text) {
         return Node.simple(tag, new Node.Element(
             Tag.A,
             Seq.of(Attribute.of("class", "section-link"), Attribute.of("href", target)),
@@ -348,11 +324,11 @@ public final class Renderer {
         ));
     }
 
-    private static @NotNull Node.Element renderSimpleLink(final @NotNull String href, final @NotNull String text) {
+    private static Node.Element renderSimpleLink(final String href, final String text) {
         return new Node.Element(Tag.A, Seq.of(Attribute.of("href", href)), Seq.of(new Node.Text(text)));
     }
 
-    private static @NotNull Node.Element renderBottomNav(
+    private static Node.Element renderBottomNav(
         final @Nullable DomainRelativeUri predecessorUri,
         final @Nullable DomainRelativeUri successorUri
     ) {
@@ -385,14 +361,14 @@ public final class Renderer {
         );
     }
 
-    private final @NotNull HeaderRenderMode headerRenderMode;
+    private final HeaderRenderMode headerRenderMode;
 
     private static final class LineNumberRenderer {
-        private LineNumberRenderer(final @NotNull Node.Element container) {
+        private LineNumberRenderer(final Node.Element container) {
             originalContainer = container;
         }
 
-        private @NotNull Node.Element render() {
+        private Node.Element render() {
             renderElement(new PendingElement(originalContainer, null));
             return new Node.Element(
                 originalContainer.tag(),
@@ -401,7 +377,7 @@ public final class Renderer {
             );
         }
 
-        private void renderElement(final @NotNull PendingElement element) {
+        private void renderElement(final PendingElement element) {
             for (final var child : element.original.children()) {
                 switch (child) {
                     case Node.Text node -> renderText(node, element);
@@ -411,7 +387,7 @@ public final class Renderer {
             closeElement(element);
         }
 
-        private void renderText(final @NotNull Node.Text textNode, final @NotNull PendingElement parent) {
+        private void renderText(final Node.Text textNode, final PendingElement parent) {
             final var string = textNode.text();
             final var length = string.length();
             final var firstLineFeedPosition = string.indexOf('\n');
@@ -435,13 +411,13 @@ public final class Renderer {
             }
         }
 
-        private void closeLine(final @NotNull PendingElement parent) {
+        private void closeLine(final PendingElement parent) {
             for (var it = parent; it != null; it = it.parent) {
                 closeElement(it);
             }
         }
 
-        private void closeElement(final @NotNull PendingElement element) {
+        private void closeElement(final PendingElement element) {
             final var children = element.newChildren.take();
             if (element.parent == null) {
                 if (!children.isEmpty()) {
@@ -456,29 +432,29 @@ public final class Renderer {
             }
         }
 
-        private void appendLine(final @NotNull Seq<@NotNull Node> nodes) {
+        private void appendLine(final Seq<Node> nodes) {
             newRootChildren.append(Constants.lineNumberMarker);
             newRootChildren.append(wrapLineContent(nodes));
         }
 
-        private static @NotNull Node.Element wrapLineContent(final @NotNull Seq<@NotNull Node> nodes) {
+        private static Node.Element wrapLineContent(final Seq<Node> nodes) {
             return (nodes.exactSize() == 1 && nodes.first() instanceof Node.Element element)
                 ? element
                 : Node.simple(Tag.SPAN, nodes);
         }
 
-        private final @NotNull Node.Element originalContainer;
-        private final @NotNull Seq.Builder<@NotNull Node> newRootChildren = new Seq.Builder<>();
+        private final Node.Element originalContainer;
+        private final Seq.Builder<Node> newRootChildren = new Seq.Builder<>();
 
         private static final class PendingElement {
-            private PendingElement(final @NotNull Node.Element original, final @Nullable PendingElement parent) {
+            private PendingElement(final Node.Element original, final @Nullable PendingElement parent) {
                 this.original = original;
                 this.parent = parent;
             }
 
-            private final @NotNull Node.Element original;
+            private final Node.Element original;
             private final @Nullable PendingElement parent;
-            private final @NotNull Seq.Builder<@NotNull Node> newChildren = new Seq.Builder<>();
+            private final Seq.Builder<Node> newChildren = new Seq.Builder<>();
         }
     }
 

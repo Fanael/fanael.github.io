@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.dom;
 
-import org.jetbrains.annotations.NotNull;
-
 sealed interface ChildContext permits Context, ChildContext.None, ChildContext.Transparent {
-    static @NotNull None none() {
+    static None none() {
         return None.instance;
     }
 
-    static @NotNull Transparent transparent() {
+    static Transparent transparent() {
         return Transparent.instance;
     }
 

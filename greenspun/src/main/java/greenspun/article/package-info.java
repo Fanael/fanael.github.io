@@ -4,4 +4,7 @@
 /**
  * Representation and handling of blog articles.
  */
+@NonNullByDefault
 package greenspun.article;
+
+import greenspun.util.annotation.NonNullByDefault;

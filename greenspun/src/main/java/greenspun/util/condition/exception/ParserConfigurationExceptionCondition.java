@@ -3,7 +3,6 @@
 package greenspun.util.condition.exception;
 
 import javax.xml.parsers.ParserConfigurationException;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A condition type indicating that there was a serious error with XML DOM parser configuration.
@@ -13,7 +12,7 @@ public final class ParserConfigurationExceptionCondition extends ExceptionCondit
      * Initializes a new {@code ParserConfigurationExceptionCondition} representing the given
      * {@link ParserConfigurationException}.
      */
-    public ParserConfigurationExceptionCondition(final @NotNull ParserConfigurationException exception) {
+    public ParserConfigurationExceptionCondition(final ParserConfigurationException exception) {
         super(exception);
     }
 }

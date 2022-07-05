@@ -14,13 +14,12 @@ import greenspun.pygments.PygmentsCache;
 import greenspun.pygments.PygmentsServer;
 import greenspun.pygments.ServerCodeTemporaryFile;
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class GeneratorTest {
     @Test
-    void matchesReference(@TempDir final @NotNull Path destinationDirectory) throws IOException {
+    void matchesReference(@TempDir final Path destinationDirectory) throws IOException {
         runGenerator(destinationDirectory);
         final var referenceFiles = getFileList(referenceDirectoryPath);
         final var actualFiles = getFileList(destinationDirectory);
@@ -30,7 +29,7 @@ final class GeneratorTest {
         }
     }
 
-    private static void runGenerator(final @NotNull Path destinationDirectory) {
+    private static void runGenerator(final Path destinationDirectory) {
         final var executorService = Executors.newSingleThreadExecutor();
         try (
             final var serverCode = ServerCodeTemporaryFile.save();
@@ -48,7 +47,7 @@ final class GeneratorTest {
         }
     }
 
-    private static void compareFile(final @NotNull Path referenceFilePath, final @NotNull Path actualFilePath) {
+    private static void compareFile(final Path referenceFilePath, final Path actualFilePath) {
         if (Files.isDirectory(referenceFilePath)) {
             Assertions.assertThat(actualFilePath).isDirectory();
         } else {
@@ -58,7 +57,7 @@ final class GeneratorTest {
         }
     }
 
-    private static @NotNull List<Path> getFileList(final @NotNull Path directory) throws IOException {
+    private static List<Path> getFileList(final Path directory) throws IOException {
         try (final var stream = Files.walk(directory)) {
             return stream.map(directory::relativize).sorted().toList();
         }

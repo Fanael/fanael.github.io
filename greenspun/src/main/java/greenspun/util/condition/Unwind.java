@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.condition;
 
-import org.jetbrains.annotations.NotNull;
-
 /**
  * Throwable type used internally by the restart mechanism for transferring control flow to a given restart point.
  * <p>
@@ -20,16 +18,16 @@ import org.jetbrains.annotations.NotNull;
  */
 @SuppressWarnings("ExtendsThrowable")
 public final class Unwind extends Throwable {
-    Unwind(final @NotNull Restart target) {
+    Unwind(final Restart target) {
         super("Unwinding to a restart point");
         this.target = target;
     }
 
-    @NotNull Restart target() {
+    Restart target() {
         return target;
     }
 
     // Mark it as transient mostly to silence static analysis warnings: unwinds are not intended to be serializable,
     // they just unfortunately inherit serializability from Throwable.
-    private final transient @NotNull Restart target;
+    private final transient Restart target;
 }

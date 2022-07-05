@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.condition;
 
-import org.jetbrains.annotations.NotNull;
-
 /**
  * A functional interface representing {@link Handler} procedures.
  */
@@ -16,7 +14,7 @@ public interface HandlerProcedure {
      * non-local control flow transfer, for example by transferring control to a restart point by using
      * {@link Restart#unwindTo()} or throwing an exception.
      */
-    void handle(@NotNull SignaledCondition condition);
+    void handle(SignaledCondition condition);
 
     /**
      * A functional interface representing a {@link Handler} procedure that is thread-safe.

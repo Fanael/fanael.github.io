@@ -10,7 +10,6 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.concurrent.locks.ReentrantLock;
 import greenspun.util.SneakyThrow;
-import org.jetbrains.annotations.NotNull;
 
 final class Streams implements AutoCloseable {
     // The corresponding unlock is in close(), so this is fine.
@@ -23,7 +22,7 @@ final class Streams implements AutoCloseable {
         }
     }
 
-    static @NotNull Streams acquire() {
+    static Streams acquire() {
         return new Streams();
     }
 
@@ -33,23 +32,23 @@ final class Streams implements AutoCloseable {
     }
 
     @SuppressWarnings({"MethodMayBeStatic", "SameReturnValue", "UseOfSystemOutOrSystemErr"})
-    @NotNull PrintStream out() {
+    PrintStream out() {
         return System.out;
     }
 
     @SuppressWarnings({"MethodMayBeStatic", "SameReturnValue", "UseOfSystemOutOrSystemErr"})
-    @NotNull PrintStream err() {
+    PrintStream err() {
         return System.err;
     }
 
     @SuppressWarnings("MethodMayBeStatic")
-    @NotNull BufferedReader in() {
+    BufferedReader in() {
         return Holder.inputReader;
     }
 
     // Put the state in a separate class for lazy initialization.
     private static final class Holder {
-        private static @NotNull Charset getInputCharset() {
+        private static Charset getInputCharset() {
             final var console = System.console();
             return (console == null) ? Charset.defaultCharset() : console.charset();
         }
@@ -61,12 +60,12 @@ final class Streams implements AutoCloseable {
 
     private static final class StandardInput extends InputStream {
         @Override
-        public int read(final byte @NotNull [] bytes) throws IOException {
+        public int read(final byte[] bytes) throws IOException {
             return System.in.read(bytes);
         }
 
         @Override
-        public int read(final byte @NotNull [] bytes, final int offset, final int length) throws IOException {
+        public int read(final byte[] bytes, final int offset, final int length) throws IOException {
             return System.in.read(bytes, offset, length);
         }
 

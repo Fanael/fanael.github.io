@@ -4,4 +4,7 @@
 /**
  * More pedantic than probably necessary DOM representation.
  */
+@NonNullByDefault
 package greenspun.dom;
+
+import greenspun.util.annotation.NonNullByDefault;

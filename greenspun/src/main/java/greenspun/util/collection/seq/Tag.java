@@ -3,27 +3,28 @@
 package greenspun.util.collection.seq;
 
 import java.util.Arrays;
-import org.jetbrains.annotations.NotNull;
+import greenspun.util.annotation.NonNullByDefault;
 
+@NonNullByDefault
 abstract sealed class Tag<T, Phantom> {
     @SuppressWarnings("unchecked")
-    static <T> @NotNull Tag<T, Object> unit() {
+    static <T> Tag<T, Object> unit() {
         return (UnitImpl<T>) UnitImpl.instance;
     }
 
     @SuppressWarnings("unchecked")
-    static <T> @NotNull Tag<@NotNull Chunk<T>, Chunk<?>> chunk() {
+    static <T> Tag<Chunk<T>, Chunk<?>> chunk() {
         return (ChunkImpl<T>) ChunkImpl.instance;
     }
 
     // NB: this would've been highly dangerous, as in ClassCastException galore, if not for the fact that the phantom
     // parameter stays the same.
     @SuppressWarnings("unchecked")
-    final <U> @NotNull Tag<U, Phantom> cast() {
+    final <U> Tag<U, Phantom> cast() {
         return (Tag<U, Phantom>) this;
     }
 
-    final @NotNull ArraySplit<T> splitArray(final T @NotNull [] array, final int index) {
+    final ArraySplit<T> splitArray(final T[] array, final int index) {
         final var length = array.length;
         final var midpoint = Math.min(index, length - 1);
         final var front = (midpoint > 0) ? Arrays.copyOf(array, midpoint) : emptyArray();
@@ -33,20 +34,20 @@ abstract sealed class Tag<T, Phantom> {
 
     abstract long measureSingle(T object);
 
-    abstract long measureArray(T @NotNull [] array);
+    abstract long measureArray(T[] array);
 
-    abstract @NotNull SplitPoint findSplitPoint(T @NotNull [] array, long index, long initialAccumulator);
+    abstract SplitPoint findSplitPoint(T[] array, long index, long initialAccumulator);
 
-    abstract @NotNull Shallow<T, Phantom> emptySeq();
+    abstract Shallow<T, Phantom> emptySeq();
 
-    abstract T @NotNull [] emptyArray();
+    abstract T[] emptyArray();
 
-    abstract T @NotNull [] unitArray(T object);
+    abstract T[] unitArray(T object);
 
     record SplitPoint(int index, long accumulator) {
     }
 
-    record ArraySplit<T>(T @NotNull [] front, T middle, T @NotNull [] back) {
+    record ArraySplit<T>(T[] front, T middle, T[] back) {
     }
 
     private static final class UnitImpl<T> extends Tag<T, Object> {
@@ -56,12 +57,12 @@ abstract sealed class Tag<T, Phantom> {
         }
 
         @Override
-        long measureArray(final T @NotNull [] array) {
+        long measureArray(final T[] array) {
             return array.length;
         }
 
         @Override
-        @NotNull SplitPoint findSplitPoint(final T @NotNull [] array, final long index, final long initialAccumulator) {
+        SplitPoint findSplitPoint(final T[] array, final long index, final long initialAccumulator) {
             final var distance = index - initialAccumulator;
             final var length = array.length;
             final var inBounds = (distance < length) ? 1 : 0;
@@ -70,19 +71,19 @@ abstract sealed class Tag<T, Phantom> {
         }
 
         @Override
-        @NotNull Shallow<T, Object> emptySeq() {
+        Shallow<T, Object> emptySeq() {
             return Shallow.emptyUnit();
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        T @NotNull [] emptyArray() {
+        T[] emptyArray() {
             return (T[]) emptyArray;
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        T @NotNull [] unitArray(final T object) {
+        T[] unitArray(final T object) {
             return (T[]) new Object[]{object};
         }
 
@@ -90,14 +91,14 @@ abstract sealed class Tag<T, Phantom> {
         private static final UnitImpl<?> instance = new UnitImpl<>();
     }
 
-    private static final class ChunkImpl<T> extends Tag<@NotNull Chunk<T>, Chunk<?>> {
+    private static final class ChunkImpl<T> extends Tag<Chunk<T>, Chunk<?>> {
         @Override
-        long measureSingle(final @NotNull Chunk<T> object) {
+        long measureSingle(final Chunk<T> object) {
             return object.subtreeSize;
         }
 
         @Override
-        long measureArray(final @NotNull Chunk<T> @NotNull [] array) {
+        long measureArray(final Chunk<T>[] array) {
             long sum = 0;
             for (final var chunk : array) {
                 sum += chunk.subtreeSize;
@@ -106,11 +107,7 @@ abstract sealed class Tag<T, Phantom> {
         }
 
         @Override
-        @NotNull SplitPoint findSplitPoint(
-            final @NotNull Chunk<T> @NotNull [] array,
-            final long index,
-            final long initialAccumulator
-        ) {
+        SplitPoint findSplitPoint(final Chunk<T>[] array, final long index, final long initialAccumulator) {
             var accumulator = initialAccumulator;
             int i = 0;
             final var length = array.length;
@@ -124,19 +121,19 @@ abstract sealed class Tag<T, Phantom> {
         }
 
         @Override
-        @NotNull Shallow<@NotNull Chunk<T>, Chunk<?>> emptySeq() {
+        Shallow<Chunk<T>, Chunk<?>> emptySeq() {
             return Shallow.emptyChunk();
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        @NotNull Chunk<T> @NotNull [] emptyArray() {
+        Chunk<T>[] emptyArray() {
             return (Chunk<T>[]) emptyArray;
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        @NotNull Chunk<T> @NotNull [] unitArray(final @NotNull Chunk<T> object) {
+        Chunk<T>[] unitArray(final Chunk<T> object) {
             return (Chunk<T>[]) new Chunk<?>[]{object};
         }
 

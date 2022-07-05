@@ -6,16 +6,18 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import greenspun.util.annotation.NonNull;
+import greenspun.util.annotation.NonNullByDefault;
+import greenspun.util.annotation.Nullable;
 
+@NonNullByDefault
 final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     Deep(
-        final @NotNull Tag<T, Phantom> tag,
+        final Tag<T, Phantom> tag,
         final long subtreeSize,
-        final T @NotNull [] prefix,
-        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle,
-        final T @NotNull [] suffix
+        final T[] prefix,
+        final TaggedSeq<Chunk<T>, Chunk<?>> middle,
+        final T[] suffix
     ) {
         super(tag, subtreeSize);
         this.prefix = prefix;
@@ -25,19 +27,19 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    public @NotNull Seq.Itr<T> iterator() {
+    public @NonNull Seq.Itr<T> iterator() {
         return new Itr<>(this);
     }
 
     @Override
-    public boolean anySatisfies(final @NotNull Predicate<? super T> predicate) {
+    public boolean anySatisfies(final Predicate<? super T> predicate) {
         return ArrayOps.anySatisfies(prefix, predicate)
             || ArrayOps.anySatisfies(suffix, predicate)
             || middle.anySatisfies(chunk -> ArrayOps.anySatisfies(chunk.values, predicate));
     }
 
     @Override
-    public <U> @NotNull TaggedSeq<U, Phantom> map(final @NotNull Function<? super T, ? extends U> function) {
+    public <U> TaggedSeq<U, Phantom> map(final Function<? super T, ? extends U> function) {
         final var newTag = tag.<U>cast();
         final var newPrefix = ArrayOps.map(prefix, function);
         final var newMiddle = middle.map(chunk -> chunk.map(newTag, function));
@@ -56,50 +58,50 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    public @NotNull TaggedSeq<T, Phantom> updatedFirst(final T object) {
+    public @NonNull TaggedSeq<T, Phantom> updatedFirst(final T object) {
         final var newSize = updateSize(object, first());
         return withNewFront(newSize, ArrayOps.updated(prefix, 0, object), middle);
     }
 
     @Override
-    public @NotNull TaggedSeq<T, Phantom> updatedLast(final T object) {
+    public @NonNull TaggedSeq<T, Phantom> updatedLast(final T object) {
         final var newSize = updateSize(object, last());
         return withNewBack(newSize, middle, ArrayOps.updated(suffix, suffix.length - 1, object));
     }
 
     @Override
-    public @NotNull TaggedSeq<T, Phantom> prepended(final T object) {
+    public @NonNull TaggedSeq<T, Phantom> prepended(final T object) {
         final var size = addToSize(object);
         return (prefix.length < maxAffixLength) ? prependedSimple(size, object) : prependedRecursive(size, object);
     }
 
     @Override
-    public @NotNull TaggedSeq<T, Phantom> appended(final T object) {
+    public @NonNull TaggedSeq<T, Phantom> appended(final T object) {
         final var size = addToSize(object);
         return (suffix.length < maxAffixLength) ? appendedSimple(size, object) : appendedRecursive(size, object);
     }
 
     @Override
-    public @NotNull TaggedSeq<T, Phantom> withoutFirst() {
+    public @NonNull TaggedSeq<T, Phantom> withoutFirst() {
         final var newSize = subtractFromSize(first());
         return (prefix.length > 1) ? withoutFirstSimple(newSize) : withoutFirstNoPrefix(newSize);
     }
 
     @Override
-    public @NotNull TaggedSeq<T, Phantom> withoutLast() {
+    public @NonNull TaggedSeq<T, Phantom> withoutLast() {
         final var newSize = subtractFromSize(last());
         return (suffix.length > 1) ? withoutLastSimple(newSize) : withoutLastNoSuffix(newSize);
     }
 
     @Override
-    void forEachArray(final @NotNull ArrayConsumer<T> action) {
+    void forEachArray(final ArrayConsumer<T> action) {
         action.accept(prefix);
         middle.forEachArray(chunks -> ArrayOps.forEach(chunks, chunk -> action.accept(chunk.values)));
         action.accept(suffix);
     }
 
     @Override
-    @NotNull GetResult<T> getImpl(final long index, final long accumulator) {
+    @NonNull GetResult<T> getImpl(final long index, final long accumulator) {
         final var prefixSplitPoint = tag.findSplitPoint(prefix, index, accumulator);
         final var prefixSize = prefixSplitPoint.accumulator();
         if (index < prefixSize) {
@@ -122,13 +124,13 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    T @NotNull [] toSmallArray() {
+    T @NonNull [] toSmallArray() {
         assert eligibleForInsertionSort();
         return ArrayOps.concat(prefix, suffix);
     }
 
     @Override
-    @NotNull TaggedSeq<T, Phantom> concatImpl(final @NotNull TaggedSeq<T, Phantom> other) {
+    TaggedSeq<T, Phantom> concatImpl(final TaggedSeq<T, Phantom> other) {
         return switch (other) {
             case Shallow<T, Phantom> shallow -> appendedShallow(shallow);
             case Deep<T, Phantom> deep -> appendedDeep(deep);
@@ -136,7 +138,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    @NotNull TreeSplit<T, Phantom> splitTree(final long index, final long accumulator) {
+    TreeSplit<T, Phantom> splitTree(final long index, final long accumulator) {
         final var prefixSplitPoint = tag.findSplitPoint(prefix, index, accumulator);
         final var prefixSize = prefixSplitPoint.accumulator();
         if (index < prefixSize) {
@@ -149,7 +151,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return splitTreeAtSuffix(accumulator, index, frontSize);
     }
 
-    @NotNull Deep<T, Phantom> prependedShallow(final @NotNull Shallow<T, Phantom> other) {
+    Deep<T, Phantom> prependedShallow(final Shallow<T, Phantom> other) {
         if (other.isEmpty()) {
             return this;
         }
@@ -164,44 +166,44 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
     }
 
-    private @NotNull Deep<T, Phantom> prependedSimple(final long newSize, final T object) {
+    private Deep<T, Phantom> prependedSimple(final long newSize, final T object) {
         return withNewFront(newSize, ArrayOps.prepended(prefix, object), middle);
     }
 
-    private @NotNull Deep<T, Phantom> prependedRecursive(final long newSize, final T object) {
+    private Deep<T, Phantom> prependedRecursive(final long newSize, final T object) {
         final var length = prefix.length;
         final var newPrefix = ArrayOps.prependedSlice(prefix, object);
         final var newChunk = makeChunk(Arrays.copyOfRange(prefix, length - maxChunkLength, length));
         return withNewFront(newSize, newPrefix, middle.prepended(newChunk));
     }
 
-    private @NotNull Deep<T, Phantom> appendedSimple(final long newSize, final T object) {
+    private Deep<T, Phantom> appendedSimple(final long newSize, final T object) {
         return withNewBack(newSize, middle, ArrayOps.appended(suffix, object));
     }
 
-    private @NotNull Deep<T, Phantom> appendedRecursive(final long newSize, final T object) {
+    private Deep<T, Phantom> appendedRecursive(final long newSize, final T object) {
         final var newSuffix = ArrayOps.appendedSlice(suffix, object);
         final var newChunk = makeChunk(Arrays.copyOf(suffix, maxChunkLength));
         return withNewBack(newSize, middle.appended(newChunk), newSuffix);
     }
 
-    private @NotNull Deep<T, Phantom> withoutFirstSimple(final long newSize) {
+    private Deep<T, Phantom> withoutFirstSimple(final long newSize) {
         return withNewFront(newSize, Arrays.copyOfRange(prefix, 1, prefix.length), middle);
     }
 
-    private @NotNull TaggedSeq<T, Phantom> withoutFirstNoPrefix(final long newSize) {
+    private TaggedSeq<T, Phantom> withoutFirstNoPrefix(final long newSize) {
         return fromEmptyPrefix(tag, newSize, middle, suffix);
     }
 
-    private @NotNull Deep<T, Phantom> withoutLastSimple(final long newSize) {
+    private Deep<T, Phantom> withoutLastSimple(final long newSize) {
         return withNewBack(newSize, middle, Arrays.copyOf(suffix, suffix.length - 1));
     }
 
-    private @NotNull TaggedSeq<T, Phantom> withoutLastNoSuffix(final long newSize) {
+    private TaggedSeq<T, Phantom> withoutLastNoSuffix(final long newSize) {
         return fromEmptySuffix(tag, newSize, prefix, middle);
     }
 
-    private @NotNull Deep<T, Phantom> appendedShallow(final @NotNull Shallow<T, Phantom> other) {
+    private Deep<T, Phantom> appendedShallow(final Shallow<T, Phantom> other) {
         if (other.isEmpty()) {
             return this;
         }
@@ -215,14 +217,14 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
     }
 
-    private @NotNull Deep<T, Phantom> appendedDeep(final @NotNull Deep<T, Phantom> other) {
+    private Deep<T, Phantom> appendedDeep(final Deep<T, Phantom> other) {
         final var newSize = computeNewSize(other.subtreeSize);
         return (suffix.length + other.prefix.length >= minChunkLength)
             ? concatAddingInfix(newSize, other)
             : concatPartial(newSize, other);
     }
 
-    private @NotNull Deep<T, Phantom> concatAddingInfix(final long newSize, final @NotNull Deep<T, Phantom> other) {
+    private Deep<T, Phantom> concatAddingInfix(final long newSize, final Deep<T, Phantom> other) {
         // The infix is long enough that it can be turned into one to three chunks.
         final var infixLength = suffix.length + other.prefix.length;
         if (infixLength <= maxChunkLength) {
@@ -248,22 +250,22 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return withNewBack(newSize, newOurMiddle.concat(newTheirMiddle), other.suffix);
     }
 
-    private @NotNull Deep<T, Phantom> concatPartial(final long newSize, final @NotNull Deep<T, Phantom> other) {
+    private Deep<T, Phantom> concatPartial(final long newSize, final Deep<T, Phantom> other) {
         final var front = mergeShortSuffix();
         final var back = other.mergeShortPrefix();
         final var newMiddle = front.middle.concat(back.middle);
         return new Deep<>(tag, newSize, front.prefix, newMiddle, back.suffix);
     }
 
-    private @NotNull PartialBack<T> mergeShortPrefix() {
+    private PartialBack<T> mergeShortPrefix() {
         return middle.isEmpty() ? mergeShortPrefixWithSuffix() : mergeShortPrefixWithMiddle();
     }
 
-    private @NotNull PartialFront<T> mergeShortSuffix() {
+    private PartialFront<T> mergeShortSuffix() {
         return middle.isEmpty() ? mergeShortSuffixWithPrefix() : mergeShortSuffixWithMiddle();
     }
 
-    private @NotNull PartialBack<T> mergeShortPrefixWithSuffix() {
+    private PartialBack<T> mergeShortPrefixWithSuffix() {
         assert middle.isEmpty();
         final var totalLength = prefix.length + suffix.length;
         if (totalLength <= maxChunkLength) {
@@ -273,7 +275,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new PartialBack<>(Shallow.ofChunk(makeChunk(split.front())), split.back());
     }
 
-    private @NotNull PartialFront<T> mergeShortSuffixWithPrefix() {
+    private PartialFront<T> mergeShortSuffixWithPrefix() {
         assert middle.isEmpty();
         final var totalLength = prefix.length + suffix.length;
         if (totalLength <= maxChunkLength) {
@@ -283,7 +285,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new PartialFront<>(split.front(), Shallow.ofChunk(makeChunk(split.back())));
     }
 
-    private @NotNull PartialBack<T> mergeShortPrefixWithMiddle() {
+    private PartialBack<T> mergeShortPrefixWithMiddle() {
         final var firstChunk = middle.first().values;
         final var totalLength = prefix.length + firstChunk.length;
         if (totalLength <= maxChunkLength) {
@@ -297,7 +299,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new PartialBack<>(newMiddle, suffix);
     }
 
-    private @NotNull PartialFront<T> mergeShortSuffixWithMiddle() {
+    private PartialFront<T> mergeShortSuffixWithMiddle() {
         final var lastChunk = middle.last().values;
         final var totalLength = lastChunk.length + suffix.length;
         if (totalLength <= maxChunkLength) {
@@ -311,10 +313,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new PartialFront<>(prefix, newMiddle);
     }
 
-    private @NotNull TreeSplit<T, Phantom> splitTreeAtPrefix(
-        final long initialAccumulator,
-        final @NotNull Tag.SplitPoint splitPoint
-    ) {
+    private TreeSplit<T, Phantom> splitTreeAtPrefix(final long initialAccumulator, final Tag.SplitPoint splitPoint) {
         final var split = tag.splitArray(prefix, splitPoint.index());
         final var middle = split.middle();
         final var middleSize = tag.measureSingle(middle);
@@ -325,7 +324,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new TreeSplit<>(front, middle, back);
     }
 
-    private @NotNull TreeSplit<T, Phantom> splitTreeRecursively(
+    private TreeSplit<T, Phantom> splitTreeRecursively(
         final long initialAccumulator,
         final long index,
         final long prefixSize
@@ -343,7 +342,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new TreeSplit<>(front, middle, back);
     }
 
-    private @NotNull TreeSplit<T, Phantom> splitTreeAtSuffix(
+    private TreeSplit<T, Phantom> splitTreeAtSuffix(
         final long initialAccumulator,
         final long index,
         final long originalFrontSize
@@ -359,11 +358,11 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new TreeSplit<>(front, middle, back);
     }
 
-    private static <T, Phantom> @NotNull TaggedSeq<T, Phantom> fromEmptyPrefix(
-        final @NotNull Tag<T, Phantom> tag,
+    private static <T, Phantom> TaggedSeq<T, Phantom> fromEmptyPrefix(
+        final Tag<T, Phantom> tag,
         final long newSize,
-        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle,
-        final T @NotNull [] suffix
+        final TaggedSeq<Chunk<T>, Chunk<?>> middle,
+        final T[] suffix
     ) {
         if (middle.isEmpty()) {
             return fromSingleArray(tag, newSize, suffix);
@@ -373,11 +372,11 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new Deep<>(tag, newSize, newPrefix, newMiddle, suffix);
     }
 
-    private static <T, Phantom> @NotNull TaggedSeq<T, Phantom> fromEmptySuffix(
-        final @NotNull Tag<T, Phantom> tag,
+    private static <T, Phantom> TaggedSeq<T, Phantom> fromEmptySuffix(
+        final Tag<T, Phantom> tag,
         final long newSize,
-        final T @NotNull [] prefix,
-        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle
+        final T[] prefix,
+        final TaggedSeq<Chunk<T>, Chunk<?>> middle
     ) {
         if (middle.isEmpty()) {
             return fromSingleArray(tag, newSize, prefix);
@@ -387,50 +386,50 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new Deep<>(tag, newSize, prefix, newMiddle, newSuffix);
     }
 
-    private static <T, Phantom> @NotNull TaggedSeq<T, Phantom> fromUnknownPrefix(
-        final @NotNull Tag<T, Phantom> tag,
+    private static <T, Phantom> TaggedSeq<T, Phantom> fromUnknownPrefix(
+        final Tag<T, Phantom> tag,
         final long newSize,
-        final T @NotNull [] prefix,
-        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle,
-        final T @NotNull [] suffix
+        final T[] prefix,
+        final TaggedSeq<Chunk<T>, Chunk<?>> middle,
+        final T[] suffix
     ) {
         return (prefix.length == 0)
             ? fromEmptyPrefix(tag, newSize, middle, suffix)
             : new Deep<>(tag, newSize, prefix, middle, suffix);
     }
 
-    private static <T, Phantom> @NotNull TaggedSeq<T, Phantom> fromUnknownSuffix(
-        final @NotNull Tag<T, Phantom> tag,
+    private static <T, Phantom> TaggedSeq<T, Phantom> fromUnknownSuffix(
+        final Tag<T, Phantom> tag,
         final long newSize,
-        final T @NotNull [] prefix,
-        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle,
-        final T @NotNull [] suffix
+        final T[] prefix,
+        final TaggedSeq<Chunk<T>, Chunk<?>> middle,
+        final T[] suffix
     ) {
         return (suffix.length == 0)
             ? fromEmptySuffix(tag, newSize, prefix, middle)
             : new Deep<>(tag, newSize, prefix, middle, suffix);
     }
 
-    private @NotNull Deep<T, Phantom> withNewFront(
+    private Deep<T, Phantom> withNewFront(
         final long newSize,
-        final T @NotNull [] newPrefix,
-        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> newMiddle
+        final T[] newPrefix,
+        final TaggedSeq<Chunk<T>, Chunk<?>> newMiddle
     ) {
         return new Deep<>(tag, newSize, newPrefix, newMiddle, suffix);
     }
 
-    private @NotNull Deep<T, Phantom> withNewBack(
+    private Deep<T, Phantom> withNewBack(
         final long newSize,
-        final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> newMiddle,
-        final T @NotNull [] newSuffix
+        final TaggedSeq<Chunk<T>, Chunk<?>> newMiddle,
+        final T[] newSuffix
     ) {
         return new Deep<>(tag, newSize, prefix, newMiddle, newSuffix);
     }
 
-    private static <T, Phantom> @NotNull TaggedSeq<T, Phantom> fromSingleArray(
-        final @NotNull Tag<T, Phantom> tag,
+    private static <T, Phantom> TaggedSeq<T, Phantom> fromSingleArray(
+        final Tag<T, Phantom> tag,
         final long newSize,
-        final T @NotNull [] array
+        final T[] array
     ) {
         if (array.length <= maxElementsToShrink) {
             return (array.length != 0) ? new Shallow<>(tag, newSize, array) : tag.emptySeq();
@@ -439,7 +438,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         return new Deep<>(tag, newSize, split.front(), Shallow.emptyChunk(), split.back());
     }
 
-    private @NotNull Chunk<T> makeChunk(final T @NotNull [] array) {
+    private Chunk<T> makeChunk(final T[] array) {
         return new Chunk<>(tag, array);
     }
 
@@ -460,12 +459,12 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     // The number of elements below which removals are allowed to turn deep sequences into shallow ones.
     private static final int maxElementsToShrink = minChunkLength;
 
-    private final T @NotNull [] prefix;
-    private final @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle;
-    private final T @NotNull [] suffix;
+    private final T[] prefix;
+    private final TaggedSeq<Chunk<T>, Chunk<?>> middle;
+    private final T[] suffix;
 
     static final class Itr<T> extends Seq.Itr<T> {
-        private Itr(final @NotNull Deep<T, ?> parent) {
+        private Itr(final Deep<T, ?> parent) {
             assert parent.tag == Tag.unit();
             array = parent.prefix;
             remainingMiddle = parent.middle;
@@ -493,7 +492,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
 
         @Override
-        void forEachRemainingImpl(final @NotNull Consumer<? super T> action) {
+        void forEachRemainingImpl(final Consumer<? super T> action) {
             while (true) {
                 ArrayOps.forEachFrom(array, index, action);
                 sequenceIndex += array.length - index;
@@ -533,16 +532,16 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
 
         private int index = 0;
-        private T @NotNull [] array;
+        private T[] array;
         private long sequenceIndex = 0;
-        private @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> remainingMiddle;
+        private TaggedSeq<Chunk<T>, Chunk<?>> remainingMiddle;
         private T @Nullable [] remainingSuffix;
 
     }
 
-    private record PartialFront<T>(T @NotNull [] prefix, @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle) {
+    private record PartialFront<T>(T[] prefix, TaggedSeq<Chunk<T>, Chunk<?>> middle) {
     }
 
-    private record PartialBack<T>(@NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle, T @NotNull [] suffix) {
+    private record PartialBack<T>(TaggedSeq<Chunk<T>, Chunk<?>> middle, T[] suffix) {
     }
 }

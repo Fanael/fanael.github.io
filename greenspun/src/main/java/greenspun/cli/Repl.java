@@ -13,14 +13,13 @@ import greenspun.pygments.PygmentsServer;
 import greenspun.util.Trace;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.exception.IOExceptionCondition;
-import org.jetbrains.annotations.NotNull;
 
 final class Repl {
     Repl(
-        final @NotNull Path sourceDirectory,
-        final @NotNull Path destinationDirectory,
-        final @NotNull ExecutorService executorService,
-        final @NotNull PygmentsServer pygmentsServer
+        final Path sourceDirectory,
+        final Path destinationDirectory,
+        final ExecutorService executorService,
+        final PygmentsServer pygmentsServer
     ) {
         pygmentsCache = new PygmentsCache(pygmentsServer);
         generator = new Generator(sourceDirectory, destinationDirectory, executorService, pygmentsCache);
@@ -52,13 +51,13 @@ final class Repl {
         });
     }
 
-    private static void unknownCommand(final @NotNull String command) {
+    private static void unknownCommand(final String command) {
         try (final var streams = Streams.acquire()) {
             streams.out().println("Unknown command: " + command);
         }
     }
 
-    private static @NotNull String readCommand() {
+    private static String readCommand() {
         try (final var trace = new Trace("Reading a command")) {
             trace.use();
             try (final var streams = Streams.acquire()) {
@@ -73,6 +72,6 @@ final class Repl {
         }
     }
 
-    private final @NotNull PygmentsCache pygmentsCache;
-    private final @NotNull Generator generator;
+    private final PygmentsCache pygmentsCache;
+    private final Generator generator;
 }

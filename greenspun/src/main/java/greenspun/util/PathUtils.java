@@ -3,7 +3,6 @@
 package greenspun.util;
 
 import java.nio.file.Path;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A utility class containing miscellaneous operations on paths.
@@ -19,7 +18,7 @@ public final class PathUtils {
      * <p>
      * If the file name has no extension, the new extension is appended.
      */
-    public static @NotNull Path changeExtension(final @NotNull Path path, final @NotNull String newExtension) {
+    public static Path changeExtension(final Path path, final String newExtension) {
         final var fileName = path.getFileName();
         if (fileName == null) {
             return path;

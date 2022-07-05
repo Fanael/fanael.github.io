@@ -3,11 +3,10 @@
 package greenspun.generator;
 
 import greenspun.article.Article;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import greenspun.util.annotation.Nullable;
 
 record ArticleToRender(
-    @NotNull Article article,
+    Article article,
     @Nullable DomainRelativeUri predecessorUri,
     @Nullable DomainRelativeUri successorUri
 ) {

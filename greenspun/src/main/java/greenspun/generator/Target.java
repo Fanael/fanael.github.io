@@ -3,7 +3,6 @@
 package greenspun.generator;
 
 import java.nio.file.Path;
-import org.jetbrains.annotations.NotNull;
 
-record Target(@NotNull Path sourcePath, @NotNull Path destinationPath) {
+record Target(Path sourcePath, Path destinationPath) {
 }

@@ -5,14 +5,13 @@ package greenspun.generator;
 
 import java.nio.file.Path;
 import greenspun.util.collection.seq.Seq;
-import org.jetbrains.annotations.NotNull;
 
 record Targets(
-    @NotNull Seq<@NotNull Path> filesToUnlink,
-    @NotNull Seq<@NotNull Path> directoriesToUnlink,
-    @NotNull Seq<@NotNull Path> directoriesToCreate,
-    @NotNull Seq<@NotNull Target> staticTargets,
-    @NotNull Seq<@NotNull Target> pageTargets,
-    @NotNull Seq<@NotNull Target> articleTargets
+    Seq<Path> filesToUnlink,
+    Seq<Path> directoriesToUnlink,
+    Seq<Path> directoriesToCreate,
+    Seq<Target> staticTargets,
+    Seq<Target> pageTargets,
+    Seq<Target> articleTargets
 ) {
 }

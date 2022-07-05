@@ -3,7 +3,6 @@
 package greenspun.dom;
 
 import greenspun.util.collection.seq.Seq;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * The base class for DOM tree nodes.
@@ -16,31 +15,28 @@ public abstract sealed class Node {
     /**
      * Returns a new DOM element node representing the given tag, with given attributes and no children.
      */
-    public static @NotNull Element empty(
-        final @NotNull Tag tag,
-        final @NotNull Seq<@NotNull Attribute> attributes
-    ) {
+    public static Element empty(final Tag tag, final Seq<Attribute> attributes) {
         return new Element(tag, attributes, Seq.empty());
     }
 
     /**
      * Returns a new DOM element node representing the given tag, with given attribute and no children.
      */
-    public static @NotNull Element empty(final @NotNull Tag tag, final @NotNull Attribute attribute) {
+    public static Element empty(final Tag tag, final Attribute attribute) {
         return new Element(tag, Seq.of(attribute), Seq.empty());
     }
 
     /**
      * Returns a new DOM element node representing the given tag, with given children and no attributes.
      */
-    public static @NotNull Element simple(final @NotNull Tag tag, final @NotNull Seq<@NotNull Node> children) {
+    public static Element simple(final Tag tag, final Seq<Node> children) {
         return new Element(tag, Seq.empty(), children);
     }
 
     /**
      * Returns a new DOM element node representing the given tag, with a single child and no attributes.
      */
-    public static @NotNull Element simple(final @NotNull Tag tag, final @NotNull Node child) {
+    public static Element simple(final Tag tag, final Node child) {
         return new Element(tag, Seq.empty(), Seq.of(child));
     }
 
@@ -51,18 +47,18 @@ public abstract sealed class Node {
         /**
          * Initializes a new text node representing the given text.
          */
-        public Text(final @NotNull String text) {
+        public Text(final String text) {
             this.text = text;
         }
 
         /**
          * Retrieves the represented text.
          */
-        public @NotNull String text() {
+        public String text() {
             return text;
         }
 
-        private final @NotNull String text;
+        private final String text;
     }
 
     /**
@@ -72,11 +68,7 @@ public abstract sealed class Node {
         /**
          * Creates a new DOM element node representing the given tag, with given attributes and children.
          */
-        public Element(
-            final @NotNull Tag tag,
-            final @NotNull Seq<@NotNull Attribute> attributes,
-            final @NotNull Seq<@NotNull Node> children
-        ) {
+        public Element(final Tag tag, final Seq<Attribute> attributes, final Seq<Node> children) {
             this.tag = tag;
             this.attributes = attributes;
             this.children = children;
@@ -85,26 +77,26 @@ public abstract sealed class Node {
         /**
          * Returns the HTML tag this element represents.
          */
-        public @NotNull Tag tag() {
+        public Tag tag() {
             return tag;
         }
 
         /**
          * Retrieves the immutable sequence of all attributes of this element.
          */
-        public @NotNull Seq<@NotNull Attribute> attributes() {
+        public Seq<Attribute> attributes() {
             return attributes;
         }
 
         /**
          * Retrieves the immutable sequence of all children of this element.
          */
-        public @NotNull Seq<@NotNull Node> children() {
+        public Seq<Node> children() {
             return children;
         }
 
-        private final @NotNull Tag tag;
-        private final @NotNull Seq<@NotNull Attribute> attributes;
-        private final @NotNull Seq<@NotNull Node> children;
+        private final Tag tag;
+        private final Seq<Attribute> attributes;
+        private final Seq<Node> children;
     }
 }

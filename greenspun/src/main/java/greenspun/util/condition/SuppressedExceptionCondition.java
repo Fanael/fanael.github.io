@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.condition;
 
-import org.jetbrains.annotations.NotNull;
-
 /**
  * A condition type indicating that an exception has been suppressed during a cleanup operation.
  * <p>
@@ -16,7 +14,7 @@ public final class SuppressedExceptionCondition extends Condition {
     /**
      * Initializes a new suppressed exception condition indicating that the given exception was suppressed.
      */
-    public SuppressedExceptionCondition(final @NotNull Exception exception) {
+    public SuppressedExceptionCondition(final Exception exception) {
         super("Suppressed exception: " + exception);
     }
 }

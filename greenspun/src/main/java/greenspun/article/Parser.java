@@ -16,17 +16,16 @@ import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.Trace;
+import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The article parser: the primary means of turning S-expressions into parsed {@link Article} objects.
  */
 public final class Parser {
-    private Parser(final @NotNull Reader reader, final @NotNull HtslConverter htslConverter) {
+    private Parser(final Reader reader, final HtslConverter htslConverter) {
         this.reader = reader;
         this.htslConverter = htslConverter;
     }
@@ -48,28 +47,25 @@ public final class Parser {
      *
      * @return The freshly parsed article.
      */
-    public static @NotNull Article parseArticleForms(
-        final @NotNull Reader reader,
-        final @NotNull HtslConverter htslConverter
-    ) {
+    public static Article parseArticleForms(final Reader reader, final HtslConverter htslConverter) {
         return new Parser(reader, htslConverter).parse();
     }
 
-    private @NotNull Article parse() {
+    private Article parse() {
         final var article = parseDefarticle();
         parseDefsections();
         verifySectionGraph();
         return linkSections(article);
     }
 
-    private @NotNull PartialArticle parseDefarticle() {
+    private PartialArticle parseDefarticle() {
         try (final var trace = new Trace("Parsing the defarticle form")) {
             trace.use();
             return parseDefarticleImpl();
         }
     }
 
-    private @NotNull PartialArticle parseDefarticleImpl() {
+    private PartialArticle parseDefarticleImpl() {
         final var form = reader.readTopLevelForm();
         if (form == null) {
             throw signalError("Cannot magically turn empty input into an article");
@@ -112,7 +108,7 @@ public final class Parser {
         }
     }
 
-    private void parseDefsection(final @NotNull Sexp form) {
+    private void parseDefsection(final Sexp form) {
         final var list = Sexps.asList(form);
         if (list == null || list.exactSize() < 2 || list.first() != Sexp.KnownSymbol.DEFSECTION) {
             throw signalError("This doesn't appear to be a valid defsection form: " + Sexps.prettyPrint(form));
@@ -144,7 +140,7 @@ public final class Parser {
         }
     }
 
-    private @NotNull Article linkSections(final @NotNull PartialArticle article) {
+    private Article linkSections(final PartialArticle article) {
         final var linkedRoot = linkSection(article.rootSection);
         return new Article(
             article.title,
@@ -156,7 +152,7 @@ public final class Parser {
         );
     }
 
-    private @NotNull Section linkSection(final @NotNull PartialSection section) {
+    private Section linkSection(final PartialSection section) {
         final var linkedChildren = section.childIds.map(childId -> {
             final var child = sectionsById.get(childId);
             assert child != null : "Reference to unknown section not found by graph verification?";
@@ -165,7 +161,7 @@ public final class Parser {
         return new Section(section.identifier, section.header, linkedChildren, section.body);
     }
 
-    private static @NotNull LocalDate parseDate(final @NotNull ExtractedProperties properties) {
+    private static LocalDate parseDate(final ExtractedProperties properties) {
         final var value = properties.get(Sexp.KnownSymbol.KW_DATE);
         final var list = Sexps.asList(value);
         if (list == null || list.exactSize() != 3) {
@@ -184,10 +180,8 @@ public final class Parser {
         }
     }
 
-    private static @NotNull Seq<String> parseTopics(
-        final @NotNull ExtractedProperties properties
-    ) {
-        return parseList(properties, Sexp.KnownSymbol.KW_TOPICS, (final @NotNull Sexp sexp) -> {
+    private static Seq<String> parseTopics(final ExtractedProperties properties) {
+        return parseList(properties, Sexp.KnownSymbol.KW_TOPICS, sexp -> {
             final var topicName = Sexps.asString(sexp);
             if (topicName == null) {
                 throw signalError("This doesn't appear to be a topic name: " + Sexps.prettyPrint(sexp));
@@ -196,10 +190,8 @@ public final class Parser {
         });
     }
 
-    private static @NotNull Seq<Sexp.Symbol> parseChildIds(
-        final @NotNull ExtractedProperties properties
-    ) {
-        return parseList(properties, Sexp.KnownSymbol.KW_CHILDREN, (final @NotNull Sexp sexp) -> {
+    private static Seq<Sexp.Symbol> parseChildIds(final ExtractedProperties properties) {
+        return parseList(properties, Sexp.KnownSymbol.KW_CHILDREN, sexp -> {
             final var childId = Sexps.asSymbol(sexp);
             if (childId == null) {
                 throw signalError("This doesn't appear to be a child section identifier: " + Sexps.prettyPrint(sexp));
@@ -208,10 +200,10 @@ public final class Parser {
         });
     }
 
-    private static <T> @NotNull Seq<T> parseList(
-        final @NotNull ExtractedProperties properties,
-        final @NotNull Sexp.KnownSymbol key,
-        final @NotNull Function<Sexp, T> function
+    private static <T> Seq<T> parseList(
+        final ExtractedProperties properties,
+        final Sexp.KnownSymbol key,
+        final Function<Sexp, T> function
     ) {
         final var value = properties.get(key);
         final var list = Sexps.asList(value);
@@ -221,10 +213,7 @@ public final class Parser {
         return list.map(function);
     }
 
-    private static @NotNull String parseString(
-        final @NotNull ExtractedProperties properties,
-        final @NotNull Sexp.KnownSymbol key
-    ) {
+    private static String parseString(final ExtractedProperties properties, final Sexp.KnownSymbol key) {
         final var value = properties.get(key);
         final var string = Sexps.asString(value);
         if (string == null) {
@@ -234,10 +223,7 @@ public final class Parser {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static boolean parseBoolean(
-        final @NotNull ExtractedProperties properties,
-        final @NotNull Sexp.KnownSymbol key
-    ) {
+    private static boolean parseBoolean(final ExtractedProperties properties, final Sexp.KnownSymbol key) {
         final var value = properties.get(key);
         if (Sexps.isNil(value)) {
             return false;
@@ -248,7 +234,7 @@ public final class Parser {
         }
     }
 
-    private static @NotNull BigInteger parseInteger(final @NotNull Sexp sexp, final @NotNull String fieldName) {
+    private static BigInteger parseInteger(final Sexp sexp, final String fieldName) {
         final var integer = Sexps.asInteger(sexp);
         if (integer == null) {
             throw signalError(fieldName + " doesn't appear to be an integer: " + Sexps.prettyPrint(sexp));
@@ -256,7 +242,7 @@ public final class Parser {
         return integer;
     }
 
-    private static int intValueExact(final @NotNull BigInteger integer, final @NotNull String fieldName) {
+    private static int intValueExact(final BigInteger integer, final String fieldName) {
         try {
             return integer.intValueExact();
         } catch (final ArithmeticException e) {
@@ -264,11 +250,11 @@ public final class Parser {
         }
     }
 
-    private static @NotNull ExtractedProperties extractProperties(
-        final @NotNull Seq<Sexp> list,
-        final @NotNull Set<? extends Sexp.Symbol> allowedKeys
+    private static ExtractedProperties extractProperties(
+        final Seq<Sexp> list,
+        final Set<? extends Sexp.Symbol> allowedKeys
     ) {
-        final var properties = new HashMap<Sexp.Symbol, @NotNull Sexp>();
+        final var properties = new HashMap<Sexp.Symbol, Sexp>();
         var it = list;
         while (!it.isEmpty()) {
             final var keyword = Sexps.asKeyword(it.first());
@@ -290,11 +276,11 @@ public final class Parser {
         return new ExtractedProperties(properties, it);
     }
 
-    private static @NotNull UnhandledErrorError signalError(final @NotNull String message) {
+    private static UnhandledErrorError signalError(final String message) {
         return ConditionContext.error(new ArticleParseErrorCondition(message));
     }
 
-    private static @NotNull UnhandledErrorError signalLinkingError(final @NotNull String message) {
+    private static UnhandledErrorError signalLinkingError(final String message) {
         return ConditionContext.error(new SectionLinkingErrorCondition(message));
     }
 
@@ -312,44 +298,39 @@ public final class Parser {
     );
     private static final Sexp.RegularSymbol rootSectionId = new Sexp.RegularSymbol("#:root-section-id");
 
-    private final @NotNull Reader reader;
-    private final @NotNull HtslConverter htslConverter;
+    private final Reader reader;
+    private final HtslConverter htslConverter;
     private final HashMap<Sexp.Symbol, PartialSection> sectionsById = new HashMap<>();
 
-    private record ExtractedProperties(@NotNull Map<Sexp.Symbol, Sexp> properties, @NotNull Seq<@NotNull Sexp> tail) {
-        private @NotNull Sexp get(final @NotNull Sexp.Symbol symbol) {
+    private record ExtractedProperties(Map<Sexp.Symbol, Sexp> properties, Seq<Sexp> tail) {
+        private Sexp get(final Sexp.Symbol symbol) {
             final var sexp = properties.get(symbol);
             return (sexp != null) ? sexp : Sexp.KnownSymbol.NIL;
         }
     }
 
     private record PartialArticle(
-        @NotNull String title,
-        @NotNull String description,
-        @NotNull LocalDate date,
+        String title,
+        String description,
+        LocalDate date,
         boolean inhibitTableOfContents,
-        @NotNull Seq<String> topics,
-        @NotNull PartialSection rootSection
+        Seq<String> topics,
+        PartialSection rootSection
     ) {
     }
 
-    private record PartialSection(
-        @NotNull Sexp.Symbol identifier,
-        @NotNull String header,
-        @NotNull Seq<Sexp.Symbol> childIds,
-        @NotNull Seq<Node> body
-    ) {
+    private record PartialSection(Sexp.Symbol identifier, String header, Seq<Sexp.Symbol> childIds, Seq<Node> body) {
     }
 
     private static final class SectionGraphVerifier {
-        private SectionGraphVerifier(final @NotNull Map<Sexp.@NotNull Symbol, @NotNull PartialSection> sectionsById) {
+        private SectionGraphVerifier(final Map<Sexp.Symbol, PartialSection> sectionsById) {
             this.sectionsById = sectionsById;
             for (final var sectionId : sectionsById.keySet()) {
                 references.put(sectionId, new HashSet<>());
             }
         }
 
-        private static void verify(final @NotNull Map<Sexp.@NotNull Symbol, @NotNull PartialSection> sectionsById) {
+        private static void verify(final Map<Sexp.Symbol, PartialSection> sectionsById) {
             final var verifier = new SectionGraphVerifier(sectionsById);
             verifier.computeReferredFromSets();
             verifier.findReferenceErrors();
@@ -399,10 +380,10 @@ public final class Parser {
             }
         }
 
-        private final @NotNull Map<Sexp.@NotNull Symbol, @NotNull PartialSection> sectionsById;
-        private final HashMap<Sexp.@NotNull Symbol, @NotNull HashSet<Sexp.Symbol>> references = new HashMap<>();
+        private final Map<Sexp.Symbol, PartialSection> sectionsById;
+        private final HashMap<Sexp.Symbol, HashSet<Sexp.Symbol>> references = new HashMap<>();
 
-        private record SectionParent(@NotNull Sexp.Symbol section, @Nullable Sexp.Symbol parent) {
+        private record SectionParent(Sexp.Symbol section, @Nullable Sexp.Symbol parent) {
         }
     }
 }

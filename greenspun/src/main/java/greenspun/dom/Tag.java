@@ -11,9 +11,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * HTML elements known to the generator.
@@ -29,7 +28,7 @@ public enum Tag {
      */
     META_CHARSET_UTF8(build(Context.METADATA, ChildContext.none())
         .setOmitClosingTag()
-        .setElementSerializer((final @NotNull Serializer serializer, final @NotNull Node.Element element) ->
+        .setElementSerializer((final Serializer serializer, final Node.Element element) ->
             serializer.serializePseudoElement(
                 "meta",
                 Seq.of(new Attribute.String("charset", "UTF-8")),
@@ -47,7 +46,7 @@ public enum Tag {
             "content", Verifier.attributeIsString
         ))
         .setRequiredAttributes(Seq.of("name", "content"))
-        .setElementSerializer((final @NotNull Serializer serializer, final @NotNull Node.Element element) ->
+        .setElementSerializer((final Serializer serializer, final Node.Element element) ->
             serializer.serializePseudoElement("meta", element.attributes(), element.children(), true))
     ),
     LINK(build(Context.METADATA, ChildContext.none())
@@ -139,7 +138,7 @@ public enum Tag {
         .setOmitClosingTag()
     );
 
-    Tag(final @NotNull Builder builder) {
+    Tag(final Builder builder) {
         htmlName = name().toLowerCase(Locale.ROOT).replace('_', '-');
         allowedContexts = builder.allowedContexts;
         childContext = builder.childContext;
@@ -154,26 +153,26 @@ public enum Tag {
      * <p>
      * The HTML name of a tag is a lowercase string, with words separated with the ASCII dash symbol "-".
      */
-    public static @Nullable Tag byHtmlName(final @NotNull String htmlName) {
+    public static @Nullable Tag byHtmlName(final String htmlName) {
         return tagsByHtmlName.get(htmlName);
     }
 
     /**
      * Retrieves the HTML name of the tag.
      */
-    public @NotNull String htmlName() {
+    public String htmlName() {
         return htmlName;
     }
 
-    boolean allowedIn(final @NotNull Context context) {
+    boolean allowedIn(final Context context) {
         return allowedContexts.contains(context);
     }
 
-    @NotNull String allowedContextsString() {
+    String allowedContextsString() {
         return allowedContexts.toString();
     }
 
-    @NotNull ChildContext childContext() {
+    ChildContext childContext() {
         return childContext;
     }
 
@@ -185,24 +184,24 @@ public enum Tag {
         return elementSerializer;
     }
 
-    @NotNull Map<String, Verifier.AttributeVerifier> allowedAttributes() {
+    Map<String, Verifier.AttributeVerifier> allowedAttributes() {
         return allowedAttributes;
     }
 
-    @NotNull Seq<String> requiredAttributes() {
+    Seq<String> requiredAttributes() {
         return requiredAttributes;
     }
 
-    private static @NotNull Builder build(
-        final @NotNull Context allowedContext,
-        final @NotNull ChildContext childContext
+    private static Builder build(
+        final Context allowedContext,
+        final ChildContext childContext
     ) {
         return new Builder(EnumSet.of(allowedContext), childContext);
     }
 
-    private static @NotNull Builder build(
-        final @NotNull EnumSet<Context> allowedContexts,
-        final @NotNull ChildContext childContext
+    private static Builder build(
+        final EnumSet<Context> allowedContexts,
+        final ChildContext childContext
     ) {
         return new Builder(allowedContexts, childContext);
     }
@@ -210,17 +209,17 @@ public enum Tag {
     private static final Map<String, Tag> tagsByHtmlName =
         Arrays.stream(values()).collect(Collectors.toUnmodifiableMap(Tag::htmlName, Function.identity()));
 
-    private final @NotNull String htmlName;
-    private final @NotNull EnumSet<Context> allowedContexts;
-    private final @NotNull ChildContext childContext;
+    private final String htmlName;
+    private final EnumSet<Context> allowedContexts;
+    private final ChildContext childContext;
     private final boolean omitClosingTag;
     private final @Nullable Serializer.ForElement elementSerializer;
-    private final @NotNull Map<String, Verifier.AttributeVerifier> allowedAttributes;
-    private final @NotNull Seq<String> requiredAttributes;
+    private final Map<String, Verifier.AttributeVerifier> allowedAttributes;
+    private final Seq<String> requiredAttributes;
 
-    private record StringSetVerifier(@NotNull Set<String> allowed) implements Verifier.AttributeVerifier {
+    private record StringSetVerifier(Set<String> allowed) implements Verifier.AttributeVerifier {
         @Override
-        public void verify(final @NotNull Verifier.AttributeVerificationContext context) {
+        public void verify(final Verifier.AttributeVerificationContext context) {
             Verifier.attributeIsString.verify(context);
             if (context.attribute() instanceof Attribute.String string && !allowed.contains(string.value())) {
                 context.recordError("invalid value, expected one of " + allowed);
@@ -230,7 +229,7 @@ public enum Tag {
 
     private static final class DatetimeVerifier implements Verifier.AttributeVerifier {
         @Override
-        public void verify(final @NotNull Verifier.AttributeVerificationContext context) {
+        public void verify(final Verifier.AttributeVerificationContext context) {
             Verifier.attributeIsString.verify(context);
             if (context.attribute() instanceof Attribute.String string &&
                 !datetimePattern.matcher(string.value()).matches()) {
@@ -242,7 +241,7 @@ public enum Tag {
     }
 
     private static final class Builder {
-        private Builder(final @NotNull EnumSet<Context> allowedContexts, final @NotNull ChildContext childContext) {
+        private Builder(final EnumSet<Context> allowedContexts, final ChildContext childContext) {
             this.allowedContexts = allowedContexts;
             this.childContext = childContext;
         }
@@ -252,26 +251,26 @@ public enum Tag {
             return this;
         }
 
-        private Builder setElementSerializer(final @NotNull Serializer.ForElement elementSerializer) {
+        private Builder setElementSerializer(final Serializer.ForElement elementSerializer) {
             this.elementSerializer = elementSerializer;
             return this;
         }
 
-        private Builder setAllowedAttributes(final @NotNull Map<String, Verifier.AttributeVerifier> allowedAttributes) {
+        private Builder setAllowedAttributes(final Map<String, Verifier.AttributeVerifier> allowedAttributes) {
             this.allowedAttributes = allowedAttributes;
             return this;
         }
 
-        private Builder setRequiredAttributes(final @NotNull Seq<String> requiredAttributes) {
+        private Builder setRequiredAttributes(final Seq<String> requiredAttributes) {
             this.requiredAttributes = requiredAttributes;
             return this;
         }
 
-        private final @NotNull EnumSet<Context> allowedContexts;
-        private final @NotNull ChildContext childContext;
+        private final EnumSet<Context> allowedContexts;
+        private final ChildContext childContext;
         private boolean omitClosingTag = false;
         private @Nullable Serializer.ForElement elementSerializer = null;
-        private @NotNull Map<String, Verifier.AttributeVerifier> allowedAttributes = Collections.emptyMap();
-        private @NotNull Seq<String> requiredAttributes = Seq.empty();
+        private Map<String, Verifier.AttributeVerifier> allowedAttributes = Collections.emptyMap();
+        private Seq<String> requiredAttributes = Seq.empty();
     }
 }

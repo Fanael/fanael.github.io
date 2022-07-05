@@ -5,7 +5,6 @@ package greenspun.article;
 import greenspun.dom.Node;
 import greenspun.sexp.Sexp;
 import greenspun.util.collection.seq.Seq;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A section of a parsed article.
@@ -15,10 +14,5 @@ import org.jetbrains.annotations.NotNull;
  * @param children   The list of subsections this section contains.
  * @param body       A list of DOM tree nodes representing the body text of the section.
  */
-public record Section(
-    @NotNull Sexp.Symbol identifier,
-    @NotNull String header,
-    @NotNull Seq<@NotNull Section> children,
-    @NotNull Seq<@NotNull Node> body
-) {
+public record Section(Sexp.Symbol identifier, String header, Seq<Section> children, Seq<Node> body) {
 }

@@ -4,7 +4,6 @@ package greenspun.article;
 
 import java.time.LocalDate;
 import greenspun.util.collection.seq.Seq;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A parsed article.
@@ -17,11 +16,11 @@ import org.jetbrains.annotations.NotNull;
  * @param rootSection            The root section of the article.
  */
 public record Article(
-    @NotNull String title,
-    @NotNull String description,
-    @NotNull LocalDate date,
+    String title,
+    String description,
+    LocalDate date,
     boolean inhibitTableOfContents,
-    @NotNull Seq<@NotNull String> topics,
-    @NotNull Section rootSection
+    Seq<String> topics,
+    Section rootSection
 ) {
 }

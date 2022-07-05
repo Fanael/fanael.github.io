@@ -3,7 +3,6 @@
 package greenspun.util.condition.exception;
 
 import javax.xml.transform.TransformerException;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A condition type indicating that there was an error during XML transformation.
@@ -12,7 +11,7 @@ public final class TransformerExceptionCondition extends ExceptionCondition<Tran
     /**
      * Initializes a new {@code TransformerExceptionCondition} representing the given {@link TransformerException}.
      */
-    public TransformerExceptionCondition(final @NotNull TransformerException exception) {
+    public TransformerExceptionCondition(final TransformerException exception) {
         super(exception);
     }
 }

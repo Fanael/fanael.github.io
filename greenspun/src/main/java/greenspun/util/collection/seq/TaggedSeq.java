@@ -4,51 +4,53 @@ package greenspun.util.collection.seq;
 
 import java.util.Objects;
 import java.util.function.Function;
-import org.jetbrains.annotations.NotNull;
+import greenspun.util.annotation.NonNull;
+import greenspun.util.annotation.NonNullByDefault;
 
+@NonNullByDefault
 abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Shallow, Deep {
-    TaggedSeq(final @NotNull Tag<T, Phantom> tag, final long subtreeSize) {
+    TaggedSeq(final Tag<T, Phantom> tag, final long subtreeSize) {
         super(subtreeSize);
         this.tag = tag;
     }
 
     @Override
-    public abstract <U> @NotNull TaggedSeq<U, Phantom> map(@NotNull Function<? super T, ? extends U> function);
+    public abstract <U> @NonNull TaggedSeq<U, Phantom> map(Function<? super T, ? extends U> function);
 
     @Override
-    public abstract @NotNull TaggedSeq<T, Phantom> updatedFirst(T object);
+    public abstract @NonNull TaggedSeq<T, Phantom> updatedFirst(T object);
 
     @Override
-    public abstract @NotNull TaggedSeq<T, Phantom> updatedLast(T object);
+    public abstract @NonNull TaggedSeq<T, Phantom> updatedLast(T object);
 
     @Override
-    public abstract @NotNull TaggedSeq<T, Phantom> prepended(T object);
+    public abstract @NonNull TaggedSeq<T, Phantom> prepended(T object);
 
     @Override
-    public abstract @NotNull TaggedSeq<T, Phantom> appended(T object);
+    public abstract @NonNull TaggedSeq<T, Phantom> appended(T object);
 
     @Override
-    public abstract @NotNull TaggedSeq<T, Phantom> withoutFirst();
+    public abstract @NonNull TaggedSeq<T, Phantom> withoutFirst();
 
     @Override
-    public abstract @NotNull TaggedSeq<T, Phantom> withoutLast();
+    public abstract @NonNull TaggedSeq<T, Phantom> withoutLast();
 
     @Override
     @SuppressWarnings("unchecked")
-    public final @NotNull TaggedSeq<T, Phantom> concat(final @NotNull Seq<? extends T> other) {
+    public final @NonNull TaggedSeq<T, Phantom> concat(final Seq<? extends T> other) {
         final var otherTagged = (TaggedSeq<? extends T, ?>) other;
         assert tag == otherTagged.tag;
         return concatImpl((TaggedSeq<T, Phantom>) otherTagged);
     }
 
     @Override
-    public final @NotNull Seq<T> updated(final long index, final T newValue) {
+    public final @NonNull Seq<T> updated(final long index, final T newValue) {
         final var split = splitTree(Objects.checkIndex(index, subtreeSize), 0);
         return split.front.concat(split.back.prepended(newValue));
     }
 
     @Override
-    final @NotNull Split<T> splitAtImpl(final long index) {
+    final @NonNull Split<T> splitAtImpl(final long index) {
         if (index >= exactSize()) {
             return new Split<>(this, empty());
         }
@@ -56,9 +58,9 @@ abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Shallow, Deep
         return new Split<>(split.front, split.back.prepended(split.middle));
     }
 
-    abstract @NotNull TaggedSeq<T, Phantom> concatImpl(@NotNull TaggedSeq<T, Phantom> other);
+    abstract TaggedSeq<T, Phantom> concatImpl(TaggedSeq<T, Phantom> other);
 
-    abstract @NotNull TreeSplit<T, Phantom> splitTree(long index, long accumulator);
+    abstract TreeSplit<T, Phantom> splitTree(long index, long accumulator);
 
     final long addToSize(final T object) {
         return computeNewSize(tag.measureSingle(object));
@@ -72,13 +74,13 @@ abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Shallow, Deep
         return computeNewSize(tag.measureSingle(newObject) - tag.measureSingle(oldObject));
     }
 
-    final @NotNull GetResult<T> getFromArray(final T @NotNull [] array, final @NotNull Tag.SplitPoint splitPoint) {
+    final GetResult<T> getFromArray(final T[] array, final Tag.SplitPoint splitPoint) {
         final var element = array[splitPoint.index()];
         return new GetResult<>(element, splitPoint.accumulator() - tag.measureSingle(element));
     }
 
-    final @NotNull Tag<T, Phantom> tag;
+    final Tag<T, Phantom> tag;
 
-    record TreeSplit<T, Phantom>(@NotNull TaggedSeq<T, Phantom> front, T middle, @NotNull TaggedSeq<T, Phantom> back) {
+    record TreeSplit<T, Phantom>(TaggedSeq<T, Phantom> front, T middle, TaggedSeq<T, Phantom> back) {
     }
 }

@@ -13,20 +13,19 @@ import greenspun.pygments.ServerCodeTemporaryFile;
 import greenspun.util.SneakyThrow;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Handler;
-import org.jetbrains.annotations.NotNull;
 
 final class Main {
     private Main() {
     }
 
-    public static void main(final @NotNull String[] args) {
+    public static void main(final String[] args) {
         System.exit(mainImpl(args).value);
     }
 
     private static void enterRepl(
-        final @NotNull ExecutorService executorService,
-        final @NotNull Path sourceDirectory,
-        final @NotNull Path destinationDirectory
+        final ExecutorService executorService,
+        final Path sourceDirectory,
+        final Path destinationDirectory
     ) {
         try (
             final var pygmentsServerCode = ServerCodeTemporaryFile.save();
@@ -37,7 +36,7 @@ final class Main {
         }
     }
 
-    private static @NotNull ExitCode mainImpl(final @NotNull String[] args) {
+    private static ExitCode mainImpl(final String[] args) {
         if (args.length != 2) {
             try (final var streams = Streams.acquire()) {
                 streams.err().println("Exactly two arguments <source directory> <destination directory> expected");
@@ -62,7 +61,7 @@ final class Main {
         }
     }
 
-    private static @NotNull ThreadPoolExecutor createThreadPool() {
+    private static ThreadPoolExecutor createThreadPool() {
         final var threadId = new AtomicInteger(0);
         return new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
@@ -75,7 +74,7 @@ final class Main {
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private static void shutDownThreadPool(final @NotNull ThreadPoolExecutor threadPool) {
+    private static void shutDownThreadPool(final ThreadPoolExecutor threadPool) {
         threadPool.shutdownNow();
         try {
             threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);

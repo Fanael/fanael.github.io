@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.dom;
 
-import org.jetbrains.annotations.NotNull;
-
 enum Context implements ChildContext {
     ROOT("root"),
     HEAD_AND_BODY("head and body"),
@@ -17,14 +15,14 @@ enum Context implements ChildContext {
     TABLE_ROW("table row"),
     TABLE_CELL("table cell");
 
-    Context(final @NotNull String readableName) {
+    Context(final String readableName) {
         this.readableName = readableName;
     }
 
     @Override
-    public @NotNull String toString() {
+    public String toString() {
         return readableName;
     }
 
-    private final @NotNull String readableName;
+    private final String readableName;
 }

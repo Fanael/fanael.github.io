@@ -4,7 +4,6 @@ package greenspun.dom;
 
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.Condition;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A condition type representing a failed DOM tree verification.
@@ -12,13 +11,13 @@ import org.jetbrains.annotations.NotNull;
  * The associated detailed message contains the list of errors formatted in human-readable way.
  */
 public final class VerificationErrorCondition extends Condition {
-    VerificationErrorCondition(final @NotNull Seq<@NotNull VerificationError> errors) {
+    VerificationErrorCondition(final Seq<VerificationError> errors) {
         super("DOM verification failed");
         this.errors = errors;
     }
 
     @Override
-    public @NotNull String detailedMessage() {
+    public String detailedMessage() {
         final var builder = new StringBuilder(message());
         for (final var error : errors) {
             builder.append("\n - ");
@@ -32,5 +31,5 @@ public final class VerificationErrorCondition extends Condition {
         return builder.toString();
     }
 
-    private final @NotNull Seq<@NotNull VerificationError> errors;
+    private final Seq<VerificationError> errors;
 }

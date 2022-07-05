@@ -14,13 +14,12 @@ import greenspun.dom.Attribute;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
 import greenspun.util.Trace;
+import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.Condition;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.exception.IOExceptionCondition;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A connection to the Pygments server.
@@ -37,7 +36,7 @@ public final class PygmentsServer implements AutoCloseable {
      * The temporary file should exist for at least as long as the pool itself, because the pool may decide to spawn
      * a new Pygments server process at any time.
      */
-    public PygmentsServer(final @NotNull ServerCodeTemporaryFile file) {
+    public PygmentsServer(final ServerCodeTemporaryFile file) {
         sourceCodePath = file.path();
     }
 
@@ -89,10 +88,7 @@ public final class PygmentsServer implements AutoCloseable {
      * <li>{@link PygmentsServerErrorCondition} if the Pygments server process reported an error.
      * </ul>
      */
-    public @NotNull Seq<@NotNull Node> highlightCode(
-        final @NotNull String code,
-        final @NotNull String languageName
-    ) {
+    public Seq<Node> highlightCode(final String code, final String languageName) {
         try (final var trace = new Trace(() -> "Highlighting code in language " + languageName)) {
             trace.use();
             final var connection = acquireConnection();
@@ -104,7 +100,7 @@ public final class PygmentsServer implements AutoCloseable {
         }
     }
 
-    private @NotNull Connection acquireConnection() {
+    private Connection acquireConnection() {
         final var connection = popFreeConnection();
         if (connection != null) {
             assert connection.stillAlive;
@@ -113,7 +109,7 @@ public final class PygmentsServer implements AutoCloseable {
         return openNewConnection();
     }
 
-    private void releaseConnection(final @NotNull Connection connection) {
+    private void releaseConnection(final Connection connection) {
         if (connection.stillAlive) {
             lock.lock();
             try {
@@ -140,7 +136,7 @@ public final class PygmentsServer implements AutoCloseable {
         }
     }
 
-    private @NotNull Connection openNewConnection() {
+    private Connection openNewConnection() {
         try (final var trace = new Trace("Spawning a new pygments server process")) {
             trace.use();
             final var builder = new ProcessBuilder("python3", sourceCodePath.toString());
@@ -155,22 +151,19 @@ public final class PygmentsServer implements AutoCloseable {
         }
     }
 
-    private final @NotNull Path sourceCodePath;
+    private final Path sourceCodePath;
     private final AtomicInteger activeConnectionCount = new AtomicInteger(0);
     private final ReentrantLock lock = new ReentrantLock();
-    private Seq<@NotNull Connection> freeConnections = Seq.empty();
+    private Seq<Connection> freeConnections = Seq.empty();
 
     private static final class Connection {
-        private Connection(final @NotNull Process process) {
+        private Connection(final Process process) {
             this.process = process;
             writer = new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8);
             reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
         }
 
-        private @NotNull Seq<@NotNull Node> highlightCode(
-            final @NotNull String code,
-            final @NotNull String languageName
-        ) {
+        private Seq<Node> highlightCode(final String code, final String languageName) {
             try {
                 sendSimpleString(":highlight");
                 sendSimpleString(languageName);
@@ -219,7 +212,7 @@ public final class PygmentsServer implements AutoCloseable {
             }
         }
 
-        private @NotNull Seq<@NotNull Node> receiveNodeStream() throws IOException {
+        private Seq<Node> receiveNodeStream() throws IOException {
             final var accumulator = new NodeAccumulator();
             loop:
             while (true) {
@@ -238,13 +231,13 @@ public final class PygmentsServer implements AutoCloseable {
             return accumulator.finish();
         }
 
-        private void sendSimpleString(final @NotNull String string) throws IOException {
+        private void sendSimpleString(final String string) throws IOException {
             assert string.indexOf('\n') == -1 : "Multiline string sent as a simple string";
             writer.write(string);
             writer.write('\n');
         }
 
-        private void sendMultilineString(final @NotNull String string) throws IOException {
+        private void sendMultilineString(final String string) throws IOException {
             int index = 0;
             final var length = string.length();
             while (index < length) {
@@ -261,17 +254,13 @@ public final class PygmentsServer implements AutoCloseable {
             sendSimpleString(":done");
         }
 
-        private void sendMultilineFragment(
-            final @NotNull String string,
-            final int offset,
-            final int end
-        ) throws IOException {
+        private void sendMultilineFragment(final String string, final int offset, final int end) throws IOException {
             writer.write('>');
             writer.write(string, offset, end - offset);
             writer.write('\n');
         }
 
-        private @NotNull String receiveSimpleString() throws IOException {
+        private String receiveSimpleString() throws IOException {
             final var line = reader.readLine();
             // NB: ":error" is a perfectly cromulent simple string that can occur as a token value in regular code, so
             // do NOT check for it here.
@@ -281,7 +270,7 @@ public final class PygmentsServer implements AutoCloseable {
             return line;
         }
 
-        private @NotNull String receiveMultilineString() throws IOException {
+        private String receiveMultilineString() throws IOException {
             final var builder = new StringBuilder();
             while (true) {
                 final var line = reader.readLine();
@@ -299,12 +288,10 @@ public final class PygmentsServer implements AutoCloseable {
             return builder.toString();
         }
 
-        private @NotNull UnhandledErrorError recoverFromServerError(
-            final @Nullable String firstLineOfResponse
-        ) {
+        private UnhandledErrorError recoverFromServerError(final @Nullable String firstLineOfResponse) {
             try (final var trace = new Trace("Attempting to recover from pygments server error")) {
                 trace.use();
-                @NotNull Condition condition;
+                Condition condition;
                 if (":error".equals(firstLineOfResponse)) {
                     // Regular error, retrieve the error message and let the server live.
                     try {
@@ -327,9 +314,9 @@ public final class PygmentsServer implements AutoCloseable {
             }
         }
 
-        private final @NotNull Process process;
-        private final @NotNull OutputStreamWriter writer;
-        private final @NotNull BufferedReader reader;
+        private final Process process;
+        private final OutputStreamWriter writer;
+        private final BufferedReader reader;
         private boolean stillAlive = true;
     }
 
@@ -339,11 +326,11 @@ public final class PygmentsServer implements AutoCloseable {
     // use and make it easier on code that visits every DOM node, like the DOM verifier or serializer. Since we're
     // caching each highlighted snippet in DOM subtree form in the Pygments cache, this is worth it.
     private static final class NodeAccumulator {
-        private void append(final @NotNull String string) {
+        private void append(final String string) {
             builder.append(string);
         }
 
-        private void setClass(final @NotNull String cssClass) {
+        private void setClass(final String cssClass) {
             if (lastClass.equals(cssClass)) {
                 return;
             }
@@ -351,7 +338,7 @@ public final class PygmentsServer implements AutoCloseable {
             lastClass = cssClass;
         }
 
-        private @NotNull Seq<@NotNull Node> finish() {
+        private Seq<Node> finish() {
             flushBuilder();
             return nodes.toSeq();
         }
@@ -364,7 +351,7 @@ public final class PygmentsServer implements AutoCloseable {
             builder.setLength(0);
         }
 
-        private @NotNull Node makeNode() {
+        private Node makeNode() {
             final var textNode = new Node.Text(builder.toString());
             final var cssClass = lastClass;
             return cssClass.isEmpty() ? textNode : new Node.Element(
@@ -374,8 +361,8 @@ public final class PygmentsServer implements AutoCloseable {
             );
         }
 
-        private final @NotNull Seq.Builder<@NotNull Node> nodes = new Seq.Builder<>();
+        private final Seq.Builder<Node> nodes = new Seq.Builder<>();
         private final StringBuilder builder = new StringBuilder();
-        private @NotNull String lastClass = "";
+        private String lastClass = "";
     }
 }

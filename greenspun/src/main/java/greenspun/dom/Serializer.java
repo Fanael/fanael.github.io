@@ -4,15 +4,14 @@ package greenspun.dom;
 
 import java.io.IOException;
 import java.io.Writer;
+import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The DOM-to-HTML serializer.
  */
 public final class Serializer {
-    private Serializer(final @NotNull Writer writer) {
+    private Serializer(final Writer writer) {
         this.writer = writer;
     }
 
@@ -21,18 +20,15 @@ public final class Serializer {
      * <p>
      * Any {@link IOException}s thrown by the writer are allowed to propagate.
      */
-    public static void serialize(
-        final @NotNull Writer writer,
-        final @NotNull Node rootNode
-    ) throws IOException {
+    public static void serialize(final Writer writer, final Node rootNode) throws IOException {
         final var serializer = new Serializer(writer);
         serializer.serializeNode(rootNode);
     }
 
     void serializePseudoElement(
-        final @NotNull String elementName,
-        final @NotNull Seq<@NotNull Attribute> attributes,
-        final @NotNull Seq<@NotNull Node> children,
+        final String elementName,
+        final Seq<Attribute> attributes,
+        final Seq<Node> children,
         final boolean omitClosingTag
     ) throws IOException {
         writer.write('<');
@@ -49,7 +45,7 @@ public final class Serializer {
         }
     }
 
-    private void serializeNode(final @NotNull Node node) throws IOException {
+    private void serializeNode(final Node node) throws IOException {
         switch (node) {
             case Node.Text text -> serializeString(text.text(), TextEscaper.instance);
             case Node.Element element -> {
@@ -64,12 +60,12 @@ public final class Serializer {
         }
     }
 
-    private void serializeDefault(final @NotNull Node.Element element) throws IOException {
+    private void serializeDefault(final Node.Element element) throws IOException {
         final var tag = element.tag();
         serializePseudoElement(tag.htmlName(), element.attributes(), element.children(), tag.omitClosingTag());
     }
 
-    private void serializeAttributes(final @NotNull Seq<@NotNull Attribute> attributes) throws IOException {
+    private void serializeAttributes(final Seq<Attribute> attributes) throws IOException {
         for (final var attribute : attributes) {
             switch (attribute) {
                 case Attribute.Boolean booleanAttr -> {
@@ -93,7 +89,7 @@ public final class Serializer {
         }
     }
 
-    private void serializeString(final @NotNull String string, final @NotNull Escaper escaper) throws IOException {
+    private void serializeString(final String string, final Escaper escaper) throws IOException {
         int index = 0;
         int indexToEscape;
         while ((indexToEscape = findCharacterToEscape(string, index, escaper)) >= 0) {
@@ -108,16 +104,12 @@ public final class Serializer {
         }
     }
 
-    private void serializeAttributeName(final @NotNull String name) throws IOException {
+    private void serializeAttributeName(final String name) throws IOException {
         writer.write(' ');
         writer.write(name);
     }
 
-    private static int findCharacterToEscape(
-        final @NotNull String string,
-        final int startIndex,
-        final @NotNull Escaper escaper
-    ) {
+    private static int findCharacterToEscape(final String string, final int startIndex, final Escaper escaper) {
         final var length = string.length();
         for (int i = startIndex; i < length; i += 1) {
             if (escaper.escape(string.charAt(i)) != null) {
@@ -127,11 +119,11 @@ public final class Serializer {
         return -1;
     }
 
-    private final @NotNull Writer writer;
+    private final Writer writer;
 
     @FunctionalInterface
     interface ForElement {
-        void serialize(final @NotNull Serializer serializer, final @NotNull Node.Element element) throws IOException;
+        void serialize(final Serializer serializer, final Node.Element element) throws IOException;
     }
 
     private sealed interface Escaper {

@@ -7,24 +7,25 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.jetbrains.annotations.NotNull;
+import greenspun.util.annotation.NonNullByDefault;
 
+@NonNullByDefault
 final class ArrayOps {
     private ArrayOps() {
     }
 
-    static <T> void forEach(final T @NotNull [] array, final @NotNull Consumer<? super T> action) {
+    static <T> void forEach(final T[] array, final Consumer<? super T> action) {
         forEachFrom(array, 0, action);
     }
 
-    static <T> void forEachFrom(final T @NotNull [] array, final int start, final @NotNull Consumer<? super T> action) {
+    static <T> void forEachFrom(final T[] array, final int start, final Consumer<? super T> action) {
         final var length = array.length;
         for (int i = start; i < length; i += 1) {
             action.accept(array[i]);
         }
     }
 
-    static <T> boolean anySatisfies(final T @NotNull [] array, final @NotNull Predicate<? super T> predicate) {
+    static <T> boolean anySatisfies(final T[] array, final Predicate<? super T> predicate) {
         for (final var item : array) {
             if (predicate.test(item)) {
                 return true;
@@ -33,10 +34,7 @@ final class ArrayOps {
         return false;
     }
 
-    static <T, U> U @NotNull [] map(
-        final T @NotNull [] array,
-        final @NotNull Function<? super T, ? extends U> function
-    ) {
+    static <T, U> U[] map(final T[] array, final Function<? super T, ? extends U> function) {
         final var length = array.length;
         @SuppressWarnings("unchecked") final var newArray = (U[]) newArray(array, length);
         for (int i = 0; i < length; i += 1) {
@@ -45,13 +43,13 @@ final class ArrayOps {
         return newArray;
     }
 
-    static <T> T @NotNull [] updated(final T @NotNull [] array, final int index, final T element) {
+    static <T> T[] updated(final T[] array, final int index, final T element) {
         final var newArray = array.clone();
         newArray[index] = element;
         return newArray;
     }
 
-    static <T> T @NotNull [] prepended(final T @NotNull [] array, final T element) {
+    static <T> T[] prepended(final T[] array, final T element) {
         final var oldLength = array.length;
         final var newArray = newArray(array, oldLength + 1);
         newArray[0] = element;
@@ -59,14 +57,14 @@ final class ArrayOps {
         return newArray;
     }
 
-    static <T> T @NotNull [] appended(final T @NotNull [] array, final T element) {
+    static <T> T[] appended(final T[] array, final T element) {
         final var oldLength = array.length;
         final var newArray = Arrays.copyOf(array, oldLength + 1);
         newArray[oldLength] = element;
         return newArray;
     }
 
-    static <T> T @NotNull [] prependedSlice(final T @NotNull [] array, final T object) {
+    static <T> T[] prependedSlice(final T[] array, final T object) {
         final var elementsToCopy = array.length - Seq.maxChunkLength;
         final var newArray = newArray(array, elementsToCopy + 1);
         newArray[0] = object;
@@ -74,7 +72,7 @@ final class ArrayOps {
         return newArray;
     }
 
-    static <T> T @NotNull [] appendedSlice(final T @NotNull [] array, final T object) {
+    static <T> T[] appendedSlice(final T[] array, final T object) {
         final var elementsToCopy = array.length - Seq.maxChunkLength;
         final var newArray = newArray(array, elementsToCopy + 1);
         System.arraycopy(array, Seq.maxChunkLength, newArray, 0, elementsToCopy);
@@ -82,18 +80,18 @@ final class ArrayOps {
         return newArray;
     }
 
-    static <T> T @NotNull [] concat(final T @NotNull [] front, final T @NotNull [] back) {
+    static <T> T[] concat(final T[] front, final T[] back) {
         assert front.getClass() == back.getClass();
         return appendedRange(front, back, back.length);
     }
 
-    static <T> @NotNull Split<T> split(final T @NotNull [] array) {
+    static <T> Split<T> split(final T[] array) {
         final var length = array.length;
         final var midpoint = length / 2;
         return new Split<>(Arrays.copyOf(array, midpoint), Arrays.copyOfRange(array, midpoint, length));
     }
 
-    static <T> @NotNull Split<T> concatSplitAt(final T @NotNull [] front, final T @NotNull [] back, final int index) {
+    static <T> Split<T> concatSplitAt(final T[] front, final T[] back, final int index) {
         assert front.getClass() == back.getClass();
         final var frontLength = front.length;
         final var backLength = back.length;
@@ -114,15 +112,11 @@ final class ArrayOps {
     }
 
     @SuppressWarnings("unchecked")
-    static <T> T @NotNull [] newArray(final T @NotNull [] original, final int length) {
+    static <T> T[] newArray(final T[] original, final int length) {
         return (T[]) Array.newInstance(original.getClass().getComponentType(), length);
     }
 
-    private static <T> T @NotNull [] appendedRange(
-        final T @NotNull [] front,
-        final T @NotNull [] back,
-        final int backEnd
-    ) {
+    private static <T> T[] appendedRange(final T[] front, final T[] back, final int backEnd) {
         final var frontLength = front.length;
         final var newLength = frontLength + backEnd;
         if (newLength == 0) {
@@ -133,11 +127,7 @@ final class ArrayOps {
         return newArray;
     }
 
-    private static <T> T @NotNull [] prependedRange(
-        final T @NotNull [] front,
-        final T @NotNull [] back,
-        final int frontStart
-    ) {
+    private static <T> T[] prependedRange(final T[] front, final T[] back, final int frontStart) {
         final var frontLength = front.length;
         final var backLength = back.length;
         final var frontElementCount = frontLength - frontStart;
@@ -147,6 +137,6 @@ final class ArrayOps {
         return newArray;
     }
 
-    record Split<T>(T @NotNull [] front, T @NotNull [] back) {
+    record Split<T>(T[] front, T[] back) {
     }
 }

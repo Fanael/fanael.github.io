@@ -3,7 +3,6 @@
 package greenspun.sexp;
 
 import java.util.concurrent.ConcurrentHashMap;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A table for interning Lisp symbols.
@@ -31,7 +30,7 @@ public final class SymbolTable {
      * to that existing symbol is returned. Otherwise, a new symbol is created and recorded as the canonical
      * representation of that symbol, that will be returned by future calls with the same symbol name.
      */
-    public @NotNull Sexp.Symbol intern(final @NotNull String symbolName) {
+    public Sexp.Symbol intern(final String symbolName) {
         // Try retrieving the already-interned symbol first: retrievals are guaranteed to not entail any locking by CHM
         // javadoc, and symbols almost always already exist.
         final var symbol = symbols.get(symbolName);

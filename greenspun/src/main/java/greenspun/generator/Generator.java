@@ -24,11 +24,10 @@ import greenspun.sexp.reader.ByteStream;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.CollectionExecutorService;
 import greenspun.util.Trace;
+import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.exception.IOExceptionCondition;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The entry point to the generation process proper.
@@ -42,10 +41,10 @@ public final class Generator {
      * Pygments cache.
      */
     public Generator(
-        final @NotNull Path sourceDirectory,
-        final @NotNull Path destinationDirectory,
-        final @NotNull ExecutorService executorService,
-        final @NotNull PygmentsCache pygmentsCache
+        final Path sourceDirectory,
+        final Path destinationDirectory,
+        final ExecutorService executorService,
+        final PygmentsCache pygmentsCache
     ) {
         this.sourceDirectory = sourceDirectory;
         this.destinationDirectory = destinationDirectory;
@@ -75,7 +74,7 @@ public final class Generator {
      * Since this method basically does everything, it can signal just about any
      * {@link greenspun.util.condition.Condition}.
      */
-    public void generate(final @NotNull Instant buildTime) {
+    public void generate(final Instant buildTime) {
         initializeDestinationDirectory();
         final var targets = new TargetDiscovery(sourceDirectory, destinationDirectory).discover();
         // NB: IO is not parallelized here, because it happens to not be beneficial; directories cannot be processed in
@@ -102,7 +101,7 @@ public final class Generator {
         }
     }
 
-    private void unlinkFile(final @NotNull Path destinationRelativePath) {
+    private void unlinkFile(final Path destinationRelativePath) {
         try (final var trace = new Trace(() -> "Unlinking unneeded file: " + destinationRelativePath)) {
             trace.use();
             Files.delete(destinationDirectory.resolve(destinationRelativePath));
@@ -111,7 +110,7 @@ public final class Generator {
         }
     }
 
-    private void copyFiles(final @NotNull Seq<Target> targets) {
+    private void copyFiles(final Seq<Target> targets) {
         for (final var target : targets) {
             final var sourcePath = target.sourcePath();
             try (final var trace = new Trace(() -> "Copying static file: " + sourcePath)) {
@@ -127,12 +126,12 @@ public final class Generator {
         }
     }
 
-    private void generatePages(final @NotNull Seq<Target> targets) {
+    private void generatePages(final Seq<Target> targets) {
         final var renderer = makeNonArticleRenderer();
         executor.forEach(targets, target -> generatePage(target, renderer));
     }
 
-    private void generatePage(final @NotNull Target target, final @NotNull Renderer renderer) {
+    private void generatePage(final Target target, final Renderer renderer) {
         final var sourcePath = target.sourcePath();
         try (final var trace = new Trace("Generating non-article page from " + sourcePath)) {
             trace.use();
@@ -143,14 +142,14 @@ public final class Generator {
         }
     }
 
-    private @NotNull Seq<ArchivedArticle> generateArticles(final @NotNull Seq<Target> targets) {
+    private Seq<ArchivedArticle> generateArticles(final Seq<Target> targets) {
         // Use the file name as a tie-breaker to ensure we don't rely on the order the file system returned paths in.
         final var articles = executor.map(targets, this::loadArticle).sorted(
-            Comparator.comparing((final @NotNull LoadedArticle article) -> article.article.date())
+            Comparator.comparing((final LoadedArticle article) -> article.article.date())
                 .thenComparing(article -> article.target().sourcePath())
                 .reversed()
         );
-        final var orderedArticles = new Seq.Builder<@NotNull OrderedArticle>();
+        final var orderedArticles = new Seq.Builder<OrderedArticle>();
         @Nullable LoadedArticle successor = null;
         for (var it = articles; !it.isEmpty(); ) {
             final var article = it.first();
@@ -167,10 +166,7 @@ public final class Generator {
         return executor.map(orderedArticles.toSeq(), article -> generateArticle(article, renderer));
     }
 
-    private @NotNull ArchivedArticle generateArticle(
-        final @NotNull OrderedArticle orderedArticle,
-        final @NotNull Renderer renderer
-    ) {
+    private ArchivedArticle generateArticle(final OrderedArticle orderedArticle, final Renderer renderer) {
         var outerArticle = orderedArticle;
         while (true) {
             final var article = outerArticle;
@@ -190,7 +186,7 @@ public final class Generator {
         }
     }
 
-    private @NotNull OrderedArticle reloadWithSameDate(final @NotNull OrderedArticle originalArticle) {
+    private OrderedArticle reloadWithSameDate(final OrderedArticle originalArticle) {
         final var target = originalArticle.target;
         final var originalDate = originalArticle.article.date();
         try (final var trace = new Trace(() -> "Reloading article from " + target.sourcePath())) {
@@ -213,7 +209,7 @@ public final class Generator {
         }
     }
 
-    private void serializeDomTree(final @NotNull Path destinationRelativePath, final @NotNull Node rootNode) {
+    private void serializeDomTree(final Path destinationRelativePath, final Node rootNode) {
         Verifier.verify(rootNode);
         final var destinationPath = destinationDirectory.resolve(destinationRelativePath);
         try (final var trace = new Trace(() -> "Saving HTML to " + destinationPath)) {
@@ -227,7 +223,7 @@ public final class Generator {
         }
     }
 
-    private @NotNull LoadedArticle loadArticle(final @NotNull Target target) {
+    private LoadedArticle loadArticle(final Target target) {
         final var fullSourcePath = sourceDirectory.resolve(target.sourcePath());
         while (true) {
             final var article = ConditionContext.withRestart("reload-article-and-retry", restart -> {
@@ -248,7 +244,7 @@ public final class Generator {
         }
     }
 
-    private static @NotNull ArchivedArticle stripSections(final @NotNull OrderedArticle orderedArticle) {
+    private static ArchivedArticle stripSections(final OrderedArticle orderedArticle) {
         final var innerArticle = orderedArticle.article;
         final var rootSection = innerArticle.rootSection();
         return new LoadedArticle(
@@ -264,7 +260,7 @@ public final class Generator {
         ).toArchivedArticle();
     }
 
-    private void generateArchives(final @NotNull Seq<ArchivedArticle> articles) {
+    private void generateArchives(final Seq<ArchivedArticle> articles) {
         try (final var outerTrace = new Trace("Generating blog archives")) {
             outerTrace.use();
             final var archivedQuarters = generateQuarterlyArchives(articles);
@@ -278,7 +274,7 @@ public final class Generator {
         }
     }
 
-    private @NotNull Seq<ArchivedTopic> generateTopicArchives(final @NotNull Seq<ArchivedArticle> articles) {
+    private Seq<ArchivedTopic> generateTopicArchives(final Seq<ArchivedArticle> articles) {
         try (final var outerTrace = new Trace("Generating per-topic blog archives")) {
             outerTrace.use();
             final var articlesByTopic = new HashMap<String, Seq<ArchivedArticle>>();
@@ -303,7 +299,7 @@ public final class Generator {
         }
     }
 
-    private @NotNull Seq<ArchivedQuarter> generateQuarterlyArchives(final @NotNull Seq<ArchivedArticle> articles) {
+    private Seq<ArchivedQuarter> generateQuarterlyArchives(final Seq<ArchivedArticle> articles) {
         try (final var outerTrace = new Trace("Generating per-quarter blog archives")) {
             outerTrace.use();
             final var articlesByQuarter = new HashMap<Quarter, Seq<ArchivedArticle>>();
@@ -326,7 +322,7 @@ public final class Generator {
         }
     }
 
-    private void generateFrontPage(final @NotNull Seq<ArchivedArticle> articles) {
+    private void generateFrontPage(final Seq<ArchivedArticle> articles) {
         try (final var trace = new Trace("Generating the front page")) {
             trace.use();
             final var domTree = makeArticleRenderer().renderFrontPage(articles);
@@ -334,7 +330,7 @@ public final class Generator {
         }
     }
 
-    private void generateFeed(final @NotNull Seq<ArchivedArticle> articles, final @NotNull Instant buildTime) {
+    private void generateFeed(final Seq<ArchivedArticle> articles, final Instant buildTime) {
         try (final var trace = new Trace("Generating RSS feed")) {
             trace.use();
             final var feedRenderer = new FeedRenderer();
@@ -348,7 +344,7 @@ public final class Generator {
         }
     }
 
-    private static void ensureDirectoryExists(final @NotNull Path path) {
+    private static void ensureDirectoryExists(final Path path) {
         try (final var trace = new Trace(() -> "Ensuring directory exists: " + path)) {
             trace.use();
             Files.createDirectory(path);
@@ -359,11 +355,11 @@ public final class Generator {
         }
     }
 
-    private static @NotNull Renderer makeArticleRenderer() {
+    private static Renderer makeArticleRenderer() {
         return new Renderer(HeaderRenderImpl.instance);
     }
 
-    private static @NotNull Renderer makeNonArticleRenderer() {
+    private static Renderer makeNonArticleRenderer() {
         return new Renderer(HeaderRenderMode.Skip.instance());
     }
 
@@ -373,10 +369,10 @@ public final class Generator {
     private static final Path archivesSubdirectoryPath = Path.of(archivesSubdirectoryName);
     private static final int frontPageArticleCount = 5;
 
-    private final @NotNull Path sourceDirectory;
-    private final @NotNull Path destinationDirectory;
-    private final @NotNull CollectionExecutorService executor;
-    private final @NotNull PygmentsCache pygmentsCache;
+    private final Path sourceDirectory;
+    private final Path destinationDirectory;
+    private final CollectionExecutorService executor;
+    private final PygmentsCache pygmentsCache;
     private final SymbolTable symbolTable = new SymbolTable();
 
     private static final class HeaderRenderImpl implements HeaderRenderMode {
@@ -386,19 +382,19 @@ public final class Generator {
         }
 
         @Override
-        public @NotNull String getTopicArchiveUri(final @NotNull String topicName) {
+        public String getTopicArchiveUri(final String topicName) {
             return "/archives/topic-" + topicName + ".html";
         }
 
         private static final HeaderRenderImpl instance = new HeaderRenderImpl();
     }
 
-    private record LoadedArticle(@NotNull Article article, @NotNull Target target) {
-        private @NotNull DomainRelativeUri destinationUri() {
+    private record LoadedArticle(Article article, Target target) {
+        private DomainRelativeUri destinationUri() {
             return new DomainRelativeUri(target.destinationPath());
         }
 
-        private @NotNull String identifier() {
+        private String identifier() {
             final var fileName = target.sourcePath().getFileName();
             assert fileName != null;
             final var string = fileName.toString();
@@ -406,14 +402,14 @@ public final class Generator {
             return (dotIndex == -1) ? string : string.substring(0, dotIndex);
         }
 
-        private @NotNull ArchivedArticle toArchivedArticle() {
+        private ArchivedArticle toArchivedArticle() {
             return new ArchivedArticle(article, identifier(), destinationUri());
         }
     }
 
     private record OrderedArticle(
-        @NotNull Article article,
-        @NotNull Target target,
+        Article article,
+        Target target,
         @Nullable DomainRelativeUri predecessorUri,
         @Nullable DomainRelativeUri successorUri
     ) {

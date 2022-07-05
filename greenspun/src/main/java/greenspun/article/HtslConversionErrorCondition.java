@@ -3,13 +3,12 @@
 package greenspun.article;
 
 import greenspun.util.condition.Condition;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A condition type indicating that an HTSL form could not be successfully converted into DOM nodes.
  */
 public final class HtslConversionErrorCondition extends Condition {
-    HtslConversionErrorCondition(final @NotNull String message) {
+    HtslConversionErrorCondition(final String message) {
         super(message);
     }
 }

@@ -4,11 +4,11 @@ package greenspun.generator;
 
 import java.io.File;
 import java.nio.file.Path;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import greenspun.util.annotation.Nullable;
 
 final class DomainRelativeUri {
-    DomainRelativeUri(final @NotNull Path path) {
+    DomainRelativeUri(final Path path) {
         assert !path.isAbsolute();
         string = '/' + path.toString().replace(File.separatorChar, '/');
     }
@@ -19,14 +19,15 @@ final class DomainRelativeUri {
     }
 
     @Override
+    @SuppressFBWarnings(value = "NP_METHOD_PARAMETER_TIGHTENS_ANNOTATION", justification = "False positive")
     public boolean equals(final @Nullable Object object) {
         return object instanceof DomainRelativeUri other && string.equals(other.string);
     }
 
     @Override
-    public @NotNull String toString() {
+    public String toString() {
         return string;
     }
 
-    private final @NotNull String string;
+    private final String string;
 }

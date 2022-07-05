@@ -3,9 +3,8 @@
 package greenspun.dom;
 
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
+import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A utility class containing operations on sequences of attributes.
@@ -17,10 +16,7 @@ public final class Attributes {
     /**
      * Retrieves the value of the attribute with the given name, or {@code null} if no such attribute is present.
      */
-    public static @Nullable Attribute get(
-        final @NotNull Seq<@NotNull Attribute> attributes,
-        final @NotNull java.lang.String name
-    ) {
+    public static @Nullable Attribute get(final Seq<Attribute> attributes, final String name) {
         for (final var attribute : attributes) {
             if (name.equals(attribute.name())) {
                 return attribute;
@@ -36,10 +32,7 @@ public final class Attributes {
      * is appended.
      */
     @CheckReturnValue
-    public static @NotNull Seq<@NotNull Attribute> updated(
-        final @NotNull Seq<@NotNull Attribute> attributes,
-        final @NotNull Attribute attribute
-    ) {
+    public static Seq<Attribute> updated(final Seq<Attribute> attributes, final Attribute attribute) {
         final var name = attribute.name();
         for (final var it = attributes.iterator(); it.hasNext(); ) {
             final var attr = it.next();
@@ -57,10 +50,7 @@ public final class Attributes {
      * a new class attribute is created and added to the sequence.
      */
     @CheckReturnValue
-    public static @NotNull Seq<@NotNull Attribute> addedClass(
-        final @NotNull Seq<@NotNull Attribute> attributes,
-        final @NotNull String className
-    ) {
+    public static Seq<Attribute> addedClass(final Seq<Attribute> attributes, final String className) {
         for (final var it = attributes.iterator(); it.hasNext(); ) {
             final var attr = it.next();
             if ("class".equals(attr.name())) {

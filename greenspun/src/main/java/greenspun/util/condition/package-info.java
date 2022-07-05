@@ -4,4 +4,7 @@
 /**
  * Common Lisp-inspired condition and restart system.
  */
+@NonNullByDefault
 package greenspun.util.condition;
+
+import greenspun.util.annotation.NonNullByDefault;

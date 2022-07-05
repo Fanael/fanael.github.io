@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.condition;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import greenspun.util.annotation.Nullable;
 
 /**
  * A condition handler, intended to be used within try-with-resources.
@@ -18,7 +17,7 @@ public final class Handler implements AutoCloseable {
      * <p>
      * The handler procedure is called whenever a condition is signaled and no later handler diverts the control flow.
      */
-    public Handler(final @NotNull HandlerProcedure procedure) {
+    public Handler(final HandlerProcedure procedure) {
         final var context = ConditionContext.localContext();
         next = context.firstHandler;
         this.procedure = procedure;
@@ -42,11 +41,11 @@ public final class Handler implements AutoCloseable {
         ownerContext.firstHandler = next;
     }
 
-    void handle(final @NotNull SignaledCondition condition) {
+    void handle(final SignaledCondition condition) {
         procedure.handle(condition);
     }
 
-    boolean usableIn(final @NotNull ConditionContext context) {
+    boolean usableIn(final ConditionContext context) {
         return ownerContext == context || procedure instanceof HandlerProcedure.ThreadSafe;
     }
 
@@ -56,6 +55,6 @@ public final class Handler implements AutoCloseable {
     }
 
     final @Nullable Handler next;
-    private final @NotNull HandlerProcedure procedure;
-    private final @NotNull ConditionContext ownerContext;
+    private final HandlerProcedure procedure;
+    private final ConditionContext ownerContext;
 }
