@@ -43,7 +43,7 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    public @NotNull Itr<T> iterator() {
+    public @NotNull Seq.Itr<T> iterator() {
         return new Itr<>(values);
     }
 

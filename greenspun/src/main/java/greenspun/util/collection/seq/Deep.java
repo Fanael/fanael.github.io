@@ -25,7 +25,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    public @NotNull Itr<T> iterator() {
+    public @NotNull Seq.Itr<T> iterator() {
         return new Itr<>(this);
     }
 
@@ -466,13 +466,15 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
 
     static final class Itr<T> extends Seq.Itr<T> {
         private Itr(final @NotNull Deep<T, ?> parent) {
+            assert parent.tag == Tag.unit();
             array = parent.prefix;
-            this.parent = parent;
+            remainingMiddle = parent.middle;
+            remainingSuffix = parent.suffix;
         }
 
         @Override
         public boolean hasNext() {
-            return index < array.length || currentStage != Stage.SUFFIX;
+            return index < array.length || remainingSuffix != null;
         }
 
         @Override
@@ -495,7 +497,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
             while (true) {
                 ArrayOps.forEachFrom(array, index, action);
                 sequenceIndex += array.length - index;
-                if (currentStage == Stage.SUFFIX) {
+                if (remainingSuffix == null) {
                     break;
                 }
                 nextArray();
@@ -509,55 +511,33 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
 
         private void nextArray() {
-            switch (currentStage) {
-                case PREFIX -> tryFirstChunk();
-                case MIDDLE -> tryNextChunk();
-                case SUFFIX -> throw noMoreElements();
-            }
-        }
-
-        private void tryFirstChunk() {
-            final var middle = parent.middle;
-            if (middle.isEmpty()) {
-                changeStage(Stage.SUFFIX, parent.suffix);
+            if (remainingMiddle.isEmpty()) {
+                nextArrayFromSuffix();
             } else {
-                chunkIterator = middle.iterator();
-                changeStage(Stage.MIDDLE, chunkIterator.next().values);
+                nextArrayFromMiddle();
             }
-        }
-
-        private void tryNextChunk() {
-            assert chunkIterator != null;
-            if (chunkIterator.hasNext()) {
-                setArray(chunkIterator.next().values);
-            } else {
-                chunkIterator = null;
-                changeStage(Stage.SUFFIX, parent.suffix);
-            }
-        }
-
-        private void changeStage(final @NotNull Stage newStage, final T @NotNull [] newArray) {
-            currentStage = newStage;
-            setArray(newArray);
-        }
-
-        private void setArray(final T @NotNull [] newArray) {
-            array = newArray;
             index = 0;
+        }
+
+        private void nextArrayFromMiddle() {
+            array = remainingMiddle.first().values;
+            remainingMiddle = remainingMiddle.withoutFirst();
+        }
+
+        private void nextArrayFromSuffix() {
+            if (remainingSuffix == null) {
+                throw noMoreElements();
+            }
+            array = remainingSuffix;
+            remainingSuffix = null;
         }
 
         private int index = 0;
         private T @NotNull [] array;
         private long sequenceIndex = 0;
-        private @NotNull Stage currentStage = Stage.PREFIX;
-        private @Nullable Seq.Itr<@NotNull Chunk<T>> chunkIterator = null;
-        private final @NotNull Deep<T, ?> parent;
+        private @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> remainingMiddle;
+        private T @Nullable [] remainingSuffix;
 
-        private enum Stage {
-            PREFIX,
-            MIDDLE,
-            SUFFIX,
-        }
     }
 
     private record PartialFront<T>(T @NotNull [] prefix, @NotNull TaggedSeq<@NotNull Chunk<T>, Chunk<?>> middle) {
