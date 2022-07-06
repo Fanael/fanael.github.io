@@ -310,10 +310,10 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      */
     @Override
     // The semantics of this method are too complex to express in CF terms.
-    @SuppressWarnings({"nullness:override.param", "nullness:assignment"})
+    @SuppressWarnings({"nullness:override.param", "nullness:conditional", "nullness:return"})
     public final <U> U @NonNull [] toArray(final U[] array) {
         final var length = getEffectiveArraySize();
-        final var usedArray = (array.length >= length) ? array : ArrayOps.newArray(array, length);
+        final @Nullable U[] usedArray = (array.length >= length) ? array : ArrayOps.newArray(array, length);
         forEachArray(new ArrayFiller<>(usedArray));
         if (usedArray.length > length) {
             usedArray[length] = null;

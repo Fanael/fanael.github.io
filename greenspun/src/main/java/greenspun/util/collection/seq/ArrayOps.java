@@ -64,9 +64,10 @@ final class ArrayOps {
         return prependedImpl(array, object, array.length - Seq.maxChunkLength);
     }
 
+    @SuppressWarnings("nullness:return") // We know we've filled the array, but CF doesn't.
     static <T> T[] appendedSlice(final T[] array, final T object) {
         final var elementsToCopy = array.length - Seq.maxChunkLength;
-        final var newArray = newArray(array, elementsToCopy + 1);
+        final @Nullable T[] newArray = newArray(array, elementsToCopy + 1);
         System.arraycopy(array, Seq.maxChunkLength, newArray, 0, elementsToCopy);
         newArray[elementsToCopy] = object;
         return newArray;
@@ -116,8 +117,8 @@ final class ArrayOps {
     }
 
     @SuppressWarnings({"unchecked", "nullness:argument"}) // The argument is an array, it always has a component type.
-    static <T> T[] newArray(final T[] original, final int length) {
-        return (T[]) Array.newInstance(original.getClass().getComponentType(), length);
+    static <T> @Nullable T[] newArray(final T[] original, final int length) {
+        return (@Nullable T[]) Array.newInstance(original.getClass().getComponentType(), length);
     }
 
     @SuppressWarnings("nullness:return") // We know we've filled the array, but CF doesn't.
@@ -132,18 +133,20 @@ final class ArrayOps {
         return newArray;
     }
 
+    @SuppressWarnings("nullness:return") // We know we've filled the array, but CF doesn't.
     private static <T> T[] prependedRange(final T[] front, final T[] back, final int frontStart) {
         final var frontLength = front.length;
         final var backLength = back.length;
         final var frontElementCount = frontLength - frontStart;
-        final var newArray = newArray(front, back.length + frontLength - frontStart);
+        final @Nullable T[] newArray = newArray(front, back.length + frontLength - frontStart);
         System.arraycopy(front, frontStart, newArray, 0, frontElementCount);
         System.arraycopy(back, 0, newArray, frontElementCount, backLength);
         return newArray;
     }
 
+    @SuppressWarnings("nullness:return") // We know we've filled the array, but CF doesn't.
     private static <T> T[] prependedImpl(final T[] array, final T element, final int oldLength) {
-        final var newArray = newArray(array, oldLength + 1);
+        final @Nullable T[] newArray = newArray(array, oldLength + 1);
         newArray[0] = element;
         System.arraycopy(array, 0, newArray, 1, oldLength);
         return newArray;
