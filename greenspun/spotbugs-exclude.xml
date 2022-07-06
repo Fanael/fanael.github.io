@@ -6,6 +6,12 @@
     <Match>
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Match>
+    <Match>
+        <Bug pattern="NP_NONNULL_RETURN_VIOLATION"/>
+    </Match>
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+    </Match>
     <!-- These two love to complain about "mutable" types that are actually immutable -->
     <Match>
         <Bug pattern="EI_EXPOSE_REP"/>

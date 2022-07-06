@@ -49,11 +49,7 @@ final class ArrayOps {
     }
 
     static <T> T[] prepended(final T[] array, final T element) {
-        final var oldLength = array.length;
-        final var newArray = newArray(array, oldLength + 1);
-        newArray[0] = element;
-        System.arraycopy(array, 0, newArray, 1, oldLength);
-        return newArray;
+        return prependedImpl(array, element, array.length);
     }
 
     @SuppressWarnings("nullness:return") // We know we've filled the array, but CF doesn't.
@@ -65,11 +61,7 @@ final class ArrayOps {
     }
 
     static <T> T[] prependedSlice(final T[] array, final T object) {
-        final var elementsToCopy = array.length - Seq.maxChunkLength;
-        final var newArray = newArray(array, elementsToCopy + 1);
-        newArray[0] = object;
-        System.arraycopy(array, 0, newArray, 1, elementsToCopy);
-        return newArray;
+        return prependedImpl(array, object, array.length - Seq.maxChunkLength);
     }
 
     static <T> T[] appendedSlice(final T[] array, final T object) {
@@ -147,6 +139,13 @@ final class ArrayOps {
         final var newArray = newArray(front, back.length + frontLength - frontStart);
         System.arraycopy(front, frontStart, newArray, 0, frontElementCount);
         System.arraycopy(back, 0, newArray, frontElementCount, backLength);
+        return newArray;
+    }
+
+    private static <T> T[] prependedImpl(final T[] array, final T element, final int oldLength) {
+        final var newArray = newArray(array, oldLength + 1);
+        newArray[0] = element;
+        System.arraycopy(array, 0, newArray, 1, oldLength);
         return newArray;
     }
 
