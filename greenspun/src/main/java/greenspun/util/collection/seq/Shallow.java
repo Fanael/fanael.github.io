@@ -2,15 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.collection.seq;
 
-import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import greenspun.util.annotation.NonNull;
-import greenspun.util.annotation.NonNullByDefault;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-@NonNullByDefault
 final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
     Shallow(final Tag<T, Phantom> tag, final long subtreeSize, final T[] values) {
         super(tag, subtreeSize);
@@ -45,7 +42,7 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    public @NonNull Seq.Itr<T> iterator() {
+    public Seq.@NonNull Itr<T> iterator() {
         return new Itr<>(values);
     }
 
@@ -72,39 +69,39 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> updatedFirst(final T object) {
+    public TaggedSeq<T, Phantom> updatedFirst(final T object) {
         checkNonEmpty("updatedFirst called on an empty sequence");
         final var newSize = updateSize(object, first());
         return new Shallow<>(tag, newSize, ArrayOps.updated(values, 0, object));
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> updatedLast(final T object) {
+    public TaggedSeq<T, Phantom> updatedLast(final T object) {
         checkNonEmpty("updatedLast called on an empty sequence");
         final var newSize = updateSize(object, last());
         return new Shallow<>(tag, newSize, ArrayOps.updated(values, values.length - 1, object));
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> prepended(final T object) {
+    public TaggedSeq<T, Phantom> prepended(final T object) {
         final var newSize = addToSize(object);
         return (values.length < maxChunkLength) ? prependedSimple(newSize, object) : prependedDeep(newSize, object);
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> appended(final T object) {
+    public TaggedSeq<T, Phantom> appended(final T object) {
         final var newSize = addToSize(object);
         return (values.length < maxChunkLength) ? appendedSimple(newSize, object) : appendedDeep(newSize, object);
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> withoutFirst() {
+    public TaggedSeq<T, Phantom> withoutFirst() {
         checkNonEmpty("withoutFirst called on an empty sequence");
         return (values.length > 1) ? withoutFirstImpl() : tag.emptySeq();
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> withoutLast() {
+    public TaggedSeq<T, Phantom> withoutLast() {
         checkNonEmpty("withoutLast called on an empty sequence");
         return (values.length > 1) ? withoutLastImpl() : tag.emptySeq();
     }
@@ -115,7 +112,7 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    @NonNull GetResult<T> getImpl(final long index, final long accumulator) {
+    GetResult<T> getImpl(final long index, final long accumulator) {
         final var splitPoint = tag.findSplitPoint(values, index, accumulator);
         return getFromArray(values, splitPoint);
     }
@@ -126,7 +123,7 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    T @NonNull [] toSmallArray() {
+    T[] toSmallArray() {
         assert eligibleForInsertionSort();
         return values.clone();
     }
@@ -171,12 +168,12 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
 
     private Shallow<T, Phantom> withoutFirstImpl() {
         final var newSize = subtractFromSize(first());
-        return new Shallow<>(tag, newSize, Arrays.copyOfRange(values, 1, values.length));
+        return new Shallow<>(tag, newSize, ArrayOps.slice(values, 1, values.length));
     }
 
     private Shallow<T, Phantom> withoutLastImpl() {
         final var newSize = subtractFromSize(last());
-        return new Shallow<>(tag, newSize, Arrays.copyOf(values, values.length - 1));
+        return new Shallow<>(tag, newSize, ArrayOps.take(values, values.length - 1));
     }
 
     private TaggedSeq<T, Phantom> concatShallow(final Shallow<T, Phantom> other) {

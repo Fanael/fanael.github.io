@@ -5,7 +5,7 @@ package greenspun.generator;
 import java.io.File;
 import java.nio.file.Path;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import greenspun.util.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 final class DomainRelativeUri {
     DomainRelativeUri(final Path path) {

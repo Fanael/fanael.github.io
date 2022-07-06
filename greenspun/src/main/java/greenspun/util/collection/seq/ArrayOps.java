@@ -7,9 +7,8 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import greenspun.util.annotation.NonNullByDefault;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-@NonNullByDefault
 final class ArrayOps {
     private ArrayOps() {
     }
@@ -57,9 +56,10 @@ final class ArrayOps {
         return newArray;
     }
 
+    @SuppressWarnings("nullness:return") // We know we've filled the array, but CF doesn't.
     static <T> T[] appended(final T[] array, final T element) {
         final var oldLength = array.length;
-        final var newArray = Arrays.copyOf(array, oldLength + 1);
+        final @Nullable T[] newArray = Arrays.copyOf(array, oldLength + 1);
         newArray[oldLength] = element;
         return newArray;
     }
@@ -88,7 +88,7 @@ final class ArrayOps {
     static <T> Split<T> split(final T[] array) {
         final var length = array.length;
         final var midpoint = length / 2;
-        return new Split<>(Arrays.copyOf(array, midpoint), Arrays.copyOfRange(array, midpoint, length));
+        return new Split<>(take(array, midpoint), slice(array, midpoint, length));
     }
 
     static <T> Split<T> concatSplitAt(final T[] front, final T[] back, final int index) {
@@ -100,29 +100,42 @@ final class ArrayOps {
         if (index == frontLength) {
             return new Split<>(front, back);
         } else if (index < frontLength) {
-            final var newFront = Arrays.copyOf(front, index);
+            final var newFront = take(front, index);
             final var newBack = prependedRange(front, back, index);
             return new Split<>(newFront, newBack);
         } else {
             final var newBackStart = index - frontLength;
             final var newFront = appendedRange(front, back, newBackStart);
-            final var newBack = Arrays.copyOfRange(back, newBackStart, backLength);
+            final var newBack = slice(back, newBackStart, backLength);
             return new Split<>(newFront, newBack);
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("nullness:return") // This always returns a sub-array, there's never any null elements.
+    static <T> T[] take(final T[] array, final int newLength) {
+        assert newLength < array.length;
+        return Arrays.copyOf(array, newLength);
+    }
+
+    @SuppressWarnings("nullness:return") // This always returns a sub-array, there's never any null elements.
+    static <T> T[] slice(final T[] array, final int fromIndex, final int toIndex) {
+        assert toIndex <= array.length;
+        return Arrays.copyOfRange(array, fromIndex, toIndex);
+    }
+
+    @SuppressWarnings({"unchecked", "nullness:argument"}) // The argument is an array, it always has a component type.
     static <T> T[] newArray(final T[] original, final int length) {
         return (T[]) Array.newInstance(original.getClass().getComponentType(), length);
     }
 
+    @SuppressWarnings("nullness:return") // We know we've filled the array, but CF doesn't.
     private static <T> T[] appendedRange(final T[] front, final T[] back, final int backEnd) {
         final var frontLength = front.length;
         final var newLength = frontLength + backEnd;
         if (newLength == 0) {
             return front;
         }
-        final var newArray = Arrays.copyOf(front, newLength);
+        final @Nullable T[] newArray = Arrays.copyOf(front, newLength);
         System.arraycopy(back, 0, newArray, frontLength, backEnd);
         return newArray;
     }

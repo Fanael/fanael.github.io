@@ -4,9 +4,10 @@ package greenspun.sexp.reader;
 
 import java.io.IOException;
 import java.io.InputStream;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.exception.IOExceptionCondition;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * An input stream of bytes with single-byte lookahead.
@@ -20,7 +21,7 @@ public final class ByteStream {
      * The stream is buffered internally in order to provide lookahead, so the passed stream does not need to be
      * buffered for performance.
      */
-    public ByteStream(final InputStream stream) {
+    public ByteStream(final @NonNull InputStream stream) {
         this.stream = stream;
         buffer = new byte[streamBufferCapacity];
         position = 0;

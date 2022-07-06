@@ -16,10 +16,11 @@ import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.Trace;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
+import org.checkerframework.checker.nullness.qual.KeyFor;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The article parser: the primary means of turning S-expressions into parsed {@link Article} objects.
@@ -155,7 +156,7 @@ public final class Parser {
     private Section linkSection(final PartialSection section) {
         final var linkedChildren = section.childIds.map(childId -> {
             final var child = sectionsById.get(childId);
-            assert child != null : "Reference to unknown section not found by graph verification?";
+            assert child != null : "Undetected reference to unknown section? @AssumeAssertion(nullness)";
             return linkSection(child);
         });
         return new Section(section.identifier, section.header, linkedChildren, section.body);
@@ -176,7 +177,10 @@ public final class Parser {
         try {
             return LocalDate.of(year, month, day);
         } catch (final DateTimeException e) {
-            throw signalError(e.getMessage());
+            final var originalMessage = e.getMessage();
+            throw signalError((originalMessage != null)
+                ? originalMessage
+                : ("Property :date couldn't be parsed: " + Sexps.prettyPrint(value)));
         }
     }
 
@@ -342,7 +346,8 @@ public final class Parser {
             while (!stack.isEmpty()) {
                 final var reference = stack.last();
                 stack = stack.withoutLast();
-                final var sectionId = reference.section;
+                @SuppressWarnings("keyfor") // We know it's a valid key in both maps, but CF doesn't.
+                final Sexp.@KeyFor({"references", "sectionsById"}) Symbol sectionId = reference.section;
                 final var parentId = reference.parent;
                 if (parentId != null) {
                     references.get(sectionId).add(parentId);
@@ -383,7 +388,7 @@ public final class Parser {
         private final Map<Sexp.Symbol, PartialSection> sectionsById;
         private final HashMap<Sexp.Symbol, HashSet<Sexp.Symbol>> references = new HashMap<>();
 
-        private record SectionParent(Sexp.Symbol section, @Nullable Sexp.Symbol parent) {
+        private record SectionParent(Sexp.Symbol section, Sexp.@Nullable Symbol parent) {
         }
     }
 }

@@ -11,8 +11,9 @@ import greenspun.dom.Attribute;
 import greenspun.dom.Attributes;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The renderer: the primary means of turning article and archive page data structures into complete DOM trees.
@@ -124,7 +125,7 @@ public final class Renderer {
     private static <T> Node.Element renderArchiveIndexSection(
         final String name,
         final Seq<? extends T> elements,
-        final Function<? super T, ? extends Node> linkFormatter
+        final Function<? super @NonNull T, ? extends Node> linkFormatter
     ) {
         return Node.simple(Tag.SECTION, Seq.of(
             Node.simple(Tag.H2, new Node.Text(name)),
@@ -265,7 +266,7 @@ public final class Renderer {
         return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
     }
 
-    private @Nullable Node.Element renderArticleTopics(final Seq<String> topics) {
+    private Node.@Nullable Element renderArticleTopics(final Seq<String> topics) {
         if (topics.isEmpty()) {
             return null;
         }
@@ -312,7 +313,7 @@ public final class Renderer {
 
     private static Node.Element renderSectionHeader(final Section section, final int nestingLevel) {
         final var headingTag = Tag.byHtmlName("h" + Math.min(nestingLevel, 6));
-        assert headingTag != null;
+        assert headingTag != null : "Heading tag not found? @AssumeAssertion(nullness)";
         return renderHeading(headingTag, '#' + section.identifier().symbolName(), section.header());
     }
 

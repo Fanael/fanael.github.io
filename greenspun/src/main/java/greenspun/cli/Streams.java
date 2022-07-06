@@ -10,6 +10,7 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.concurrent.locks.ReentrantLock;
 import greenspun.util.SneakyThrow;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 final class Streams implements AutoCloseable {
     // The corresponding unlock is in close(), so this is fine.
@@ -60,12 +61,12 @@ final class Streams implements AutoCloseable {
 
     private static final class StandardInput extends InputStream {
         @Override
-        public int read(final byte[] bytes) throws IOException {
+        public int read(final byte @NonNull [] bytes) throws IOException {
             return System.in.read(bytes);
         }
 
         @Override
-        public int read(final byte[] bytes, final int offset, final int length) throws IOException {
+        public int read(final byte @NonNull [] bytes, final int offset, final int length) throws IOException {
             return System.in.read(bytes, offset, length);
         }
 

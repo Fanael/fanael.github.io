@@ -4,7 +4,4 @@
 /**
  * Communication with the Pygments syntax highlighting server.
  */
-@NonNullByDefault
 package greenspun.pygments;
-
-import greenspun.util.annotation.NonNullByDefault;

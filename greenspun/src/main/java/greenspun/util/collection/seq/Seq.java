@@ -16,8 +16,8 @@ import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import greenspun.util.annotation.NonNull;
-import greenspun.util.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A general purpose persistent (immutable with efficient copy-and-update semantics) double-ended queue. It is intended
@@ -68,7 +68,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * <p>
      * Complexity: constant time.
      */
-    public static <T> @NonNull Seq<T> empty() {
+    public static <T> Seq<T> empty() {
         return Shallow.emptyUnit();
     }
 
@@ -77,7 +77,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * <p>
      * Complexity: constant time.
      */
-    public static <T> @NonNull Seq<T> of(final T element) {
+    public static <T> Seq<T> of(final T element) {
         return Shallow.ofUnits(element);
     }
 
@@ -86,7 +86,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * <p>
      * Complexity: constant time.
      */
-    public static <T> @NonNull Seq<T> of(final T e1, final T e2) {
+    public static <T> Seq<T> of(final T e1, final T e2) {
         return Shallow.ofUnits(e1, e2);
     }
 
@@ -95,7 +95,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * <p>
      * Complexity: constant time.
      */
-    public static <T> @NonNull Seq<T> of(final T e1, final T e2, final T e3) {
+    public static <T> Seq<T> of(final T e1, final T e2, final T e3) {
         return Shallow.ofUnits(e1, e2, e3);
     }
 
@@ -104,7 +104,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * <p>
      * Complexity: constant time.
      */
-    public static <T> @NonNull Seq<T> of(final T e1, final T e2, final T e3, final T e4) {
+    public static <T> Seq<T> of(final T e1, final T e2, final T e3, final T e4) {
         return Shallow.ofUnits(e1, e2, e3, e4);
     }
 
@@ -114,7 +114,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * Complexity: constant time if the iterable is already a {@code Seq}, linear time otherwise.
      */
     @SuppressWarnings("unchecked")
-    public static <T> @NonNull Seq<T> fromIterable(final @NonNull Iterable<? extends T> iterable) {
+    public static <T> Seq<T> fromIterable(final Iterable<? extends T> iterable) {
         if (iterable instanceof Seq<? extends T> seq) {
             return (Seq<T>) seq; // This cast is fine because Seq is immutable.
         }
@@ -133,9 +133,9 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * <p>
      * Complexity: linear time.
      */
-    public static <T, U> @NonNull Seq<U> mapIterable(
-        final @NonNull Iterable<? extends T> iterable,
-        final @NonNull Function<? super T, ? extends U> function
+    public static <T, U> Seq<U> mapIterable(
+        final Iterable<? extends T> iterable,
+        final Function<? super T, ? extends U> function
     ) {
         if (iterable instanceof Seq<? extends T> seq) {
             return seq.map(function);
@@ -147,11 +147,11 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         return builder.toSeq();
     }
 
-    static @NonNull NoSuchElementException noSuchElement(final @NonNull String message) {
+    static NoSuchElementException noSuchElement(final String message) {
         throw new NoSuchElementException(message);
     }
 
-    static @NonNull UnsupportedOperationException unsupportedModification() {
+    static UnsupportedOperationException unsupportedModification() {
         throw new UnsupportedOperationException("Sequences don't support in-place mutation");
     }
 
@@ -191,7 +191,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * Complexity: linear time.
      */
     @Override
-    public final @NonNull String toString() {
+    public final String toString() {
         if (isEmpty()) {
             return "[]";
         }
@@ -210,7 +210,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * Complexity: constant time.
      */
     @Override
-    public abstract @NonNull Itr<T> iterator();
+    public abstract Itr<T> iterator();
 
     /**
      * Performs the given action on each element of this sequence, in iteration order.
@@ -222,7 +222,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws NullPointerException if the action is {@code null}
      */
     @Override
-    public final void forEach(final @NonNull Consumer<? super T> action) {
+    public final void forEach(final Consumer<? super T> action) {
         Objects.requireNonNull(action); // Check eagerly in case we're empty.
         forEachArray(array -> ArrayOps.forEach(array, action));
     }
@@ -236,7 +236,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * Complexity: constant time.
      */
     @Override
-    public final @NonNull Spliterator<T> spliterator() {
+    public final Spliterator<T> spliterator() {
         return Spliterators.spliterator(iterator(), subtreeSize, Spliterator.ORDERED | Spliterator.IMMUTABLE);
     }
 
@@ -290,7 +290,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws OutOfMemoryError if this sequence is too large to fit in an array
      */
     @Override
-    public final Object @NonNull [] toArray() {
+    public final Object[] toArray() {
         return toArray(Object[]::new);
     }
 
@@ -309,7 +309,9 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws OutOfMemoryError if this sequence is too large to fit in an array
      */
     @Override
-    public final <U> U @NonNull [] toArray(final U @NonNull [] array) {
+    // The semantics of this method are too complex to express in CF terms.
+    @SuppressWarnings({"nullness:override.param", "nullness:assignment"})
+    public final <U> U @NonNull [] toArray(final U[] array) {
         final var length = getEffectiveArraySize();
         final var usedArray = (array.length >= length) ? array : ArrayOps.newArray(array, length);
         forEachArray(new ArrayFiller<>(usedArray));
@@ -329,7 +331,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws OutOfMemoryError if this sequence is too large to fit in an array
      */
     @Override
-    public final <U> U @NonNull [] toArray(final @NonNull IntFunction<U @NonNull []> generator) {
+    public final <U> U[] toArray(final IntFunction<U[]> generator) {
         final var array = generator.apply(getEffectiveArraySize());
         forEachArray(new ArrayFiller<>(array));
         return array;
@@ -344,7 +346,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @see #contains(Object)
      */
     @Override
-    public final boolean containsAll(final @NonNull Collection<?> collection) {
+    public final boolean containsAll(final Collection<?> collection) {
         for (final var element : collection) {
             if (!contains(element)) {
                 return false;
@@ -371,7 +373,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * <p>
      * Complexity: constant time if a matching element is close to either end, linear time otherwise.
      */
-    public abstract boolean anySatisfies(@NonNull Predicate<? super T> predicate);
+    public abstract boolean anySatisfies(Predicate<? super T> predicate);
 
     /**
      * Returns a sequence containing the results of applying the given function to the elements of this sequence, in
@@ -382,7 +384,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * Complexity: linear time.
      */
     @CheckReturnValue
-    public abstract <U> @NonNull Seq<U> map(@NonNull Function<? super T, ? extends U> function);
+    public abstract <U> Seq<U> map(Function<? super T, ? extends U> function);
 
     /**
      * Returns the first element of this sequence.
@@ -410,7 +412,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws NoSuchElementException if this sequence is empty
      */
     @CheckReturnValue
-    public abstract @NonNull Seq<T> updatedFirst(T object);
+    public abstract Seq<T> updatedFirst(T object);
 
     /**
      * Returns a copy of this sequence with the last element replaced with the given object.
@@ -420,7 +422,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws NoSuchElementException if this sequence is empty
      */
     @CheckReturnValue
-    public abstract @NonNull Seq<T> updatedLast(T object);
+    public abstract Seq<T> updatedLast(T object);
 
     /**
      * Returns a copy of this sequence with the given element prepended, that is, added as the new first element.
@@ -430,7 +432,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws OutOfMemoryError if the resulting sequence would be larger than {@link Long#MAX_VALUE}.
      **/
     @CheckReturnValue
-    public abstract @NonNull Seq<T> prepended(T object);
+    public abstract Seq<T> prepended(T object);
 
     /**
      * Returns a copy of this sequence with the given element appended, that is, added as the new last element.
@@ -440,7 +442,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws OutOfMemoryError if the resulting sequence would be larger than {@link Long#MAX_VALUE}.
      */
     @CheckReturnValue
-    public abstract @NonNull Seq<T> appended(T object);
+    public abstract Seq<T> appended(T object);
 
     /**
      * Returns a copy of this sequence with the first element removed.
@@ -450,7 +452,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws NoSuchElementException if this sequence is empty
      */
     @CheckReturnValue
-    public abstract @NonNull Seq<T> withoutFirst();
+    public abstract Seq<T> withoutFirst();
 
     /**
      * Returns a copy of this sequence with the last element removed.
@@ -460,7 +462,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws NoSuchElementException if this sequence is empty
      */
     @CheckReturnValue
-    public abstract @NonNull Seq<T> withoutLast();
+    public abstract Seq<T> withoutLast();
 
     /**
      * Returns a sequence containing the elements of this sequence followed by the elements of the given sequence.
@@ -470,7 +472,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws IllegalStateException if the resulting sequence would be larger than {@link Long#MAX_VALUE}.
      */
     @CheckReturnValue
-    public abstract @NonNull Seq<T> concat(@NonNull Seq<? extends T> other);
+    public abstract Seq<T> concat(Seq<? extends T> other);
 
     /**
      * Returns the element at the specified index in this sequence.
@@ -492,7 +494,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws IndexOutOfBoundsException if the index is out of range
      */
     @CheckReturnValue
-    public abstract @NonNull Seq<T> updated(final long index, final T newValue);
+    public abstract Seq<T> updated(final long index, final T newValue);
 
     /**
      * Splits this sequence into two at the given index.
@@ -505,7 +507,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws IndexOutOfBoundsException if the index is out of range
      */
     @CheckReturnValue
-    public final @NonNull Split<T> splitAt(final long index) {
+    public final Split<T> splitAt(final long index) {
         // Check the index once here, let children assume it's always valid.
         return splitAtImpl(Objects.checkFromToIndex(index, subtreeSize, subtreeSize));
     }
@@ -518,7 +520,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * Complexity: linear time if this sequence is already sorted or nearly sorted, O(n log n) otherwise.
      */
     @CheckReturnValue
-    public final @NonNull Seq<T> sorted(final @NonNull Comparator<? super T> comparator) {
+    public final Seq<T> sorted(final Comparator<? super T> comparator) {
         return sortedImpl(this, comparator);
     }
 
@@ -581,19 +583,19 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      */
     @Deprecated
     @Override
-    public final boolean removeIf(final @NonNull Predicate<? super T> filter) {
+    public final boolean removeIf(final Predicate<? super T> filter) {
         throw unsupportedModification();
     }
 
-    abstract void forEachArray(@NonNull ArrayConsumer<T> action);
+    abstract void forEachArray(ArrayConsumer<T> action);
 
-    abstract @NonNull GetResult<T> getImpl(long index, long accumulator);
+    abstract GetResult<T> getImpl(long index, long accumulator);
 
-    abstract @NonNull Split<T> splitAtImpl(long index);
+    abstract Split<T> splitAtImpl(long index);
 
     abstract boolean eligibleForInsertionSortImpl();
 
-    abstract T @NonNull [] toSmallArray();
+    abstract T[] toSmallArray();
 
     final boolean eligibleForInsertionSort() {
         return subtreeSize <= maxChunkLength && eligibleForInsertionSortImpl();
@@ -607,7 +609,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         }
     }
 
-    private boolean equalsImpl(final @NonNull Seq<?> other) {
+    private boolean equalsImpl(final Seq<?> other) {
         if (this == other) {
             return true;
         }
@@ -632,9 +634,9 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         return (int) subtreeSize;
     }
 
-    private static <T> @NonNull Seq<T> sortedImpl(
-        final @NonNull Seq<T> seq,
-        final @NonNull Comparator<? super T> comparator
+    private static <T> Seq<T> sortedImpl(
+        final Seq<T> seq,
+        final Comparator<? super T> comparator
     ) {
         final var size = seq.subtreeSize;
         if (size <= 1) {
@@ -654,10 +656,10 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         return merge(left, right, comparator);
     }
 
-    private static <T> @NonNull Seq<T> merge(
-        final @NonNull Seq<T> left,
-        final @NonNull Seq<T> right,
-        final @NonNull Comparator<? super T> comparator
+    private static <T> Seq<T> merge(
+        final Seq<T> left,
+        final Seq<T> right,
+        final Comparator<? super T> comparator
     ) {
         if (left.isEmpty()) {
             return right;
@@ -690,7 +692,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         }
     }
 
-    private static <T> void insertionSort(final T @NonNull [] array, final @NonNull Comparator<? super T> comparator) {
+    private static <T> void insertionSort(final T[] array, final Comparator<? super T> comparator) {
         final var length = array.length;
         for (int i = 1; i < length; i += 1) {
             for (int k = i; k > 0 && comparator.compare(array[k - 1], array[k]) > 0; k -= 1) {
@@ -715,7 +717,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
 
     @FunctionalInterface
     interface ArrayConsumer<T> {
-        void accept(T @NonNull [] array);
+        void accept(T[] array);
     }
 
     /**
@@ -727,7 +729,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         Itr() {
         }
 
-        static @NonNull NoSuchElementException noMoreElements() {
+        static NoSuchElementException noMoreElements() {
             throw noSuchElement("No more elements");
         }
 
@@ -780,7 +782,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
          * @throws NullPointerException if the action is null
          */
         @Override
-        public final void forEachRemaining(final @NonNull Consumer<? super T> action) {
+        public final void forEachRemaining(final Consumer<? super T> action) {
             Objects.requireNonNull(action); // Check for null just once, children can assume it's never null.
             forEachRemainingImpl(action);
         }
@@ -794,7 +796,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
             throw unsupportedModification();
         }
 
-        abstract void forEachRemainingImpl(@NonNull Consumer<? super T> action);
+        abstract void forEachRemainingImpl(Consumer<? super T> action);
     }
 
     /**
@@ -819,7 +821,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
          * Initializes a new sequence builder with the given sequence as its initial contents.
          */
         @SuppressWarnings("unchecked")
-        public Builder(final @NonNull Seq<T> sequence) {
+        public Builder(final Seq<T> sequence) {
             buffer = (T[]) new Object[maxChunkLength];
             this.sequence = sequence;
         }
@@ -831,7 +833,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
          * <p>
          * Complexity: constant time.
          */
-        public @NonNull Seq<T> toSeq() {
+        public Seq<T> toSeq() {
             flushBuffer();
             return sequence;
         }
@@ -843,7 +845,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
          * <p>
          * Complexity: constant time.
          */
-        public @NonNull Seq<T> take() {
+        public Seq<T> take() {
             final var result = toSeq();
             setSeq(empty());
             return result;
@@ -854,7 +856,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
          * <p>
          * Complexity: constant time.
          */
-        public void setSeq(final @NonNull Seq<T> sequence) {
+        public void setSeq(final Seq<T> sequence) {
             this.sequence = sequence;
             bufferIndex = 0;
         }
@@ -885,15 +887,15 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
             bufferIndex = 0;
         }
 
-        private final T @NonNull [] buffer;
+        private final T[] buffer;
         private int bufferIndex = 0;
-        private @NonNull Seq<T> sequence;
+        private Seq<T> sequence;
     }
 
     /**
      * Self-explanatory record representing the result of {@link #splitAt(long)}.
      */
-    public record Split<T>(@NonNull Seq<T> front, @NonNull Seq<T> back) {
+    public record Split<T>(Seq<T> front, Seq<T> back) {
     }
 
     record GetResult<T>(T element, long accumulator) {
@@ -901,7 +903,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
 
     private static final class HashCodeAccumulator<T> implements ArrayConsumer<T> {
         @Override
-        public void accept(final T @NonNull [] array) {
+        public void accept(final T[] array) {
             int hash = hashCode;
             for (final var item : array) {
                 hash = 31 * hash + Objects.hashCode(item);
@@ -913,18 +915,18 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
     }
 
     private static final class ArrayFiller<T extends U, U> implements ArrayConsumer<T> {
-        private ArrayFiller(final U @NonNull [] array) {
+        private ArrayFiller(final @Nullable U[] array) {
             this.array = array;
         }
 
         @Override
-        public void accept(final T @NonNull [] array) {
+        public void accept(final T[] array) {
             final var length = array.length;
             System.arraycopy(array, 0, this.array, index, length);
             index += length;
         }
 
-        private final U @NonNull [] array;
+        private final @Nullable U[] array;
         private int index = 0;
     }
 }

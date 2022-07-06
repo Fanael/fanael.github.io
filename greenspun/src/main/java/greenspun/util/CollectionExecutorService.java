@@ -11,6 +11,8 @@ import java.util.function.Function;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.Unwind;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A wrapper around {@link ExecutorService} providing convenient methods for concurrent operations on collections.
@@ -51,20 +53,21 @@ public final class CollectionExecutorService {
      */
     public <T> void forEach(
         final Iterable<? extends T> iterable,
-        final Consumer<? super T> consumer
+        final Consumer<? super @NonNull T> consumer
     ) {
-        waitForResults(submitTasks(iterable, value -> {
+        final Function<? super @NonNull T, @Nullable Object> function = value -> {
             consumer.accept(value);
             return null;
-        }));
+        };
+        waitForResults(submitTasks(iterable, function));
     }
 
     private <T, R> Seq<Future<R>> submitTasks(
         final Iterable<? extends T> iterable,
-        final Function<? super T, ? extends R> function
+        final Function<? super @NonNull T, ? extends R> function
     ) {
         final var inheritedState = ConditionContext.saveInheritableState();
-        return Seq.mapIterable(iterable, (item) -> executorService.submit(() -> {
+        return Seq.mapIterable(iterable, item -> executorService.submit(() -> {
             final var previousState = ConditionContext.inheritState(inheritedState);
             try (final var trace = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
                 trace.use();
@@ -81,8 +84,8 @@ public final class CollectionExecutorService {
         return builder.toSeq();
     }
 
-    private static void waitForResults(final Seq<? extends Future<?>> futures) {
-        new AwaitImpl<>(futures.iterator(), (value) -> {
+    private static void waitForResults(final Seq<? extends Future<? super @NonNull Object>> futures) {
+        new AwaitImpl<>(futures.iterator(), value -> {
         }).awaitAll();
     }
 
@@ -135,6 +138,7 @@ public final class CollectionExecutorService {
         private void recover(final ExecutionException executionException) {
             needsCancellation = true;
             final var cause = executionException.getCause();
+            assert cause != null : "ExecutionException with no cause? @AssumeAssertion(nullness)";
             switch (cause) {
                 // Cross-thread unwind to a restart found, rethrow it to continue unwinding in the parent thread.
                 case Unwind unwind -> throw SneakyThrow.doThrow(unwind);

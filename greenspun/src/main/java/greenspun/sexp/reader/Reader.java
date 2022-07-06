@@ -14,11 +14,11 @@ import java.util.Arrays;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.SymbolTable;
 import greenspun.util.UnreachableCodeReachedError;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.exception.IOExceptionCondition;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The S-expression reader: the primary means of converting a stream of bytes into a stream of {@link Sexp} objects.

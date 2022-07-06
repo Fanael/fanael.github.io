@@ -2,15 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.collection.seq;
 
-import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import greenspun.util.annotation.NonNull;
-import greenspun.util.annotation.NonNullByDefault;
-import greenspun.util.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-@NonNullByDefault
 final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     Deep(
         final Tag<T, Phantom> tag,
@@ -27,7 +24,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    public @NonNull Seq.Itr<T> iterator() {
+    public Seq.@NonNull Itr<T> iterator() {
         return new Itr<>(this);
     }
 
@@ -58,37 +55,37 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> updatedFirst(final T object) {
+    public TaggedSeq<T, Phantom> updatedFirst(final T object) {
         final var newSize = updateSize(object, first());
         return withNewFront(newSize, ArrayOps.updated(prefix, 0, object), middle);
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> updatedLast(final T object) {
+    public TaggedSeq<T, Phantom> updatedLast(final T object) {
         final var newSize = updateSize(object, last());
         return withNewBack(newSize, middle, ArrayOps.updated(suffix, suffix.length - 1, object));
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> prepended(final T object) {
+    public TaggedSeq<T, Phantom> prepended(final T object) {
         final var size = addToSize(object);
         return (prefix.length < maxAffixLength) ? prependedSimple(size, object) : prependedRecursive(size, object);
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> appended(final T object) {
+    public TaggedSeq<T, Phantom> appended(final T object) {
         final var size = addToSize(object);
         return (suffix.length < maxAffixLength) ? appendedSimple(size, object) : appendedRecursive(size, object);
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> withoutFirst() {
+    public TaggedSeq<T, Phantom> withoutFirst() {
         final var newSize = subtractFromSize(first());
         return (prefix.length > 1) ? withoutFirstSimple(newSize) : withoutFirstNoPrefix(newSize);
     }
 
     @Override
-    public @NonNull TaggedSeq<T, Phantom> withoutLast() {
+    public TaggedSeq<T, Phantom> withoutLast() {
         final var newSize = subtractFromSize(last());
         return (suffix.length > 1) ? withoutLastSimple(newSize) : withoutLastNoSuffix(newSize);
     }
@@ -101,7 +98,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    @NonNull GetResult<T> getImpl(final long index, final long accumulator) {
+    GetResult<T> getImpl(final long index, final long accumulator) {
         final var prefixSplitPoint = tag.findSplitPoint(prefix, index, accumulator);
         final var prefixSize = prefixSplitPoint.accumulator();
         if (index < prefixSize) {
@@ -124,7 +121,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    T @NonNull [] toSmallArray() {
+    T[] toSmallArray() {
         assert eligibleForInsertionSort();
         return ArrayOps.concat(prefix, suffix);
     }
@@ -173,7 +170,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     private Deep<T, Phantom> prependedRecursive(final long newSize, final T object) {
         final var length = prefix.length;
         final var newPrefix = ArrayOps.prependedSlice(prefix, object);
-        final var newChunk = makeChunk(Arrays.copyOfRange(prefix, length - maxChunkLength, length));
+        final var newChunk = makeChunk(ArrayOps.slice(prefix, length - maxChunkLength, length));
         return withNewFront(newSize, newPrefix, middle.prepended(newChunk));
     }
 
@@ -183,12 +180,12 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
 
     private Deep<T, Phantom> appendedRecursive(final long newSize, final T object) {
         final var newSuffix = ArrayOps.appendedSlice(suffix, object);
-        final var newChunk = makeChunk(Arrays.copyOf(suffix, maxChunkLength));
+        final var newChunk = makeChunk(ArrayOps.take(suffix, maxChunkLength));
         return withNewBack(newSize, middle.appended(newChunk), newSuffix);
     }
 
     private Deep<T, Phantom> withoutFirstSimple(final long newSize) {
-        return withNewFront(newSize, Arrays.copyOfRange(prefix, 1, prefix.length), middle);
+        return withNewFront(newSize, ArrayOps.slice(prefix, 1, prefix.length), middle);
     }
 
     private TaggedSeq<T, Phantom> withoutFirstNoPrefix(final long newSize) {
@@ -196,7 +193,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     private Deep<T, Phantom> withoutLastSimple(final long newSize) {
-        return withNewBack(newSize, middle, Arrays.copyOf(suffix, suffix.length - 1));
+        return withNewBack(newSize, middle, ArrayOps.take(suffix, suffix.length - 1));
     }
 
     private TaggedSeq<T, Phantom> withoutLastNoSuffix(final long newSize) {

@@ -4,8 +4,8 @@ package greenspun.dom;
 
 import java.io.IOException;
 import java.io.Writer;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The DOM-to-HTML serializer.
@@ -95,7 +95,7 @@ public final class Serializer {
         while ((indexToEscape = findCharacterToEscape(string, index, escaper)) >= 0) {
             writer.write(string, index, indexToEscape - index);
             final var escaped = escaper.escape(string.charAt(indexToEscape));
-            assert escaped != null;
+            assert escaped != null : "Non-deterministic character escaper? @AssumeAssertion(nullness)";
             writer.write(escaped);
             index = indexToEscape + 1;
         }

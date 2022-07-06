@@ -5,9 +5,9 @@ package greenspun.dom;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The DOM verifier.
@@ -145,6 +145,7 @@ public final class Verifier {
         return ancestors.map(Node.Element::tag);
     }
 
+    @SuppressWarnings("nullness:switch.expression") // CF doesn't quite get pattern matching switch right.
     private static @Nullable Context getEffectiveChildContext(final Tag tag, final Context context) {
         return switch (tag.childContext()) {
             case Context c -> c;

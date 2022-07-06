@@ -24,10 +24,10 @@ import greenspun.sexp.reader.ByteStream;
 import greenspun.sexp.reader.Reader;
 import greenspun.util.CollectionExecutorService;
 import greenspun.util.Trace;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.exception.IOExceptionCondition;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * The entry point to the generation process proper.
@@ -396,7 +396,7 @@ public final class Generator {
 
         private String identifier() {
             final var fileName = target.sourcePath().getFileName();
-            assert fileName != null;
+            assert fileName != null : "Article path has no file name? @AssumeAssertion(nullness)";
             final var string = fileName.toString();
             final var dotIndex = string.lastIndexOf('.');
             return (dotIndex == -1) ? string : string.substring(0, dotIndex);

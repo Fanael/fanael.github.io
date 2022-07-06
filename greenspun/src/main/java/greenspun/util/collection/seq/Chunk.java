@@ -3,9 +3,7 @@
 package greenspun.util.collection.seq;
 
 import java.util.function.Function;
-import greenspun.util.annotation.NonNullByDefault;
 
-@NonNullByDefault
 final class Chunk<T> {
     Chunk(final Tag<T, ?> tag, final T[] values) {
         this(tag.measureArray(values), values);

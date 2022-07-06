@@ -4,10 +4,7 @@ package greenspun.util.collection.seq;
 
 import java.util.Objects;
 import java.util.function.Function;
-import greenspun.util.annotation.NonNull;
-import greenspun.util.annotation.NonNullByDefault;
 
-@NonNullByDefault
 abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Shallow, Deep {
     TaggedSeq(final Tag<T, Phantom> tag, final long subtreeSize) {
         super(subtreeSize);
@@ -15,42 +12,42 @@ abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Shallow, Deep
     }
 
     @Override
-    public abstract <U> @NonNull TaggedSeq<U, Phantom> map(Function<? super T, ? extends U> function);
+    public abstract <U> TaggedSeq<U, Phantom> map(Function<? super T, ? extends U> function);
 
     @Override
-    public abstract @NonNull TaggedSeq<T, Phantom> updatedFirst(T object);
+    public abstract TaggedSeq<T, Phantom> updatedFirst(T object);
 
     @Override
-    public abstract @NonNull TaggedSeq<T, Phantom> updatedLast(T object);
+    public abstract TaggedSeq<T, Phantom> updatedLast(T object);
 
     @Override
-    public abstract @NonNull TaggedSeq<T, Phantom> prepended(T object);
+    public abstract TaggedSeq<T, Phantom> prepended(T object);
 
     @Override
-    public abstract @NonNull TaggedSeq<T, Phantom> appended(T object);
+    public abstract TaggedSeq<T, Phantom> appended(T object);
 
     @Override
-    public abstract @NonNull TaggedSeq<T, Phantom> withoutFirst();
+    public abstract TaggedSeq<T, Phantom> withoutFirst();
 
     @Override
-    public abstract @NonNull TaggedSeq<T, Phantom> withoutLast();
+    public abstract TaggedSeq<T, Phantom> withoutLast();
 
     @Override
     @SuppressWarnings("unchecked")
-    public final @NonNull TaggedSeq<T, Phantom> concat(final Seq<? extends T> other) {
+    public final TaggedSeq<T, Phantom> concat(final Seq<? extends T> other) {
         final var otherTagged = (TaggedSeq<? extends T, ?>) other;
         assert tag == otherTagged.tag;
         return concatImpl((TaggedSeq<T, Phantom>) otherTagged);
     }
 
     @Override
-    public final @NonNull Seq<T> updated(final long index, final T newValue) {
+    public final Seq<T> updated(final long index, final T newValue) {
         final var split = splitTree(Objects.checkIndex(index, subtreeSize), 0);
         return split.front.concat(split.back.prepended(newValue));
     }
 
     @Override
-    final @NonNull Split<T> splitAtImpl(final long index) {
+    final Split<T> splitAtImpl(final long index) {
         if (index >= exactSize()) {
             return new Split<>(this, empty());
         }

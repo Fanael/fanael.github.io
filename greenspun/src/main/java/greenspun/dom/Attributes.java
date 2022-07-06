@@ -3,8 +3,8 @@
 package greenspun.dom;
 
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A utility class containing operations on sequences of attributes.

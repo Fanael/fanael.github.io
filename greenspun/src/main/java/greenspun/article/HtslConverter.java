@@ -80,6 +80,7 @@ public final class HtslConverter {
         return new Node.Element(tag, convertedAttributes, convertedChildren);
     }
 
+    @SuppressWarnings("nullness:argument") // CF is just confused by pattern matching switch
     private static Seq<Attribute> convertAttributes(final Seq<Sexp> attributes) {
         Seq<Attribute> result = Seq.empty();
         for (final var it = attributes.iterator(); it.hasNext(); ) {

@@ -4,7 +4,4 @@
 /**
  * Representation of S-expressions as Java objects.
  */
-@NonNullByDefault
 package greenspun.sexp;
-
-import greenspun.util.annotation.NonNullByDefault;

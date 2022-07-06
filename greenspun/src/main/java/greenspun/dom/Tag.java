@@ -11,8 +11,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * HTML elements known to the generator.
@@ -180,7 +180,7 @@ public enum Tag {
         return omitClosingTag;
     }
 
-    @Nullable Serializer.ForElement elementSerializer() {
+    Serializer.@Nullable ForElement elementSerializer() {
         return elementSerializer;
     }
 
@@ -213,7 +213,7 @@ public enum Tag {
     private final EnumSet<Context> allowedContexts;
     private final ChildContext childContext;
     private final boolean omitClosingTag;
-    private final @Nullable Serializer.ForElement elementSerializer;
+    private final Serializer.@Nullable ForElement elementSerializer;
     private final Map<String, Verifier.AttributeVerifier> allowedAttributes;
     private final Seq<String> requiredAttributes;
 
@@ -269,7 +269,7 @@ public enum Tag {
         private final EnumSet<Context> allowedContexts;
         private final ChildContext childContext;
         private boolean omitClosingTag = false;
-        private @Nullable Serializer.ForElement elementSerializer = null;
+        private Serializer.@Nullable ForElement elementSerializer = null;
         private Map<String, Verifier.AttributeVerifier> allowedAttributes = Collections.emptyMap();
         private Seq<String> requiredAttributes = Seq.empty();
     }

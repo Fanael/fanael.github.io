@@ -6,6 +6,13 @@ import com.github.spotbugs.snom.Effort
 plugins {
     id "application"
     id "com.github.spotbugs" version "5.0.9"
+    id "org.checkerframework" version "0.6.13" apply false
+}
+
+ext.withCF = project.hasProperty("withCF")
+
+if (ext.withCF) {
+    apply plugin: "org.checkerframework"
 }
 
 repositories {
@@ -14,8 +21,8 @@ repositories {
 
 dependencies {
     compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.1"
+    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.22.2"
     compileOnly project(":auki")
-    compileOnly project(":minijsr305")
     annotationProcessor project(":auki")
     testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.1"
     testAnnotationProcessor project(":auki")
@@ -73,4 +80,17 @@ test {
 spotbugsMain.reports.configure {
     xml.enabled = false
     html.enabled = true
+}
+
+if (ext.withCF) {
+    checkerFramework {
+        extraJavacArgs = [
+                "-Alint=redundantNullComparison",
+                "-AshowSuppressWarningsStrings",
+                "-AwarnUnneededSuppressions",
+                "-ArequirePrefixInWarningSuppressions",
+                "-ApermitUnsupportedJdkVersion",
+        ]
+        checkers = ["org.checkerframework.checker.nullness.NullnessChecker"]
+    }
 }

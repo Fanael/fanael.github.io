@@ -4,7 +4,4 @@
 /**
  * The S-expression reader.
  */
-@NonNullByDefault
 package greenspun.sexp.reader;
-
-import greenspun.util.annotation.NonNullByDefault;

@@ -3,7 +3,7 @@
 package greenspun.util.condition;
 
 import greenspun.util.SneakyThrow;
-import greenspun.util.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A restart point.

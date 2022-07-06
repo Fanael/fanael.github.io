@@ -5,7 +5,8 @@ package greenspun.util.condition;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import greenspun.util.SneakyThrow;
-import greenspun.util.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A condition context keeps track of currently registered handlers and restart points.
@@ -184,6 +185,7 @@ public final class ConditionContext {
     @Nullable Restart firstRestart = null;
     private @Nullable Handler currentHandler = null;
 
+    @SuppressWarnings("nullness:type.argument") // Not actually nullable, CF doesn't understand withInitial.
     private static final ThreadLocal<ConditionContext> localContext =
         ThreadLocal.withInitial(ConditionContext::new);
 
@@ -222,7 +224,7 @@ public final class ConditionContext {
 
     private final class RestartIterable implements Iterable<Restart> {
         @Override
-        public Iterator<Restart> iterator() {
+        public @NonNull Iterator<Restart> iterator() {
             return new RestartIterator(firstRestart);
         }
     }

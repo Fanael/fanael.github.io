@@ -3,8 +3,8 @@
 package greenspun.sexp;
 
 import java.math.BigInteger;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A utility class containing common operations on S-expressions.
@@ -47,7 +47,8 @@ public final class Sexps {
      * <p>
      * Note that empty lists represent the known symbol {@code nil}.
      */
-    public static @Nullable Sexp.Symbol asSymbol(final Sexp sexp) {
+    @SuppressWarnings("nullness:switch.expression") // CF doesn't quite get pattern matching switch right.
+    public static Sexp.@Nullable Symbol asSymbol(final Sexp sexp) {
         return switch (sexp) {
             case Sexp.Symbol symbol -> symbol;
             case Sexp.List list && list.value().isEmpty() -> Sexp.KnownSymbol.NIL;
@@ -60,7 +61,7 @@ public final class Sexps {
      * <p>
      * A Lisp keyword is any symbol whose name begins with a colon.
      */
-    public static @Nullable Sexp.Symbol asKeyword(final Sexp sexp) {
+    public static Sexp.@Nullable Symbol asKeyword(final Sexp sexp) {
         return (sexp instanceof Sexp.Symbol symbol && symbol.symbolName().startsWith(":")) ? symbol : null;
     }
 

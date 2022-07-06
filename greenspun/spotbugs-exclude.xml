@@ -1,4 +1,11 @@
 <FindBugsFilter>
+    <!-- We don't need SpotBugs for null analysis, silence the nullness stuff it reports -->
+    <Match>
+        <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
+    </Match>
+    <Match>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+    </Match>
     <!-- These two love to complain about "mutable" types that are actually immutable -->
     <Match>
         <Bug pattern="EI_EXPOSE_REP"/>

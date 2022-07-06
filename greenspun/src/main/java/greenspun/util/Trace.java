@@ -4,8 +4,9 @@ package greenspun.util;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.condition.MessageSupplier;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A trace message, intended to be used within try-with-resources.
@@ -90,6 +91,7 @@ public final class Trace implements AutoCloseable {
         return context.get();
     }
 
+    @SuppressWarnings("nullness:type.argument") // Not actually nullable, CF doesn't understand withInitial.
     private static final ThreadLocal<Context> context = ThreadLocal.withInitial(Context::new);
 
     private final @Nullable Trace next;
@@ -103,7 +105,7 @@ public final class Trace implements AutoCloseable {
 
     private static final class IterableImpl implements Iterable<String> {
         @Override
-        public Iterator<String> iterator() {
+        public @NonNull Iterator<String> iterator() {
             return new IteratorImpl(localContext().firstTrace);
         }
 

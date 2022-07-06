@@ -12,10 +12,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashSet;
 import greenspun.util.PathUtils;
 import greenspun.util.Trace;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.exception.IOExceptionCondition;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 final class TargetDiscovery {
     TargetDiscovery(final Path sourceDirectory, final Path destinationDirectory) {

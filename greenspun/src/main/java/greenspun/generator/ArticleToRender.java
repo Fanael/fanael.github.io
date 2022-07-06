@@ -3,7 +3,7 @@
 package greenspun.generator;
 
 import greenspun.article.Article;
-import greenspun.util.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 record ArticleToRender(
     Article article,

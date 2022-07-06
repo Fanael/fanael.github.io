@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.pygments;
 
-import greenspun.util.annotation.Nullable;
 import greenspun.util.condition.Condition;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A condition type indicating that the Pygments server has reported an error.
@@ -16,7 +17,7 @@ public final class PygmentsServerErrorCondition extends Condition {
     }
 
     @SuppressWarnings("SameParameterValue")
-    PygmentsServerErrorCondition(final String message, final String detailedMessage) {
+    PygmentsServerErrorCondition(final String message, final @NonNull String detailedMessage) {
         super(message);
         this.detailedMessage = detailedMessage;
     }

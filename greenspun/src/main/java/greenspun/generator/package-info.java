@@ -4,7 +4,4 @@
 /**
  * Implementation of the generation process proper.
  */
-@NonNullByDefault
 package greenspun.generator;
-
-import greenspun.util.annotation.NonNullByDefault;

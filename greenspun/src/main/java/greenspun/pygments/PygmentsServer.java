@@ -14,12 +14,12 @@ import greenspun.dom.Attribute;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
 import greenspun.util.Trace;
-import greenspun.util.annotation.Nullable;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.Condition;
 import greenspun.util.condition.ConditionContext;
 import greenspun.util.condition.UnhandledErrorError;
 import greenspun.util.condition.exception.IOExceptionCondition;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A connection to the Pygments server.
@@ -212,6 +212,7 @@ public final class PygmentsServer implements AutoCloseable {
             }
         }
 
+        @SuppressWarnings("nullness:switching.nullable") // CF doesn't understand explicit "case null"
         private Seq<Node> receiveNodeStream() throws IOException {
             final var accumulator = new NodeAccumulator();
             loop:

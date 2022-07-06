@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.collection.seq;
 
-import java.util.Arrays;
-import greenspun.util.annotation.NonNullByDefault;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-@NonNullByDefault
 abstract sealed class Tag<T, Phantom> {
     @SuppressWarnings("unchecked")
     static <T> Tag<T, Object> unit() {
@@ -27,8 +25,8 @@ abstract sealed class Tag<T, Phantom> {
     final ArraySplit<T> splitArray(final T[] array, final int index) {
         final var length = array.length;
         final var midpoint = Math.min(index, length - 1);
-        final var front = (midpoint > 0) ? Arrays.copyOf(array, midpoint) : emptyArray();
-        final var back = (midpoint < length - 1) ? Arrays.copyOfRange(array, midpoint + 1, length) : emptyArray();
+        final var front = (midpoint > 0) ? ArrayOps.take(array, midpoint) : emptyArray();
+        final var back = (midpoint < length - 1) ? ArrayOps.slice(array, midpoint + 1, length) : emptyArray();
         return new ArraySplit<>(front, array[midpoint], back);
     }
 
@@ -40,7 +38,7 @@ abstract sealed class Tag<T, Phantom> {
 
     abstract Shallow<T, Phantom> emptySeq();
 
-    abstract T[] emptyArray();
+    abstract @NonNull T[] emptyArray();
 
     abstract T[] unitArray(T object);
 
@@ -77,8 +75,8 @@ abstract sealed class Tag<T, Phantom> {
 
         @Override
         @SuppressWarnings("unchecked")
-        T[] emptyArray() {
-            return (T[]) emptyArray;
+        @NonNull T[] emptyArray() {
+            return (@NonNull T[]) emptyArray;
         }
 
         @Override
