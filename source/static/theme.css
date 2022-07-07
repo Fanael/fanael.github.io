@@ -20,7 +20,7 @@ html {
     color-scheme: light dark;
     font-family: serif;
     line-height: 1.25;
-    scroll-padding: 1.5em 0;
+    scroll-padding: 1em 0;
 }
 
 @media screen {
