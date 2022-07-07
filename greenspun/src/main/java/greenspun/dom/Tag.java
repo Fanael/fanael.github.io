@@ -136,6 +136,13 @@ public enum Tag {
     ),
     TD(build(Context.TABLE_CELL, Context.FLOW)
         .setOmitClosingTag()
+    ),
+    SCRIPT(build(Context.METADATA, ChildContext.none())
+        .setAllowedAttributes(Map.of(
+            "src", Verifier.attributeIsString,
+            "defer", Verifier.attributeIsBoolean
+        ))
+        .setRequiredAttributes(Seq.of("src"))
     );
 
     Tag(final Builder builder) {

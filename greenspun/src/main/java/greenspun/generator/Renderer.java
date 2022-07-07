@@ -475,6 +475,10 @@ public final class Renderer {
         );
 
         private static final Seq<Node> headSuffix = Seq.of(
+            Node.empty(Tag.SCRIPT, Seq.of(
+                Attribute.of("defer", true),
+                Attribute.of("src", "/static/fixes.js")
+            )),
             Node.empty(Tag.LINK, Seq.of(
                 Attribute.of("rel", "alternate"),
                 Attribute.of("href", '/' + RenderConstants.feedFileName),

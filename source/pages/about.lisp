@@ -14,7 +14,9 @@
   (p "I used to be pretty active in the Emacs community, so "
      ((a :href "https://github.com/Fanael/") "my GitHub profile")
      " is dominated by my Emacs packages. I'm no longer as active due to health issues, but I still use Emacs a lot.")
-  (p "I'm also a non-binary person, third person pronouns she/her."))
+  (p "I'm a non-binary person, third person pronouns she/her. Anybody concerned about it is more than welcome to shove their opinion up their "
+     (code "/dev/null")
+     "."))
 
 (defsection about-blog
   :header "About the blog"
@@ -32,11 +34,11 @@
      ".")
   (p "This blog is "
      (em "entirely")
-     " static, the pages are generated ahead of time, the browser receives complete HTML. This means there's "
-     (em "absolutely no JavaScript")
-     " present; if there is, it's been injected by a third party. I'd appreciate "
-     ((a :href "https://github.com/Fanael/fanael.github.io/issues") "receiving an issue report")
-     " if that's the case so I can move to a different hosting.")
+     " static, the pages are generated ahead of time, the browser receives complete HTML. There is a "
+     ((a :href "/static/fixes.js") "tiny bit of JavaScript")
+     " present to work around certain browsers being unusable with certain input devices; unfortunately the budgets of Apple, Google and Microsoft — or their shared parent company, the \"National\" \"Security\" Agency — are so tiny, they just cannot afford one of those exotic devices known as "
+     (em "keyboards")
+     " to support those in their browsers. At least Firefox gets it right.")
   (p "This blog is a member of the "
      ((a :href "https://250kb.club/") "250 KB club")
      ", because I abhor systems which allow forcing people to download 10 MB background images of hipsters drinking coffee.")
