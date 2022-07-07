@@ -9,7 +9,7 @@
 :focus {
     outline-offset: 0.125em;
     outline-offset: max(0.125em, 2px);
-    outline: 0.125em dotted;
+    outline: 0.125em dashed;
     outline-width: max(0.125em, 2px);
 }
 
@@ -20,7 +20,7 @@ html {
     color-scheme: light dark;
     font-family: serif;
     line-height: 1.25;
-    scroll-padding: 1.5em 0;
+    scroll-padding: 1em 0;
 }
 
 @media screen {
