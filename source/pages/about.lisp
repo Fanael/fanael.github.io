@@ -39,6 +39,7 @@
      " present to work around certain browsers being unusable with certain input devices; unfortunately the budgets of Apple, Google and Microsoft — or their shared parent company, the \"National\" \"Security\" Agency — are so tiny, they just cannot afford one of those exotic devices known as "
      (em "keyboards")
      " to support those in their browsers. At least Firefox gets it right.")
+  (p "The " ((a :href "/pages/offline-mode.html") "offline mode") " has its own bits of JavaScript, documented there.")
   (p "This blog is a member of the "
      ((a :href "https://250kb.club/") "250 KB club")
      ", because I abhor systems which allow forcing people to download 10 MB background images of hipsters drinking coffee.")

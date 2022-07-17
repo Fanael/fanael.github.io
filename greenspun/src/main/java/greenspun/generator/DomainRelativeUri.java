@@ -10,7 +10,20 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 final class DomainRelativeUri {
     DomainRelativeUri(final Path path) {
         assert !path.isAbsolute();
-        string = '/' + path.toString().replace(File.separatorChar, '/');
+        string = '/' + pathToUriString(path);
+    }
+
+    private DomainRelativeUri(final String string) {
+        this.string = string;
+    }
+
+    static DomainRelativeUri ofRoot() {
+        return sharedOfRoot;
+    }
+
+    static DomainRelativeUri ofDirectory(final Path path) {
+        assert !path.isAbsolute();
+        return new DomainRelativeUri('/' + pathToUriString(path) + '/');
     }
 
     @Override
@@ -28,6 +41,12 @@ final class DomainRelativeUri {
     public String toString() {
         return string;
     }
+
+    private static String pathToUriString(final Path path) {
+        return path.toString().replace(File.separatorChar, '/');
+    }
+
+    private static final DomainRelativeUri sharedOfRoot = new DomainRelativeUri("/");
 
     private final String string;
 }

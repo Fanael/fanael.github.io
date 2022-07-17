@@ -137,12 +137,23 @@ public enum Tag {
     TD(build(Context.TABLE_CELL, Context.FLOW)
         .setOmitClosingTag()
     ),
-    SCRIPT(build(Context.METADATA, ChildContext.none())
+    SCRIPT(build(EnumSet.of(Context.METADATA, Context.FLOW, Context.PHRASING), ChildContext.none())
         .setAllowedAttributes(Map.of(
             "src", Verifier.attributeIsString,
             "defer", Verifier.attributeIsBoolean
         ))
         .setRequiredAttributes(Seq.of("src"))
+    ),
+    OUTPUT(build(EnumSet.of(Context.FLOW, Context.PHRASING), Context.PHRASING)
+        .setAllowedAttributes(Map.of("aria-live", new StringSetVerifier(Set.of("polite"))))
+        .setRequiredAttributes(Seq.of("aria-live"))
+    ),
+    BUTTON(build(EnumSet.of(Context.FLOW, Context.PHRASING), Context.PHRASING)
+        .setAllowedAttributes(Map.of(
+            "disabled", Verifier.attributeIsBoolean,
+            "type", new StringSetVerifier(Set.of("button"))
+        ))
+        .setRequiredAttributes(Seq.of("type"))
     );
 
     Tag(final Builder builder) {

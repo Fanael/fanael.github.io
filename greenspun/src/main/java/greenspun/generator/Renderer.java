@@ -535,6 +535,11 @@ public final class Renderer {
         private static final Node.Element footer = Node.simple(Tag.FOOTER, new Node.Element(Tag.UL,
             Seq.of(Attribute.of("id", "footer")),
             Seq.of(
+                Node.simple(Tag.LI, new Node.Element(
+                    Tag.A,
+                    Seq.of(Attribute.of("href", "/pages/offline-mode.html")),
+                    Seq.of(new Node.Text("Offline mode"))
+                )),
                 Node.simple(Tag.LI, new Node.Text("Powered by HTML & CSS")),
                 Node.simple(Tag.LI, new Node.Text(RenderConstants.copyrightLine)),
                 Node.simple(Tag.LI, Seq.of(

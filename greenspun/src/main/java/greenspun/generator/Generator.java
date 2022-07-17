@@ -88,7 +88,8 @@ public final class Generator {
         final var articles = generateArticles(targets.articleTargets());
         generateFrontPage(articles.splitAt(Math.min(articles.exactSize(), frontPageArticleCount)).front());
         generateFeed(articles, buildTime);
-        generateArchives(articles);
+        final var archiveUris = generateArchives(articles);
+        generateFileList(targets, archiveUris);
     }
 
     private void initializeDestinationDirectory() {
@@ -260,17 +261,21 @@ public final class Generator {
         ).toArchivedArticle();
     }
 
-    private void generateArchives(final Seq<ArchivedArticle> articles) {
+    private Seq<DomainRelativeUri> generateArchives(final Seq<ArchivedArticle> articles) {
         try (final var outerTrace = new Trace("Generating blog archives")) {
             outerTrace.use();
             final var archivedQuarters = generateQuarterlyArchives(articles);
             final var archivedTopics = generateTopicArchives(articles);
             try (final var innerTrace = new Trace("Generating the archives index")) {
                 innerTrace.use();
-                final var destinationRelativePath = archivesSubdirectoryPath.resolve("index.html");
+                final var destinationRelativePath = archivesSubdirectoryPath.resolve(directoryRootFileName);
                 final var domTree = Renderer.renderArchiveIndex(archivedQuarters, archivedTopics, articles);
                 serializeDomTree(destinationRelativePath, domTree);
             }
+            var result = archivedQuarters.map(ArchivedQuarter::uri);
+            result = result.concat(archivedTopics.map(ArchivedTopic::uri));
+            result = result.appended(DomainRelativeUri.ofDirectory(archivesSubdirectoryPath));
+            return result;
         }
     }
 
@@ -326,7 +331,7 @@ public final class Generator {
         try (final var trace = new Trace("Generating the front page")) {
             trace.use();
             final var domTree = makeArticleRenderer().renderFrontPage(articles);
-            serializeDomTree(Path.of("index.html"), domTree);
+            serializeDomTree(Path.of(directoryRootFileName), domTree);
         }
     }
 
@@ -342,6 +347,39 @@ public final class Generator {
                 throw ConditionContext.error(new IOExceptionCondition(e));
             }
         }
+    }
+
+    private void generateFileList(final Targets targets, final Seq<DomainRelativeUri> archiveUris) {
+        try (final var trace = new Trace("Generating list of files")) {
+            trace.use();
+            var uris = targets.staticTargets().map(Generator::targetDestinationUri);
+            uris = uris.concat(targets.pageTargets().map(Generator::targetDestinationUri));
+            uris = uris.concat(targets.articleTargets().map(Generator::targetDestinationUri));
+            uris = uris.concat(archiveUris);
+            uris = uris.appended(DomainRelativeUri.ofRoot());
+            uris = uris.sorted(Comparator.comparing(DomainRelativeUri::toString));
+            writeFileList(uris);
+        }
+    }
+
+    private void writeFileList(final Seq<DomainRelativeUri> uris) {
+        final var destinationPath = destinationDirectory.resolve(fileListName);
+        try (final var writer = Files.newBufferedWriter(destinationPath)) {
+            boolean needsSeparator = false;
+            for (final var uri : uris) {
+                if (needsSeparator) {
+                    writer.write('\0');
+                }
+                writer.write(uri.toString());
+                needsSeparator = true;
+            }
+        } catch (final IOException e) {
+            throw ConditionContext.error(new IOExceptionCondition(e));
+        }
+    }
+
+    private static DomainRelativeUri targetDestinationUri(final Target target) {
+        return new DomainRelativeUri(target.destinationPath());
     }
 
     private static void ensureDirectoryExists(final Path path) {
@@ -363,9 +401,13 @@ public final class Generator {
         return new Renderer(HeaderRenderMode.Skip.instance());
     }
 
+    static final String directoryRootFileName = "index.html";
     static final String staticSubdirectoryName = "static";
     static final String pagesSubdirectoryName = "pages";
     static final String archivesSubdirectoryName = "archives";
+    static final String fileListName = "files.txt";
+    static final Path serviceWorkerSourcePath = Path.of(staticSubdirectoryName, "root-sw.js");
+    static final Path serviceWorkerDestinationPath = Path.of("sw.js");
     private static final Path archivesSubdirectoryPath = Path.of(archivesSubdirectoryName);
     private static final int frontPageArticleCount = 5;
 

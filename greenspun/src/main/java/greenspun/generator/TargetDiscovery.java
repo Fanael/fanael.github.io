@@ -22,7 +22,8 @@ final class TargetDiscovery {
         this.sourceDirectory = sourceDirectory;
         this.destinationDirectory = destinationDirectory;
         knownDestinationPaths.add(Path.of(""));
-        knownDestinationPaths.add(Path.of("index.html"));
+        knownDestinationPaths.add(Path.of(Generator.directoryRootFileName));
+        knownDestinationPaths.add(Path.of(Generator.fileListName));
         knownDestinationPaths.add(Path.of(RenderConstants.feedFileName));
         knownDestinationPaths.add(Path.of(Generator.staticSubdirectoryName));
         knownDestinationPaths.add(Path.of(Generator.pagesSubdirectoryName));
@@ -66,8 +67,11 @@ final class TargetDiscovery {
                     @Override
                     public FileVisitResult visitFile(final Path file, final BasicFileAttributes attributes) {
                         final var relativePath = sourceDirectory.relativize(file);
-                        targets.append(new Target(relativePath, relativePath));
-                        knownDestinationPaths.add(relativePath);
+                        final var destinationPath = relativePath.equals(Generator.serviceWorkerSourcePath)
+                            ? Generator.serviceWorkerDestinationPath
+                            : relativePath;
+                        targets.append(new Target(relativePath, destinationPath));
+                        knownDestinationPaths.add(destinationPath);
                         return FileVisitResult.CONTINUE;
                     }
                 });
