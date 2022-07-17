@@ -2,7 +2,7 @@
 ;; SPDX-License-Identifier: AGPL-3.0-or-later OR CC-BY-SA-4.0
 (defarticle
   :title "Offline mode"
-  :description ""
+  :description "The site's offline mode controls, reasoning and documentation"
   :date (1970 01 01) ; ignored anyway
   :children (what-is-this how-to-use)
   ((script :defer t :src "/static/offline-control.js"))
