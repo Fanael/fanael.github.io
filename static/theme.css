@@ -555,6 +555,12 @@ article:not(:last-child) .read-full {
     margin-bottom: 2.5em;
 }
 
+/* Interactive elements */
+button {
+    font-size: inherit;
+    padding: 0.125em 0.5ch;
+}
+
 /* Dark mode */
 @media only screen and (prefers-color-scheme: dark) {
     html {
