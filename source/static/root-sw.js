@@ -4,7 +4,8 @@
 
 const scope = self.location.origin + '/';
 const currentCacheName = 'v1';
-const fetchAllMessage = 'FETCH_ALL';
+const fetchFileListMessage = 'fetch-file-list';
+const updateFileMessage = 'update-file';
 const fileListPath = '/files.txt';
 const fetchTimeout = 666;
 
@@ -56,32 +57,7 @@ async function fetchImpl(request, event) {
     return (await cache.match(request)) || promise;
 }
 
-async function fetchAll() {
-    function reportEvent(eventCounters, event) {
-        const previous = eventCounters.get(event) || 0;
-        eventCounters.set(event, previous + 1);
-    }
-
-    async function fetchToCache(cache, file, eventCounters) {
-        const request = new Request(file);
-        let response;
-        try {
-            response = await fetch(request.clone());
-        } catch(e) {
-            return reportEvent(eventCounters, 'network-error');
-        }
-        const status = response.status;
-        if(status >= 500 && status < 600) {
-            return reportEvent(eventCounters, 'server-error');
-        }
-        if(!response.ok) {
-            return reportEvent(eventCounters, 'http-error');
-        }
-        await cache.put(request, response);
-        return reportEvent(eventCounters, 'ok');
-    }
-
-    const cache = await self.caches.open(currentCacheName);
+async function fetchFileList() {
     let response;
     try {
         response = await fetch(fileListPath);
@@ -91,11 +67,29 @@ async function fetchAll() {
     if(!response.ok) {
         return null;
     }
-    const files = (await response.text()).split('\0');
-    const eventCounters = new Map();
-    eventCounters.set('total', files.length);
-    await Promise.all(files.map(file => fetchToCache(cache, file, eventCounters)));
-    return eventCounters;
+    return (await response.text()).split('\0');
+}
+
+async function updateFile(file) {
+    const makeResult = status => ({file, status});
+
+    const request = new Request(file);
+    let response;
+    try {
+        response = await fetch(request.clone());
+    } catch(e) {
+        return makeResult('network-error');
+    }
+    const status = response.status;
+    if(status >= 500 && status < 600) {
+        return makeResult('server-error');
+    }
+    if(!response.ok) {
+        return makeResult('http-error');
+    }
+    const cache = await self.caches.open(currentCacheName);
+    await cache.put(request, response);
+    return makeResult('ok');
 }
 
 self.addEventListener('install', () => {
@@ -116,8 +110,14 @@ self.addEventListener('fetch', event => {
 });
 
 self.addEventListener('message', event => {
-    if(event.data.type === fetchAllMessage) {
-        const source = event.source;
-        fetchAll().then(result => source.postMessage(result));
+    const source = event.source;
+    const message = event.data;
+    switch(message.type) {
+    case fetchFileListMessage:
+        event.waitUntil(fetchFileList().then(result => source.postMessage(result)));
+        break;
+    case updateFileMessage:
+        event.waitUntil(updateFile(message.file).then(result => source.postMessage(result)));
+        break;
     }
 });
