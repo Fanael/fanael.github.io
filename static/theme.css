@@ -15,6 +15,7 @@
 
 html {
     --basic-link-color: #2431a9;
+    --visited-link-color: #819;
     --box-shadow-color: rgba(0, 0, 0, 0.094);
     --box-shadow-specs: 0 0 0.75ch 0.5ch var(--box-shadow-color), 0 0 1.5ch 1ch var(--box-shadow-color);
     color-scheme: light dark;
@@ -56,6 +57,7 @@ html {
 
 a:visited {
     color: #819;
+    color: var(--visited-link-color);
 }
 
 a:link, a[href^="#"] {
@@ -564,15 +566,12 @@ button {
 /* Dark mode */
 @media only screen and (prefers-color-scheme: dark) {
     html {
-        --box-shadow-color: rgba(0, 0, 0, 0.466);
         --basic-link-color: #a1abda;
+        --box-shadow-color: rgba(0, 0, 0, 0.466);
+        --visited-link-color: #7edca4;
         background-color: #191919;
         background-image: none;
         color: #eee;
-    }
-
-    a:visited {
-        color: #7edca4;
     }
 
     a:active {
