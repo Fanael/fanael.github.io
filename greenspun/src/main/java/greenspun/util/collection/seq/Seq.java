@@ -15,7 +15,6 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -177,7 +176,6 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * Complexity: constant time if the sizes differ, linear time otherwise.
      */
     @Override
-    @SuppressFBWarnings(value = "NP_METHOD_PARAMETER_TIGHTENS_ANNOTATION", justification = "False positive")
     public final boolean equals(final @Nullable Object object) {
         return object instanceof Seq<?> other && equalsImpl(other);
     }
