@@ -7,6 +7,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     Deep(
@@ -506,15 +507,9 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
 
         @Override
+        @SuppressWarnings("VariableNotUsedInsideIf")
         TaggedSeq<T, Object> restImpl() {
-            final var suffix = remainingSuffix;
-            if (suffix == null) {
-                return (index < array.length) ? Shallow.ofUnits(ArrayOps.drop(array, index)) : Shallow.emptyUnit();
-            }
-            final var tag = Tag.<T>unit();
-            final var prefix = (index < array.length) ? ArrayOps.drop(array, index) : tag.emptyArray();
-            final var size = tag.measureArray(prefix) + remainingMiddle.subtreeSize + tag.measureArray(suffix);
-            return fromUnknownPrefix(tag, size, prefix, remainingMiddle, suffix);
+            return (remainingSuffix == null) ? makeRestFromSingle() : makeRestFromMany();
         }
 
         private void nextArrayIfNeeded() {
@@ -543,6 +538,24 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
             }
             array = remainingSuffix;
             remainingSuffix = null;
+        }
+
+        private TaggedSeq<T, Object> makeRestFromSingle() {
+            final var tag = Tag.<T>unit();
+            if (index >= array.length) {
+                return tag.emptySeq();
+            }
+            final var newArray = ArrayOps.drop(array, index);
+            return fromSingleArray(tag, tag.measureArray(newArray), newArray);
+        }
+
+        @RequiresNonNull("remainingSuffix")
+        private TaggedSeq<T, Object> makeRestFromMany() {
+            final var suffix = remainingSuffix;
+            final var tag = Tag.<T>unit();
+            final var prefix = (index < array.length) ? ArrayOps.drop(array, index) : tag.emptyArray();
+            final var size = tag.measureArray(prefix) + remainingMiddle.subtreeSize + tag.measureArray(suffix);
+            return fromUnknownPrefix(tag, size, prefix, remainingMiddle, suffix);
         }
 
         private int index = 0;
