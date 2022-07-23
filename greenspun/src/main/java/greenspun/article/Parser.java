@@ -259,25 +259,22 @@ public final class Parser {
         final Set<? extends Sexp.Symbol> allowedKeys
     ) {
         final var properties = new HashMap<Sexp.Symbol, Sexp>();
-        var it = list;
-        while (!it.isEmpty()) {
-            final var keyword = Sexps.asKeyword(it.first());
+        final var it = list.iterator();
+        while (it.hasNext()) {
+            final var keyword = Sexps.asKeyword(it.peek());
             if (keyword == null) {
                 break;
             }
-            it = it.withoutFirst();
+            it.next();
             if (!allowedKeys.contains(keyword)) {
                 throw signalError("Property key " + keyword + " not allowed in this context");
             }
-            final var value = it.isEmpty() ? Sexp.KnownSymbol.NIL : it.first();
-            if (!it.isEmpty()) {
-                it = it.withoutFirst();
-            }
+            final var value = it.hasNext() ? it.next() : Sexp.KnownSymbol.NIL;
             if (properties.put(keyword, value) != null) {
                 throw signalError("Duplicate value for property " + keyword);
             }
         }
-        return new ExtractedProperties(properties, it);
+        return new ExtractedProperties(properties, it.rest());
     }
 
     private static UnhandledErrorError signalError(final String message) {

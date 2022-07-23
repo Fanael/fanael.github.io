@@ -152,10 +152,9 @@ public final class Generator {
         );
         final var orderedArticles = new Seq.Builder<OrderedArticle>();
         @Nullable LoadedArticle successor = null;
-        for (var it = articles; !it.isEmpty(); ) {
-            final var article = it.first();
-            it = it.withoutFirst();
-            final var predecessorUri = it.isEmpty() ? null : it.first().destinationUri();
+        for (final var it = articles.iterator(); it.hasNext(); ) {
+            final var article = it.next();
+            final var predecessorUri = it.hasNext() ? it.peek().destinationUri() : null;
             final var successorUri = (successor == null) ? null : successor.destinationUri();
             final var innerArticle = article.article;
             final var target = article.target;
