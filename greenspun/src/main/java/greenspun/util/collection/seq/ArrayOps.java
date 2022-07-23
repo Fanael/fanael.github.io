@@ -79,16 +79,14 @@ final class ArrayOps {
     }
 
     static <T> Split<T> split(final T[] array) {
-        final var length = array.length;
-        final var midpoint = length / 2;
-        return new Split<>(take(array, midpoint), slice(array, midpoint, length));
+        final var midpoint = array.length / 2;
+        return new Split<>(take(array, midpoint), drop(array, midpoint));
     }
 
     static <T> Split<T> concatSplitAt(final T[] front, final T[] back, final int index) {
         assert front.getClass() == back.getClass();
         final var frontLength = front.length;
-        final var backLength = back.length;
-        final var totalLength = frontLength + backLength;
+        final var totalLength = frontLength + back.length;
         assert index < totalLength;
         if (index == frontLength) {
             return new Split<>(front, back);
@@ -99,21 +97,21 @@ final class ArrayOps {
         } else {
             final var newBackStart = index - frontLength;
             final var newFront = appendedRange(front, back, newBackStart);
-            final var newBack = slice(back, newBackStart, backLength);
+            final var newBack = drop(back, newBackStart);
             return new Split<>(newFront, newBack);
         }
     }
 
-    @SuppressWarnings("nullness:return") // This always returns a sub-array, there's never any null elements.
+    @SuppressWarnings("nullness:return") // This always returns a sub-array, there's never any new null elements.
     static <T> T[] take(final T[] array, final int newLength) {
         assert newLength < array.length;
         return Arrays.copyOf(array, newLength);
     }
 
-    @SuppressWarnings("nullness:return") // This always returns a sub-array, there's never any null elements.
-    static <T> T[] slice(final T[] array, final int fromIndex, final int toIndex) {
-        assert toIndex <= array.length;
-        return Arrays.copyOfRange(array, fromIndex, toIndex);
+    @SuppressWarnings("nullness:return") // This always returns a sub-array, there's never any new null elements.
+    static <T> T[] drop(final T[] array, final int howMany) {
+        assert howMany < array.length;
+        return Arrays.copyOfRange(array, howMany, array.length);
     }
 
     @SuppressWarnings({"unchecked", "nullness:argument"}) // The argument is an array, it always has a component type.

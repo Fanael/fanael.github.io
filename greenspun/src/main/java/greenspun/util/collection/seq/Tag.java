@@ -26,7 +26,7 @@ abstract sealed class Tag<T, Phantom> {
         final var length = array.length;
         final var midpoint = Math.min(index, length - 1);
         final var front = (midpoint > 0) ? ArrayOps.take(array, midpoint) : emptyArray();
-        final var back = (midpoint < length - 1) ? ArrayOps.slice(array, midpoint + 1, length) : emptyArray();
+        final var back = (midpoint < length - 1) ? ArrayOps.drop(array, midpoint + 1) : emptyArray();
         return new ArraySplit<>(front, array[midpoint], back);
     }
 

@@ -679,13 +679,15 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
             if (comparator.compare(itemL, itemR) <= 0) {
                 builder.append(itemL);
                 if (!l.hasNext()) {
-                    return builder.toSeq().concat(right.splitAt(r.previousIndex()).back);
+                    builder.append(itemR);
+                    return builder.toSeq().concat(r.rest());
                 }
                 itemL = l.next();
             } else {
                 builder.append(itemR);
                 if (!r.hasNext()) {
-                    return builder.toSeq().concat(left.splitAt(l.previousIndex()).back);
+                    builder.append(itemL);
+                    return builder.toSeq().concat(l.rest());
                 }
                 itemR = r.next();
             }
@@ -752,6 +754,24 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         public abstract T next();
 
         /**
+         * Returns the next element, without advancing the iterator.
+         * <p>
+         * Complexity: constant time.
+         *
+         * @throws NoSuchElementException if the iterator has no next element
+         */
+        public abstract T peek();
+
+        /**
+         * Returns a sequence containing all elements that would be returned by continuously calling {@link #next()}.
+         * <p>
+         * Complexity: constant time on average, worst-case logarithmic time.
+         */
+        public final Seq<T> rest() {
+            return restImpl();
+        }
+
+        /**
          * Returns the index of the element that would be returned by a subsequent call to {@link #next()}.
          * <p>
          * If at the end of the sequence, returns the sequence size.
@@ -797,6 +817,8 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         }
 
         abstract void forEachRemainingImpl(Consumer<? super T> action);
+
+        abstract TaggedSeq<T, Object> restImpl();
     }
 
     /**

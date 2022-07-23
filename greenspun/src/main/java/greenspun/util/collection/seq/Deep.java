@@ -168,9 +168,8 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     private Deep<T, Phantom> prependedRecursive(final long newSize, final T object) {
-        final var length = prefix.length;
         final var newPrefix = ArrayOps.prependedSlice(prefix, object);
-        final var newChunk = makeChunk(ArrayOps.slice(prefix, length - maxChunkLength, length));
+        final var newChunk = makeChunk(ArrayOps.drop(prefix, prefix.length - maxChunkLength));
         return withNewFront(newSize, newPrefix, middle.prepended(newChunk));
     }
 
@@ -185,7 +184,7 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     private Deep<T, Phantom> withoutFirstSimple(final long newSize) {
-        return withNewFront(newSize, ArrayOps.slice(prefix, 1, prefix.length), middle);
+        return withNewFront(newSize, ArrayOps.drop(prefix, 1), middle);
     }
 
     private TaggedSeq<T, Phantom> withoutFirstNoPrefix(final long newSize) {
@@ -484,6 +483,12 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
 
         @Override
+        public T peek() {
+            nextArrayIfNeeded();
+            return array[index];
+        }
+
+        @Override
         public long nextIndex() {
             return sequenceIndex;
         }
@@ -498,6 +503,18 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
                 }
                 nextArray();
             }
+        }
+
+        @Override
+        TaggedSeq<T, Object> restImpl() {
+            final var suffix = remainingSuffix;
+            if (suffix == null) {
+                return (index < array.length) ? Shallow.ofUnits(ArrayOps.drop(array, index)) : Shallow.emptyUnit();
+            }
+            final var tag = Tag.<T>unit();
+            final var prefix = (index < array.length) ? ArrayOps.drop(array, index) : tag.emptyArray();
+            final var size = tag.measureArray(prefix) + remainingMiddle.subtreeSize + tag.measureArray(suffix);
+            return fromUnknownPrefix(tag, size, prefix, remainingMiddle, suffix);
         }
 
         private void nextArrayIfNeeded() {
@@ -533,7 +550,6 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         private long sequenceIndex = 0;
         private TaggedSeq<Chunk<T>, Chunk<?>> remainingMiddle;
         private T @Nullable [] remainingSuffix;
-
     }
 
     private record PartialFront<T>(T[] prefix, TaggedSeq<Chunk<T>, Chunk<?>> middle) {

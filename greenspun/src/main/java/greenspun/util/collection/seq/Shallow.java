@@ -43,6 +43,7 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
 
     @Override
     public Seq.@NonNull Itr<T> iterator() {
+        assert tag == Tag.unit();
         return new Itr<>(values);
     }
 
@@ -168,7 +169,7 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
 
     private Shallow<T, Phantom> withoutFirstImpl() {
         final var newSize = subtractFromSize(first());
-        return new Shallow<>(tag, newSize, ArrayOps.slice(values, 1, values.length));
+        return new Shallow<>(tag, newSize, ArrayOps.drop(values, 1));
     }
 
     private Shallow<T, Phantom> withoutLastImpl() {
@@ -225,6 +226,14 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
 
         @Override
+        public T peek() {
+            if (index >= values.length) {
+                throw noMoreElements();
+            }
+            return values[index];
+        }
+
+        @Override
         public long nextIndex() {
             return index;
         }
@@ -233,6 +242,11 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
         void forEachRemainingImpl(final Consumer<? super T> action) {
             ArrayOps.forEachFrom(values, index, action);
             index = values.length;
+        }
+
+        @Override
+        TaggedSeq<T, Object> restImpl() {
+            return (index < values.length) ? ofUnits(ArrayOps.drop(values, index)) : emptyUnit();
         }
 
         private int index = 0;
