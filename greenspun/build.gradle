@@ -6,7 +6,7 @@ import com.github.spotbugs.snom.Effort
 plugins {
     id "application"
     id "com.github.spotbugs" version "5.0.9"
-    id "org.checkerframework" version "0.6.13" apply false
+    id "org.checkerframework" version "0.6.14" apply false
 }
 
 ext.withCF = project.hasProperty("withCF")
@@ -21,7 +21,7 @@ repositories {
 
 dependencies {
     compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.1"
-    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.22.2"
+    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.23.0"
     compileOnly project(":auki")
     annotationProcessor project(":auki")
     testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.1"
