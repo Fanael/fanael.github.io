@@ -103,17 +103,17 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
         final var prefixSplitPoint = tag.findSplitPoint(prefix, index, accumulator);
         final var prefixSize = prefixSplitPoint.accumulator();
         if (index < prefixSize) {
-            return getFromArray(prefix, prefixSplitPoint);
+            return tag.getFromArray(prefix, prefixSplitPoint);
         }
         final var frontSize = prefixSize + middle.subtreeSize;
         if (index < frontSize) {
             final var result = middle.getImpl(index, prefixSize);
             final var array = result.element().values;
             final var splitPoint = tag.findSplitPoint(array, index, result.accumulator());
-            return getFromArray(array, splitPoint);
+            return tag.getFromArray(array, splitPoint);
         }
         final var suffixSplitPoint = tag.findSplitPoint(suffix, index, frontSize);
-        return getFromArray(suffix, suffixSplitPoint);
+        return tag.getFromArray(suffix, suffixSplitPoint);
     }
 
     @Override
@@ -125,6 +125,24 @@ final class Deep<T, Phantom> extends TaggedSeq<T, Phantom> {
     T[] toSmallArray() {
         assert eligibleForInsertionSort();
         return ArrayOps.concat(prefix, suffix);
+    }
+
+    @Override
+    TaggedSeq<T, Phantom> updatedImpl(final long index, final long accumulator, final Tag.Updater<T> updater) {
+        final var prefixSplitPoint = tag.findSplitPoint(prefix, index, accumulator);
+        final var prefixSize = prefixSplitPoint.accumulator();
+        if (index < prefixSize) {
+            final var newPrefix = tag.updatedArray(prefix, prefixSplitPoint, updater);
+            return withNewFront(subtreeSize, newPrefix, middle);
+        }
+        final var frontSize = prefixSize + middle.subtreeSize;
+        if (index < frontSize) {
+            final var newMiddle = middle.updatedImpl(index, prefixSize, Chunk.makeUpdater(tag, index, updater));
+            return withNewFront(subtreeSize, prefix, newMiddle);
+        }
+        final var suffixSplitPoint = tag.findSplitPoint(suffix, index, frontSize);
+        final var newSuffix = tag.updatedArray(suffix, suffixSplitPoint, updater);
+        return withNewBack(subtreeSize, middle, newSuffix);
     }
 
     @Override

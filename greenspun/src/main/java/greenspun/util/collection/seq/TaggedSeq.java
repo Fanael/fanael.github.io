@@ -42,8 +42,8 @@ abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Shallow, Deep
 
     @Override
     public final Seq<T> updated(final long index, final T newValue) {
-        final var split = splitTree(Objects.checkIndex(index, subtreeSize), 0);
-        return split.front.concat(split.back.prepended(newValue));
+        // Check the index once here, let children assume it's always valid.
+        return updatedImpl(Objects.checkIndex(index, subtreeSize), 0, (accumulator, oldValue) -> newValue);
     }
 
     @Override
@@ -54,6 +54,8 @@ abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Shallow, Deep
         final var split = splitTree(index, 0);
         return new Split<>(split.front, split.back.prepended(split.middle));
     }
+
+    abstract TaggedSeq<T, Phantom> updatedImpl(long index, long accumulator, Tag.Updater<T> updater);
 
     abstract TaggedSeq<T, Phantom> concatImpl(TaggedSeq<T, Phantom> other);
 
@@ -69,11 +71,6 @@ abstract sealed class TaggedSeq<T, Phantom> extends Seq<T> permits Shallow, Deep
 
     final long updateSize(final T newObject, final T oldObject) {
         return computeNewSize(tag.measureSingle(newObject) - tag.measureSingle(oldObject));
-    }
-
-    final GetResult<T> getFromArray(final T[] array, final Tag.SplitPoint splitPoint) {
-        final var element = array[splitPoint.index()];
-        return new GetResult<>(element, splitPoint.accumulator() - tag.measureSingle(element));
     }
 
     final Tag<T, Phantom> tag;

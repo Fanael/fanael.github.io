@@ -15,6 +15,14 @@ final class Chunk<T> {
         this.values = values;
     }
 
+    static <T> Tag.Updater<Chunk<T>> makeUpdater(final Tag<T, ?> tag, final long index, final Tag.Updater<T> updater) {
+        return (accumulator, chunk) -> {
+            final var splitPoint = tag.findSplitPoint(chunk.values, index, accumulator);
+            final var newValues = tag.updatedArray(chunk.values, splitPoint, updater);
+            return new Chunk<>(chunk.subtreeSize, newValues);
+        };
+    }
+
     <U> Chunk<U> map(final Tag<U, ?> tag, final Function<? super T, ? extends U> function) {
         final var newValues = ArrayOps.map(values, function);
         assert tag.measureArray(newValues) == subtreeSize;

@@ -30,6 +30,20 @@ abstract sealed class Tag<T, Phantom> {
         return new ArraySplit<>(front, array[midpoint], back);
     }
 
+    final Seq.GetResult<T> getFromArray(final T[] array, final SplitPoint splitPoint) {
+        final var element = array[splitPoint.index()];
+        return new Seq.GetResult<>(element, splitPoint.accumulator() - measureSingle(element));
+    }
+
+    final T[] updatedArray(final T[] array, final SplitPoint splitPoint, final Updater<T> updater) {
+        final var index = splitPoint.index();
+        final var oldValue = array[index];
+        final var oldValueSize = measureSingle(oldValue);
+        final var newValue = updater.update(splitPoint.accumulator() - oldValueSize, oldValue);
+        assert measureSingle(newValue) == oldValueSize;
+        return ArrayOps.updated(array, index, newValue);
+    }
+
     abstract long measureSingle(T object);
 
     abstract long measureArray(T[] array);
@@ -41,6 +55,11 @@ abstract sealed class Tag<T, Phantom> {
     abstract @NonNull T[] emptyArray();
 
     abstract T[] unitArray(T object);
+
+    @FunctionalInterface
+    interface Updater<T> {
+        T update(long accumulator, T oldValue);
+    }
 
     record SplitPoint(int index, long accumulator) {
     }

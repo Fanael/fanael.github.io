@@ -475,7 +475,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
     /**
      * Returns the element at the specified index in this sequence.
      * <p>
-     * Complexity: O(log(min(m,n))) time.
+     * Complexity: O(log(min(k,n-k))) time.
      *
      * @throws IndexOutOfBoundsException if the index is out of range
      */
@@ -487,7 +487,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
     /**
      * Returns a copy of this sequence with the element at the given index replaced with the given new value.
      * <p>
-     * Complexity: logarithmic time.
+     * Complexity: O(log(min(k,n-k))) time.
      *
      * @throws IndexOutOfBoundsException if the index is out of range
      */

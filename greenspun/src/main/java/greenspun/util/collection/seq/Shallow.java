@@ -115,7 +115,14 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
     @Override
     GetResult<T> getImpl(final long index, final long accumulator) {
         final var splitPoint = tag.findSplitPoint(values, index, accumulator);
-        return getFromArray(values, splitPoint);
+        return tag.getFromArray(values, splitPoint);
+    }
+
+    @Override
+    TaggedSeq<T, Phantom> updatedImpl(final long index, final long accumulator, final Tag.Updater<T> updater) {
+        final var splitPoint = tag.findSplitPoint(values, index, accumulator);
+        final var newValues = tag.updatedArray(values, splitPoint, updater);
+        return new Shallow<>(tag, subtreeSize, newValues);
     }
 
     @Override
