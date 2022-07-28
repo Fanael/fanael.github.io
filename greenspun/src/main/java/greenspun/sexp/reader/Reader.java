@@ -160,10 +160,7 @@ public final class Reader {
     private Sexp readSymbol(final byte firstByte) {
         final var symbolNameBytes = new ByteArrayOutputStream(initialSymbolCapacity);
         symbolNameBytes.write(firstByte);
-        while (true) {
-            if (stream.reachedEnd()) {
-                break;
-            }
+        while (!stream.reachedEnd()) {
             final var b = stream.peek();
             if (ByteClass.of(b) != ByteClass.REGULAR) {
                 break;
