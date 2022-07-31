@@ -351,9 +351,9 @@ public final class Generator {
     private void generateFileList(final Targets targets, final Seq<DomainRelativeUri> archiveUris) {
         try (final var trace = new Trace("Generating list of files")) {
             trace.use();
-            var uris = targets.staticTargets().map(Generator::targetDestinationUri);
-            uris = uris.concat(targets.pageTargets().map(Generator::targetDestinationUri));
-            uris = uris.concat(targets.articleTargets().map(Generator::targetDestinationUri));
+            var uris = targets.staticTargets().map(Target::destinationUri);
+            uris = uris.concat(targets.pageTargets().map(Target::destinationUri));
+            uris = uris.concat(targets.articleTargets().map(Target::destinationUri));
             uris = uris.concat(archiveUris);
             uris = uris.appended(DomainRelativeUri.ofRoot());
             uris = uris.sorted(Comparator.comparing(DomainRelativeUri::toString));
@@ -375,10 +375,6 @@ public final class Generator {
         } catch (final IOException e) {
             throw ConditionContext.error(new IOExceptionCondition(e));
         }
-    }
-
-    private static DomainRelativeUri targetDestinationUri(final Target target) {
-        return new DomainRelativeUri(target.destinationPath());
     }
 
     private static void ensureDirectoryExists(final Path path) {
@@ -432,7 +428,7 @@ public final class Generator {
 
     private record LoadedArticle(Article article, Target target) {
         private DomainRelativeUri destinationUri() {
-            return new DomainRelativeUri(target.destinationPath());
+            return target.destinationUri();
         }
 
         private String identifier() {

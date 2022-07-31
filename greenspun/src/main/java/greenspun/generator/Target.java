@@ -5,4 +5,7 @@ package greenspun.generator;
 import java.nio.file.Path;
 
 record Target(Path sourcePath, Path destinationPath) {
+    DomainRelativeUri destinationUri() {
+        return new DomainRelativeUri(destinationPath);
+    }
 }
