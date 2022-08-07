@@ -6,7 +6,7 @@ import com.github.spotbugs.snom.Effort
 plugins {
     id "application"
     id "com.github.spotbugs" version "5.0.9"
-    id "org.checkerframework" version "0.6.14" apply false
+    id "org.checkerframework" version "0.6.15" apply false
 }
 
 ext.withCF = project.hasProperty("withCF")
@@ -21,14 +21,14 @@ repositories {
 
 dependencies {
     compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.1"
-    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.23.0"
+    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.24.0"
     compileOnly project(":auki")
     annotationProcessor project(":auki")
     testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.1"
     testAnnotationProcessor project(":auki")
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.8.2"
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.9.0"
     testImplementation group: "org.assertj", name: "assertj-core", version: "3.23.1"
-    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.8.2"
+    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.9.0"
 }
 
 spotbugs {

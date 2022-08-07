@@ -53,7 +53,7 @@ public final class CollectionExecutorService {
      */
     public <T> void forEach(
         final Iterable<? extends T> iterable,
-        final Consumer<? super @NonNull T> consumer
+        final Consumer<? super T> consumer
     ) {
         final Function<? super @NonNull T, @Nullable Object> function = value -> {
             consumer.accept(value);
@@ -84,7 +84,7 @@ public final class CollectionExecutorService {
         return builder.toSeq();
     }
 
-    private static void waitForResults(final Seq<? extends Future<? super @NonNull Object>> futures) {
+    private static void waitForResults(final Seq<? extends Future<? super Object>> futures) {
         new AwaitImpl<>(futures.iterator(), value -> {
         }).awaitAll();
     }
