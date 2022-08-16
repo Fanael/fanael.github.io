@@ -3,7 +3,7 @@
 </span><span class="cx-ln"></span><span>./a.out  2,77s user 0,00s system 99% cpu 2,771 total
 </span><span class="cx-ln"></span><span>$ g++ -O3 -DUSE_SHELL_SORT p3-prefetch-shell-sort.cc &amp;&amp; time ./a.out # Shell sort
 </span><span class="cx-ln"></span><span>./a.out  4,52s user 0,00s system 99% cpu 4,517 total</span></samp></pre><p>The implementation of Shell sort has been lifted from Wikipedia and C++-ified with no other significant changes:</p><pre class="code-block"><span class="cx-language">C++</span>
-<code class="cx-numbered"><span class="cx-ln"></span><span><span class="c-k">void</span> shell_sort(std::<span class="c-k">uint32_t</span>* array, std::<span class="c-k">size_t</span> length)
+<code class="cx-numbered"><span class="cx-ln"></span><span><span class="c-k">void</span> <span class="c-nf">shell_sort</span>(std::<span class="c-k">uint32_t</span>* array, std::<span class="c-k">size_t</span> length)
 </span><span class="cx-ln"></span><span>{
 </span><span class="cx-ln"></span><span>    <span class="c-k">if</span>(length &lt;= <span class="c-m">1</span>) {
 </span><span class="cx-ln"></span><span>        <span class="c-k">return</span>;
