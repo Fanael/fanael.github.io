@@ -39,8 +39,10 @@ List of known commands:
     - ":nl": the token is a single literal line feed. No values follow.
     - ":s": simple text. One simple string follows, indicating the text of the
       token.
-    - ":m": multiline text. One *multiline* string follows, indicating the text
+    - ":m": multiline text. One multiline string follows, indicating the text
       of the token.
+    - ":mn": multiline text, *without* a new line at the end. One multiline
+      string follows, indicating the text of the token.
    The simple strings ":done" and ":error" can also occur in place of a token
    type, with their usual semantics.
 '''
@@ -111,7 +113,7 @@ def send_token_stream(code: str, lexer: lex.Lexer, sink: TextSink) -> None:
         elif '\n' not in value:
             sink.write(f':s\n{value}\n')
         else:
-            sink.write(':m\n')
+            sink.write(':m\n' if value[-1] == '\n' else ':mn\n')
             print_multiline_string(value, sink)
 
 def read_multiline_string(source: TextSource) -> str:

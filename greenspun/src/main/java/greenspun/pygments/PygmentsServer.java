@@ -226,6 +226,7 @@ public final class PygmentsServer implements AutoCloseable {
                     case ":nl" -> accumulator.append("\n");
                     case ":s" -> accumulator.append(receiveSimpleString());
                     case ":m" -> accumulator.append(receiveMultilineString());
+                    case ":mn" -> accumulator.append(receiveMultilineString(true));
                     case null, default -> throw recoverFromServerError(response);
                 }
             }
@@ -272,6 +273,10 @@ public final class PygmentsServer implements AutoCloseable {
         }
 
         private String receiveMultilineString() throws IOException {
+            return receiveMultilineString(false);
+        }
+
+        private String receiveMultilineString(final boolean omitFinalLineFeed) throws IOException {
             final var builder = new StringBuilder();
             while (true) {
                 final var line = reader.readLine();
@@ -285,6 +290,9 @@ public final class PygmentsServer implements AutoCloseable {
                 } else {
                     throw recoverFromServerError(line);
                 }
+            }
+            if (omitFinalLineFeed && !builder.isEmpty()) {
+                builder.setLength(builder.length() - 1);
             }
             return builder.toString();
         }
