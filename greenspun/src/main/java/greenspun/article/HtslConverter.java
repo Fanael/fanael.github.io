@@ -8,6 +8,7 @@ import greenspun.dom.Attributes;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
 import greenspun.generator.Renderer;
+import greenspun.pygments.Language;
 import greenspun.pygments.PygmentsCache;
 import greenspun.sexp.Sexp;
 import greenspun.sexp.Sexps;
@@ -37,8 +38,8 @@ public final class HtslConverter {
      * <ul>
      * <li>{@link HtslConversionErrorCondition} is signaled if an S-expression could not be converted into a DOM tree
      * node.
-     * <li>Any condition type that {@link PygmentsCache#highlightCode(String, String, String)} can signal, if an error
-     * occurs in syntax highlighting during the macro-expansion of {@code highlighted-code} tag macro.
+     * <li>Any condition type that {@link PygmentsCache#highlightCode(String, Language)} can signal, if an error occurs
+     * in syntax highlighting during the macro-expansion of {@code highlighted-code} tag macro.
      * </ul>
      */
     public Seq<Node> convert(final Seq<Sexp> forms) {
@@ -149,13 +150,12 @@ public final class HtslConverter {
         if (languageTag == null) {
             throw signalError("This doesn't appear to be a language name: " + Sexps.prettyPrint(languageTagForm));
         }
-        final var prettyLanguageName = syntaxHighlightingLanguages.get(languageTag);
-        if (prettyLanguageName == null) {
+        final var pygmentsLanguageName = languageTag.symbolName().substring(1);
+        final var language = Language.byPygmentsName(pygmentsLanguageName);
+        if (language == null) {
             throw signalError("Unknown language for syntax highlighting: " + languageTag);
         }
-        final var code = codeNode.value();
-        final var pygmentsLanguageName = languageTag.symbolName().substring(1);
-        return pygmentsCache.highlightCode(code, pygmentsLanguageName, prettyLanguageName);
+        return pygmentsCache.highlightCode(codeNode.value(), language);
     }
 
     private Node.Element expandImageFigure(final Seq<Sexp> attributes, final Seq<Sexp> children) {
@@ -206,13 +206,6 @@ public final class HtslConverter {
         Sexp.KnownSymbol.SIDENOTE, HtslConverter::expandSidenote,
         Sexp.KnownSymbol.FIGCONTENT, HtslConverter::expandFigcontent,
         Sexp.KnownSymbol.INFO_BOX, HtslConverter::expandInfoBox
-    );
-    private static final Map<Sexp.Symbol, String> syntaxHighlightingLanguages = Map.of(
-        Sexp.KnownSymbol.KW_CPLUSPLUS, "C++",
-        Sexp.KnownSymbol.KW_COMMON_LISP, "Common Lisp",
-        Sexp.KnownSymbol.KW_DIFF, "Unified diff",
-        Sexp.KnownSymbol.KW_JAVA, "Java",
-        Sexp.KnownSymbol.KW_NASM, "x86 assembly"
     );
 
     private final PygmentsCache pygmentsCache;

@@ -42,22 +42,23 @@ public final class PygmentsCache {
     }
 
     /**
-     * Highlights the syntax of the given code using the given language name for determining syntactic rules.
-     * The given pretty name will be included in the DOM.
+     * Highlights the syntax of the given code using the given language for determining syntactic rules.
+     * The pretty name of the language will be included in the DOM.
      * <p>
      * If successful, returns a DOM {@link Node} representing the highlighted code.
      * <p>
      * On error, a fatal condition is signaled, following the same contract as
      * {@link PygmentsServer#highlightCode(String, String)}.
      */
-    public Node highlightCode(final String code, final String languageName, final String prettyName) {
-        final var key = new CacheKey(code, languageName, prettyName);
+    public Node highlightCode(final String code, final Language language) {
+        final var key = new CacheKey(code, language);
         final var cachedNode = map.get(key);
         if (cachedNode != null) {
             cachedNode.generation = currentGeneration.get();
             return cachedNode.node;
         }
-        final var node = Renderer.wrapHighlightedCode(server.highlightCode(code, languageName), prettyName);
+        final var node =
+            Renderer.wrapHighlightedCode(server.highlightCode(code, language.pygmentsName()), language.prettyName());
         // If multiple threads try to add an entry with the same key at the same time, just let the first one win
         // and use its DOM subtree, as DOM nodes are immutable anyway.
         final var newCachedNode = map.putIfAbsent(key, new CacheValue(node, currentGeneration.get()));
@@ -68,7 +69,7 @@ public final class PygmentsCache {
     private final ConcurrentHashMap<CacheKey, CacheValue> map = new ConcurrentHashMap<>();
     private final AtomicInteger currentGeneration = new AtomicInteger(0);
 
-    private record CacheKey(String code, String languageName, String prettyName) {
+    private record CacheKey(String code, Language language) {
     }
 
     private static final class CacheValue {

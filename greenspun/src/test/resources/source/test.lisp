@@ -29,7 +29,7 @@
 
 (defsection c11
   :header "Section 1.1"
-  ((highlighted-code :language :java)
+  ((highlighted-code :language :JAVa)
    "final class Main {
     private Main() {
     }

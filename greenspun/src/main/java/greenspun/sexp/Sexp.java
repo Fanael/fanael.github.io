@@ -91,12 +91,7 @@ public sealed interface Sexp {
         SIDENOTE("sidenote"),
         FIGCONTENT("figcontent"),
         INFO_BOX("info-box"),
-        KW_LANGUAGE(":language"),
-        KW_CPLUSPLUS(":c++"),
-        KW_COMMON_LISP(":common-lisp"),
-        KW_DIFF(":diff"),
-        KW_JAVA(":java"),
-        KW_NASM(":nasm");
+        KW_LANGUAGE(":language");
 
         KnownSymbol(final java.lang.String name) {
             this.name = name;
