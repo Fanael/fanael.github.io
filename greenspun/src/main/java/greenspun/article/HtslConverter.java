@@ -211,7 +211,8 @@ public final class HtslConverter {
         Sexp.KnownSymbol.KW_CPLUSPLUS, "C++",
         Sexp.KnownSymbol.KW_COMMON_LISP, "Common Lisp",
         Sexp.KnownSymbol.KW_DIFF, "Unified diff",
-        Sexp.KnownSymbol.KW_JAVA, "Java"
+        Sexp.KnownSymbol.KW_JAVA, "Java",
+        Sexp.KnownSymbol.KW_NASM, "x86 assembly"
     );
 
     private final PygmentsCache pygmentsCache;

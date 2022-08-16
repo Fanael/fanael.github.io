@@ -17,13 +17,12 @@
      (em "actually")
      " work internally?")
   (p "To answer this question, let's analyze how different x86 processors, ranging from the first \"modern\" Intel microarchitecture, P6, to their current designs, handle the following simple loop (the code is 32-bit just to allow us to discuss very old x86 processors):")
-  ((code-block :language "x86 assembly")
-   (code ".loop:
+  ((highlighted-code :language :nasm)
+   ".loop:
     add [edx], eax
     add edx, 4
     sub eax, 1
-    jnz .loop
-")))
+    jnz .loop"))
 
 (defsection setting-the-stage
   :header "RISC-V: setting the stage"

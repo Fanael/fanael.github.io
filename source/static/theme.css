@@ -379,11 +379,15 @@ figure, .code-block {
     font-style: italic;
 }
 
-.c-gh, .c-gu {
+.c-gh, .c-gu, .c-nc, .c-nf {
     color: #153;
 }
 
-.c-gd {
+.c-nc {
+    font-weight: 550;
+}
+
+.c-gd, .c-nb {
     color: #541;
 }
 
@@ -566,52 +570,60 @@ button {
 /* Dark mode */
 @media only screen and (prefers-color-scheme: dark) {
     html {
-        --basic-link-color: #a1abda;
+        --basic-link-color: #6fa5dc;
         --box-shadow-color: rgba(0, 0, 0, 0.466);
-        --visited-link-color: #7edca4;
-        background-color: #191919;
+        --visited-link-color: #68d391;
+        background-color: #111;
         background-image: none;
         color: #eee;
     }
 
     a:active {
-        color: #e28382;
+        color: #ea7a7a;
     }
 
-    .c-m, .c-gd {
-        color: #abf;
+    .c-k, .c-se {
+        color: #ef8e8b;
     }
 
-    .c-s, .c-gi, em, strong {
-        color: #7ea;
+    .c-s, .c-gi {
+        color: #8bb4e2;
     }
 
-    .c-k, .c-se, .c-gh, .c-gu {
-        color: #f88;
+    .c-m {
+        color: #ecca7d;
     }
 
-    thead, tfoot {
-        background-color: #111;
+    .c-gh, .c-gu, .c-nc, .c-nf, em, strong {
+        color: #7fdfa6;
     }
 
-    figure, .code-block, .cx-language, .cx-ln, td, th {
-        border-color: #888;
-    }
-
-    .code-block, .toc, tbody > tr:nth-child(2n) {
-        background-color: #2b2b2b;
-    }
-
-    table tr:hover {
-        background-color: #223;
+    .c-gd, .c-nb {
+        color: #c292d0;
     }
 
     .c-c, #footer li, article header p, .cx-ln {
         color: #a5a5a5;
     }
 
-    .cx-ln + :hover, .cx-ln:hover + * {
-        background-color: #222;
+    figure, .code-block, .cx-language, .cx-ln, td, th {
+        border-color: #888;
+    }
+
+    .info {
+        border-color: #b87ec9;
+    }
+
+    thead, tfoot {
+        background-color: #111;
+    }
+
+    tbody > tr:nth-child(2n), .cx-ln + :hover, .cx-ln:hover + * {
+        background-color: #1d1d1d;
+    }
+
+    .code-block, .toc, thead, tfoot, table tr:hover {
+        background-color: #262626;
     }
 
     @supports (-webkit-background-clip: text) or (background-clip: text) {

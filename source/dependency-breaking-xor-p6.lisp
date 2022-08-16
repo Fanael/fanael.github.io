@@ -18,11 +18,11 @@
   (p "By the time the P6 microarchitecture was being designed, the "
      (code "xor")
      " zeroing idiom was already nigh-universal in compiler output and hand-written assembly alike, so it was specifically recognized as a zeroing idiom for the purpose of avoiding partial register stalls in code such as this:")
-  ((code-block :language "x86 assembly")
-   (code "    xor eax, eax
+  ((highlighted-code :language :nasm)
+   "    xor eax, eax
     mov al, [ecx]
     ; use eax
-"))
+")
   (p "In code tuned for the original Pentium or earlier processors, this was the usual way of zero-extending an 8-bit (or 16-bit with "
      (code "ax")
      " instead of "
@@ -46,15 +46,14 @@
   (p "To test for dependency-breaking behavior, we simply need to create a long dependency chain, interspersed by the tested instructions. I somewhat arbitrarily chose multiplication as the instruction to form the chain with, because its significant latency, yet single-cycle reciprocal throughput makes it trivial to see if we're bound by throughput (in which case the dependency chain is broken) or by latency (in which case it's not). Therefore, the tested loop will look like this, using the "
      ((a :href "https://www.nasm.us/") "Netwide Assembler")
      " syntax:")
-  ((code-block :language "x86 assembly, NASM syntax")
-   (code ".loop:
-        %rep 10
-        xor eax, eax
-        imul eax, eax
-        %endrep
-        dec ecx
-        jnz .loop
-"))
+  ((highlighted-code :language :nasm)
+   ".loop:
+    %rep 10
+    xor eax, eax
+    imul eax, eax
+    %endrep
+    dec ecx
+    jnz .loop")
   (p "MMX and SSE instruction sets were tested the same way, using "
      (code "pxor")
      " and "

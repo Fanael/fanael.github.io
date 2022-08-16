@@ -66,15 +66,18 @@ TokenType: TypeAlias = tok._TokenType # pylint: disable=protected-access
 # Set of token types that we want to style.
 KNOWN_TOKENS: frozenset[TokenType] = frozenset((
     tok.Comment,
+    tok.Generic.Deleted,
+    tok.Generic.Heading,
+    tok.Generic.Inserted,
+    tok.Generic.Subheading,
     tok.Keyword,
+    tok.Name.Builtin,
+    tok.Name.Class,
+    tok.Name.Function,
+    tok.Number,
     tok.String,
     tok.String.Escape,
     tok.String.Interpol,
-    tok.Number,
-    tok.Generic.Deleted,
-    tok.Generic.Inserted,
-    tok.Generic.Heading,
-    tok.Generic.Subheading,
 ))
 
 def get_effective_class_name(token_type: TokenType) -> str:
