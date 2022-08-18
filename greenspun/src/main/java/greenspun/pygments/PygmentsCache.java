@@ -48,7 +48,7 @@ public final class PygmentsCache {
      * If successful, returns a DOM {@link Node} representing the highlighted code.
      * <p>
      * On error, a fatal condition is signaled, following the same contract as
-     * {@link PygmentsServer#highlightCode(String, String)}.
+     * {@link PygmentsServer#highlightCode(String, Language)}.
      */
     public Node highlightCode(final String code, final Language language) {
         final var key = new CacheKey(code, language);
@@ -57,8 +57,7 @@ public final class PygmentsCache {
             cachedNode.generation = currentGeneration.get();
             return cachedNode.node;
         }
-        final var node =
-            Renderer.wrapHighlightedCode(server.highlightCode(code, language.pygmentsName()), language.prettyName());
+        final var node = Renderer.wrapHighlightedCode(server.highlightCode(code, language), language.prettyName());
         // If multiple threads try to add an entry with the same key at the same time, just let the first one win
         // and use its DOM subtree, as DOM nodes are immutable anyway.
         final var newCachedNode = map.putIfAbsent(key, new CacheValue(node, currentGeneration.get()));

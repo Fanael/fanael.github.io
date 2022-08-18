@@ -75,7 +75,7 @@ public final class PygmentsServer implements AutoCloseable {
     }
 
     /**
-     * Highlights the syntax of the given code using the given language name for determining syntactic rules.
+     * Highlights the syntax of the given code using the given language for determining syntactic rules.
      * <p>
      * If successful, returns a {@link Seq} of DOM {@link Node}s representing the highlighted code.
      * <p>
@@ -88,7 +88,8 @@ public final class PygmentsServer implements AutoCloseable {
      * <li>{@link PygmentsServerErrorCondition} if the Pygments server process reported an error.
      * </ul>
      */
-    public Seq<Node> highlightCode(final String code, final String languageName) {
+    public Seq<Node> highlightCode(final String code, final Language language) {
+        final var languageName = language.pygmentsName();
         try (final var trace = new Trace(() -> "Highlighting code in language " + languageName)) {
             trace.use();
             final var connection = acquireConnection();
