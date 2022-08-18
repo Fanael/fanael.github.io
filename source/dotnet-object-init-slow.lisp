@@ -80,8 +80,8 @@
      ", 95% confidence interval [888.5 ms, 905.9 ms], while the equivalent C# code under .NET 6.0.8 (under Windows) takes "
      (b "2942 ms")
      ", 95% CI [2575 ms, 3308.4 ms], or "
-     (b "over three times as much on average")
-     ", with large standard deviation, which close to my prior observations. Same version of .NET under Linux is even slower, likely because "
+     (strong "over three times as much on average")
+     ", with large standard deviation, which is close to my prior observations. Same version of .NET under Linux is even slower, likely because "
      ((a :href "https://github.com/dotnet/runtime/issues/67776") " it does not have assembly intrinsics for some operations on non-Windows platforms")
      " yet.")
   (p "Enough waffling about, let's take a look at the disassembly, shall we?"))
