@@ -15,9 +15,10 @@
 
 html {
     --basic-link-color: #2431a9;
-    --visited-link-color: #819;
     --box-shadow-color: rgba(0, 0, 0, 0.094);
     --box-shadow-specs: 0 0 0.75ch 0.5ch var(--box-shadow-color), 0 0 1.5ch 1ch var(--box-shadow-color);
+    --visited-link-color: #819;
+    -webkit-text-size-adjust: 100%;
     color-scheme: light dark;
     font-family: serif;
     line-height: 1.25;
