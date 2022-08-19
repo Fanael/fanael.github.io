@@ -75,12 +75,18 @@
       " the generated code to see if the compiler didn't do anything destructive anyway. If you're not a trained professional who likes living dangerously, you should prefer libraries like the "
       ((a :href "https://github.com/openjdk/jmh") "Java micro­benchmark harness")
       " instead, which take care of those nasty optimizing compilers. And handle just-in-time compiler warm-up better. And more."))
-  (p "Running it on my Zen 2 desktop, the Java code running under OpenJDK 18.0.2 (under Linux) executes in "
-     (b "897 ms")
-     ", 95% confidence interval [888.5 ms, 905.9 ms], while the equivalent C# code under .NET 6.0.8 (under Windows) takes "
-     (b "2942 ms")
-     ", 95% CI [2575 ms, 3308.4 ms], or "
-     (strong "over three times as much on average")
+  (p "Running this flawed microbenchmark on my Zen 2 desktop yields the following results:")
+  (figure
+   (figcaption "Measured execution times")
+   (figcontent
+    (table
+     (thead
+      (tr (th "Language") (th "Runtime")        (th "Operating system") (th "Average time") (th "95% confidence interval")))
+     (tbody
+      (tr (th "Java")     (td "OpenJDK 18.0.2") (td "Debian")           (td "897 ms")   (td "[888.5 ms, 905.9 ms]"))
+      (tr (th "C#")       (td ".NET 6.0.8")     (td "Windows")          (td "2942 ms")  (td "[2575 ms, 3308.4 ms]"))))))
+  (p ".NET ends up taking "
+     (strong "over three times as much time on average")
      ", with large standard deviation, which is close to my prior observations. Same version of .NET under Linux is even slower, likely because "
      ((a :href "https://github.com/dotnet/runtime/issues/67776") " it does not have assembly intrinsics for some operations on non-Windows platforms")
      " yet.")
