@@ -22,7 +22,7 @@
      " create many objects, spending north of 80% wall clock time on "
      (em "just")
      " allocating new objects, instead of on actual logic, is certainly a lot.")
-  (p "The next step I took to understand why those functions take so much time was, naturally, looking at the generated code. The difference were quite stark, and explained the performance gap almost immediately, so why don't we take a look?"))
+  (p "The next step I took to understand why those functions take so much time was, naturally, looking at the generated code. The differences were quite stark, and explained the performance gap almost immediately, so why don't we take a look?"))
 
 (defsection setup
   :header "The setup"
