@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import com.github.spotbugs.snom.Confidence
 import com.github.spotbugs.snom.Effort
+import com.github.spotbugs.snom.SpotBugsTask
 
 plugins {
     id "application"
-    id "com.github.spotbugs" version "5.0.9"
-    id "org.checkerframework" version "0.6.15" apply false
+    id "com.github.spotbugs" version "5.0.12"
+    id "org.checkerframework" version "0.6.16" apply false
 }
 
 ext.withCF = project.hasProperty("withCF")
@@ -20,19 +21,21 @@ repositories {
 }
 
 dependencies {
-    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.1"
-    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.24.0"
+    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.2"
+    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.25.0"
     compileOnly project(":auki")
     annotationProcessor project(":auki")
-    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.1"
+    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.2"
     testAnnotationProcessor project(":auki")
+    testCompileOnly group: "org.checkerframework", name: "checker-qual", version: "3.25.0"
     testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.9.0"
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-params", version: "5.9.0"
     testImplementation group: "org.assertj", name: "assertj-core", version: "3.23.1"
     testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.9.0"
 }
 
 spotbugs {
-    toolVersion.set "4.7.1"
+    toolVersion.set "4.7.2"
     showProgress.set true
     includeFilter.set file("spotbugs-include.xml")
     excludeFilter.set file("spotbugs-exclude.xml")
@@ -75,11 +78,16 @@ javadoc {
 
 test {
     useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
 }
 
-spotbugsMain.reports.configure {
-    xml.enabled = false
-    html.enabled = true
+tasks.withType(SpotBugsTask).configureEach {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
 }
 
 if (ext.withCF) {

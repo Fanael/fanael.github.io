@@ -7,54 +7,52 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
-    Shallow(final Tag<T, Phantom> tag, final long subtreeSize, final T[] values) {
-        super(tag, subtreeSize);
-        assert values.length <= maxChunkLength;
-        assert subtreeSize == tag.measureArray(values);
+final class Shallow<T extends C, C> extends SeqImpl<T, C> {
+    private Shallow(final long subtreeSize, final T[] values) {
+        super(subtreeSize);
+        assert values.length <= maxLength;
         this.values = values;
     }
 
-    private Shallow(final Tag<T, Phantom> tag) {
-        this(tag, 0, tag.emptyArray());
-    }
-
     @SuppressWarnings("unchecked")
-    static <T> Shallow<T, Object> emptyUnit() {
-        return (Shallow<T, Object>) emptyUnitInstance;
+    static <T> Shallow<T, @Nullable Object> emptyUnit() {
+        return (Shallow<T, @Nullable Object>) emptyUnit;
     }
 
     @SuppressWarnings("unchecked")
     static <T> Shallow<Chunk<T>, Chunk<?>> emptyChunk() {
-        return (Shallow<Chunk<T>, Chunk<?>>) emptyChunkInstance;
+        return (Shallow<Chunk<T>, Chunk<?>>) emptyChunk;
     }
 
     @SafeVarargs
     @SuppressWarnings("varargs")
-    static <T> Shallow<T, Object> ofUnits(final T... values) {
-        return new Shallow<>(Tag.unit(), values.length, values);
+    static <T> Shallow<T, @Nullable Object> ofUnits(final T... values) {
+        return make(Tag.unit(), values.length, values);
     }
 
-    static <T> Shallow<Chunk<T>, Chunk<?>> ofChunk(final Chunk<T> chunk) {
-        final var tag = Tag.<T>chunk();
-        return new Shallow<>(tag, chunk.subtreeSize, tag.unitArray(chunk));
+    static <T> Shallow<Chunk<T>, Chunk<?>> ofChunk(final Tag<T, ? super T> tag, final T[] values) {
+        final var chunkTag = Tag.<T>chunk();
+        final var chunk = Chunk.make(tag, values);
+        return make(chunkTag, chunk.subtreeSize, chunkTag.unitArray(chunk));
+    }
+
+    static <T extends C, C> Shallow<T, C> make(final Tag<T, C> tag, final long subtreeSize, final T[] values) {
+        assert tag.arrayTypeMatches(values.getClass());
+        assert subtreeSize == tag.sumOfSizes(values);
+        return new Shallow<>(subtreeSize, values);
     }
 
     @Override
     public Seq.@NonNull Itr<T> iterator() {
-        assert tag == Tag.unit();
+        assert Tag.unit().arrayTypeMatches(values.getClass());
         return new Itr<>(values);
     }
 
     @Override
     public boolean anySatisfies(final Predicate<? super T> predicate) {
         return ArrayOps.anySatisfies(values, predicate);
-    }
-
-    @Override
-    public <U> TaggedSeq<U, Phantom> map(final Function<? super T, ? extends U> function) {
-        return new Shallow<>(tag.cast(), subtreeSize, ArrayOps.map(values, function));
     }
 
     @Override
@@ -70,134 +68,129 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
     }
 
     @Override
-    public TaggedSeq<T, Phantom> updatedFirst(final T object) {
-        checkNonEmpty("updatedFirst called on an empty sequence");
-        final var newSize = updateSize(object, first());
-        return new Shallow<>(tag, newSize, ArrayOps.updated(values, 0, object));
-    }
-
-    @Override
-    public TaggedSeq<T, Phantom> updatedLast(final T object) {
-        checkNonEmpty("updatedLast called on an empty sequence");
-        final var newSize = updateSize(object, last());
-        return new Shallow<>(tag, newSize, ArrayOps.updated(values, values.length - 1, object));
-    }
-
-    @Override
-    public TaggedSeq<T, Phantom> prepended(final T object) {
-        final var newSize = addToSize(object);
-        return (values.length < maxChunkLength) ? prependedSimple(newSize, object) : prependedDeep(newSize, object);
-    }
-
-    @Override
-    public TaggedSeq<T, Phantom> appended(final T object) {
-        final var newSize = addToSize(object);
-        return (values.length < maxChunkLength) ? appendedSimple(newSize, object) : appendedDeep(newSize, object);
-    }
-
-    @Override
-    public TaggedSeq<T, Phantom> withoutFirst() {
-        checkNonEmpty("withoutFirst called on an empty sequence");
-        return (values.length > 1) ? withoutFirstImpl() : tag.emptySeq();
-    }
-
-    @Override
-    public TaggedSeq<T, Phantom> withoutLast() {
-        checkNonEmpty("withoutLast called on an empty sequence");
-        return (values.length > 1) ? withoutLastImpl() : tag.emptySeq();
-    }
-
-    @Override
-    void forEachArray(final ArrayConsumer<T> action) {
+    void forEachArray(final ArrayConsumer<? super T> action) {
         action.accept(values);
     }
 
     @Override
-    GetResult<T> getImpl(final long index, final long accumulator) {
-        final var splitPoint = tag.findSplitPoint(values, index, accumulator);
-        return tag.getFromArray(values, splitPoint);
+    <U extends C> SeqImpl<U, C> map(final Tag<T, C> tag, final Function<? super T, ? extends U> function) {
+        return make(tag.cast(), subtreeSize, mapArray(tag, values, function));
     }
 
     @Override
-    TaggedSeq<T, Phantom> updatedImpl(final long index, final long accumulator, final Tag.Updater<T> updater) {
-        final var splitPoint = tag.findSplitPoint(values, index, accumulator);
-        final var newValues = tag.updatedArray(values, splitPoint, updater);
-        return new Shallow<>(tag, subtreeSize, newValues);
+    SeqImpl<T, C> prepended(final Tag<T, C> tag, final T value) {
+        return (values.length < maxLength) ? prependedSimple(tag, value) : prependedDeep(tag, value);
     }
 
     @Override
-    boolean eligibleForInsertionSortImpl() {
-        return true;
+    SeqImpl<T, C> appended(final Tag<T, C> tag, final T value) {
+        return (values.length < maxLength) ? appendedSimple(tag, value) : appendedDeep(tag, value);
     }
 
     @Override
-    T[] toSmallArray() {
-        assert eligibleForInsertionSort();
-        return values.clone();
+    SeqImpl<T, C> updatedFirst(final Tag<T, C> tag, final T value) {
+        checkNonEmpty("updatedFirst called on an empty sequence");
+        final var newSize = updateSize(tag, value, first());
+        return make(tag, newSize, ArrayOps.updated(values, 0, value));
     }
 
     @Override
-    TaggedSeq<T, Phantom> concatImpl(final TaggedSeq<T, Phantom> other) {
+    SeqImpl<T, C> updatedLast(final Tag<T, C> tag, final T value) {
+        checkNonEmpty("updatedLast called on an empty sequence");
+        final var newSize = updateSize(tag, value, last());
+        return make(tag, newSize, ArrayOps.updated(values, values.length - 1, value));
+    }
+
+    @Override
+    SeqImpl<T, C> withoutFirst(final Tag<T, C> tag) {
+        checkNonEmpty("withoutFirst called on an empty sequence");
+        return (values.length > 1) ? withoutFirstImpl(tag) : tag.emptySeq();
+    }
+
+    @Override
+    SeqImpl<T, C> withoutLast(final Tag<T, C> tag) {
+        checkNonEmpty("withoutLast called on an empty sequence");
+        return (values.length > 1) ? withoutLastImpl(tag) : tag.emptySeq();
+    }
+
+    @Override
+    SeqImpl<T, C> concat(final Tag<T, C> tag, final SeqImpl<T, C> other) {
         if (isEmpty()) {
             return other;
         }
         return switch (other) {
-            case Shallow<T, Phantom> shallow -> concatShallow(shallow);
-            case Deep<T, Phantom> deep -> deep.prependedShallow(this);
+            case Shallow<T, C> shallow -> concatShallow(tag, shallow);
+            case Deep<T, C> deep -> deep.prependedShallow(tag, this);
         };
     }
 
     @Override
-    TreeSplit<T, Phantom> splitTree(final long index, final long accumulator) {
-        final var splitPoint = tag.findSplitPoint(values, index, accumulator);
-        final var split = tag.splitArray(values, splitPoint.index());
+    GetResult<T> get(final Tag<T, C> tag, final long index) {
+        return getFromArray(tag, values, index);
+    }
+
+    @Override
+    SeqImpl<T, C> updated(final Tag<T, C> tag, final long index, final Updater<T> updater) {
+        return make(tag, subtreeSize, updatedArray(tag, values, index, updater));
+    }
+
+    @Override
+    TreeSplit<T, C> splitTree(final Tag<T, C> tag, final long index) {
+        final var point = tag.findSplitPoint(values, index);
+        final var split = tag.splitArray(values, point.index());
         final var middle = split.middle();
-        final var middleSize = tag.measureSingle(middle);
-        final var front = fromPossiblyEmptyArray(splitPoint.accumulator() - accumulator - middleSize, split.front());
-        final var back = fromPossiblyEmptyArray(subtreeSize - front.subtreeSize - middleSize, split.back());
+        final var frontSize = point.prefixSize();
+        final var front = fromPossiblyEmptyArray(tag, frontSize, split.front());
+        final var back = fromPossiblyEmptyArray(tag, subtreeSize - frontSize - tag.sizeOf(middle), split.back());
         return new TreeSplit<>(front, middle, back);
     }
 
-    private Shallow<T, Phantom> prependedSimple(final long newSize, final T object) {
-        return new Shallow<>(tag, newSize, ArrayOps.prepended(values, object));
+    @Override
+    Class<? extends Object[]> getArrayType() {
+        return values.getClass();
     }
 
-    private Deep<T, Phantom> prependedDeep(final long newSize, final T object) {
-        return new Deep<>(tag, newSize, tag.unitArray(object), emptyChunk(), values);
+    private Shallow<T, C> prependedSimple(final Tag<T, C> tag, final T value) {
+        final var newSize = addToSize(tag, value);
+        return make(tag, newSize, ArrayOps.prepended(values, value));
     }
 
-    private Shallow<T, Phantom> appendedSimple(final long newSize, final T object) {
-        return new Shallow<>(tag, newSize, ArrayOps.appended(values, object));
+    private Deep<T, C> prependedDeep(final Tag<T, C> tag, final T value) {
+        final var valueSize = tag.sizeOf(value);
+        return Deep.make(tag, computeNewSize(valueSize), valueSize, tag.unitArray(value), emptyChunk(), values);
     }
 
-    private Deep<T, Phantom> appendedDeep(final long newSize, final T object) {
-        return new Deep<>(tag, newSize, values, emptyChunk(), tag.unitArray(object));
+    private Shallow<T, C> appendedSimple(final Tag<T, C> tag, final T value) {
+        final var newSize = addToSize(tag, value);
+        return make(tag, newSize, ArrayOps.appended(values, value));
     }
 
-    private Shallow<T, Phantom> withoutFirstImpl() {
-        final var newSize = subtractFromSize(first());
-        return new Shallow<>(tag, newSize, ArrayOps.drop(values, 1));
+    private SeqImpl<T, C> appendedDeep(final Tag<T, C> tag, final T value) {
+        final var newSize = addToSize(tag, value);
+        return Deep.make(tag, newSize, subtreeSize, values, emptyChunk(), tag.unitArray(value));
     }
 
-    private Shallow<T, Phantom> withoutLastImpl() {
-        final var newSize = subtractFromSize(last());
-        return new Shallow<>(tag, newSize, ArrayOps.take(values, values.length - 1));
+    private Shallow<T, C> withoutFirstImpl(final Tag<T, C> tag) {
+        final var newSize = subtractFromSize(tag, first());
+        return make(tag, newSize, ArrayOps.drop(values, 1));
     }
 
-    private TaggedSeq<T, Phantom> concatShallow(final Shallow<T, Phantom> other) {
+    private Shallow<T, C> withoutLastImpl(final Tag<T, C> tag) {
+        final var newSize = subtractFromSize(tag, last());
+        return make(tag, newSize, ArrayOps.take(values, values.length - 1));
+    }
+
+    private SeqImpl<T, C> concatShallow(final Tag<T, C> tag, final Shallow<T, C> other) {
         if (other.isEmpty()) {
             return this;
         }
         final var newSize = computeNewSize(other.subtreeSize);
         final var totalLength = values.length + other.values.length;
-        if (totalLength <= maxChunkLength) {
-            return new Shallow<>(tag, newSize, ArrayOps.concat(values, other.values));
+        // Note: folding this if into a ternary confuses Checker Framework, don't do it.
+        if (totalLength <= maxLength) {
+            return make(tag, newSize, ArrayOps.concat(values, other.values));
         }
-        return new Deep<>(tag, newSize, values, emptyChunk(), other.values);
-    }
-
-    private Shallow<T, Phantom> fromPossiblyEmptyArray(final long size, final T[] array) {
-        return (array.length != 0) ? new Shallow<>(tag, size, array) : tag.emptySeq();
+        return Deep.make(tag, newSize, subtreeSize, values, emptyChunk(), other.values);
     }
 
     private void checkNonEmpty(final String message) {
@@ -206,10 +199,23 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
     }
 
+    private static <T extends C, C> Shallow<T, C> fromPossiblyEmptyArray(
+        final Tag<T, C> tag,
+        final long size,
+        final T[] array
+    ) {
+        return (array.length != 0) ? make(tag, size, array) : tag.emptySeq();
+    }
+
+    private static <T extends C, C> Shallow<T, C> makeEmpty(final Tag<T, C> tag) {
+        return make(tag, 0, tag.emptyArray());
+    }
+
     final T[] values;
 
-    private static final Shallow<?, Object> emptyUnitInstance = new Shallow<>(Tag.unit());
-    private static final Shallow<? extends Chunk<?>, Chunk<?>> emptyChunkInstance = new Shallow<>(Tag.chunk());
+    private static final int maxLength = Chunk.maxLength;
+    private static final Shallow<?, Object> emptyUnit = makeEmpty(Tag.unit());
+    private static final Shallow<? extends Chunk<?>, Chunk<?>> emptyChunk = makeEmpty(Tag.chunk());
 
     static final class Itr<T> extends Seq.Itr<T> {
         private Itr(final T[] values) {
@@ -252,7 +258,7 @@ final class Shallow<T, Phantom> extends TaggedSeq<T, Phantom> {
         }
 
         @Override
-        TaggedSeq<T, Object> restImpl() {
+        SeqImpl<T, @Nullable Object> restImpl() {
             return (index < values.length) ? ofUnits(ArrayOps.drop(values, index)) : emptyUnit();
         }
 

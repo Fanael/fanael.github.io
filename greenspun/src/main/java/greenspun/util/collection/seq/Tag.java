@@ -2,93 +2,85 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.collection.seq;
 
+import greenspun.util.UnreachableCodeReachedError;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-abstract sealed class Tag<T, Phantom> {
+abstract sealed class Tag<T extends C, C> {
+    private Tag(final Class<C[]> arrayClass) {
+        this.arrayClass = arrayClass;
+    }
+
     @SuppressWarnings("unchecked")
-    static <T> Tag<T, Object> unit() {
-        return (UnitImpl<T>) UnitImpl.instance;
+    static <T> Tag<T, @Nullable Object> unit() {
+        return (OfUnit<T>) OfUnit.instance;
     }
 
     @SuppressWarnings("unchecked")
     static <T> Tag<Chunk<T>, Chunk<?>> chunk() {
-        return (ChunkImpl<T>) ChunkImpl.instance;
+        return (OfChunk<T>) OfChunk.instance;
     }
 
-    // NB: this would've been highly dangerous, as in ClassCastException galore, if not for the fact that the phantom
-    // parameter stays the same.
+    // NB: this is safe only because the runtime array component type stays the same.
     @SuppressWarnings("unchecked")
-    final <U> Tag<U, Phantom> cast() {
-        return (Tag<U, Phantom>) this;
+    final <U extends C> Tag<U, C> cast() {
+        return (Tag<U, C>) this;
+    }
+
+    final boolean arrayTypeMatches(final Class<? extends Object[]> clazz) {
+        return arrayClass == clazz;
     }
 
     final ArraySplit<T> splitArray(final T[] array, final int index) {
         final var length = array.length;
-        final var midpoint = Math.min(index, length - 1);
-        final var front = (midpoint > 0) ? ArrayOps.take(array, midpoint) : emptyArray();
-        final var back = (midpoint < length - 1) ? ArrayOps.drop(array, midpoint + 1) : emptyArray();
-        return new ArraySplit<>(front, array[midpoint], back);
+        assert index < length;
+        final var front = (index > 0) ? ArrayOps.take(array, index) : emptyArray();
+        final var back = (index < length - 1) ? ArrayOps.drop(array, index + 1) : emptyArray();
+        return new ArraySplit<>(front, array[index], back);
     }
 
-    final Seq.GetResult<T> getFromArray(final T[] array, final SplitPoint splitPoint) {
-        final var element = array[splitPoint.index()];
-        return new Seq.GetResult<>(element, splitPoint.accumulator() - measureSingle(element));
-    }
+    abstract long sizeOf(C object);
 
-    final T[] updatedArray(final T[] array, final SplitPoint splitPoint, final Updater<T> updater) {
-        final var index = splitPoint.index();
-        final var oldValue = array[index];
-        final var oldValueSize = measureSingle(oldValue);
-        final var newValue = updater.update(splitPoint.accumulator() - oldValueSize, oldValue);
-        assert measureSingle(newValue) == oldValueSize;
-        return ArrayOps.updated(array, index, newValue);
-    }
+    abstract long sumOfSizes(C[] array);
 
-    abstract long measureSingle(T object);
+    abstract SplitPoint findSplitPoint(C[] array, long index);
 
-    abstract long measureArray(T[] array);
-
-    abstract SplitPoint findSplitPoint(T[] array, long index, long initialAccumulator);
-
-    abstract Shallow<T, Phantom> emptySeq();
+    abstract Shallow<T, C> emptySeq();
 
     abstract @NonNull T[] emptyArray();
 
     abstract T[] unitArray(T object);
 
-    @FunctionalInterface
-    interface Updater<T> {
-        T update(long accumulator, T oldValue);
-    }
+    private final Class<C[]> arrayClass;
 
-    record SplitPoint(int index, long accumulator) {
+    record SplitPoint(int index, long remainder, long prefixSize) {
     }
 
     record ArraySplit<T>(T[] front, T middle, T[] back) {
     }
 
-    private static final class UnitImpl<T> extends Tag<T, Object> {
+    private static final class OfUnit<T> extends Tag<T, @Nullable Object> {
+        private OfUnit() {
+            super(Object[].class);
+        }
+
         @Override
-        long measureSingle(final T object) {
+        long sizeOf(final @Nullable Object object) {
             return 1;
         }
 
         @Override
-        long measureArray(final T[] array) {
+        long sumOfSizes(final @Nullable Object[] array) {
             return array.length;
         }
 
         @Override
-        SplitPoint findSplitPoint(final T[] array, final long index, final long initialAccumulator) {
-            final var distance = index - initialAccumulator;
-            final var length = array.length;
-            final var inBounds = (distance < length) ? 1 : 0;
-            final var arrayIndex = (int) Math.min(length, index - initialAccumulator);
-            return new SplitPoint(arrayIndex, initialAccumulator + arrayIndex + inBounds);
+        SplitPoint findSplitPoint(final @Nullable Object[] array, final long index) {
+            return new SplitPoint((int) index, 0, index);
         }
 
         @Override
-        Shallow<T, Object> emptySeq() {
+        Shallow<T, @Nullable Object> emptySeq() {
             return Shallow.emptyUnit();
         }
 
@@ -104,37 +96,43 @@ abstract sealed class Tag<T, Phantom> {
             return (T[]) new Object[]{object};
         }
 
+        private static final OfUnit<?> instance = new OfUnit<>();
         private static final Object[] emptyArray = new Object[0];
-        private static final UnitImpl<?> instance = new UnitImpl<>();
     }
 
-    private static final class ChunkImpl<T> extends Tag<Chunk<T>, Chunk<?>> {
-        @Override
-        long measureSingle(final Chunk<T> object) {
-            return object.subtreeSize;
+    private static final class OfChunk<T> extends Tag<Chunk<T>, Chunk<?>> {
+        @SuppressWarnings({"unchecked", "RedundantCast"}) // Silly IDEA, casting through Class<?> is necessary.
+        private OfChunk() {
+            // Silly Java, Chunk<?>[].class should be legal and denote the same object.
+            super((Class<Chunk<?>[]>) (Class<?>) Chunk[].class);
         }
 
         @Override
-        long measureArray(final Chunk<T>[] array) {
+        long sizeOf(final Chunk<?> chunk) {
+            return chunk.subtreeSize;
+        }
+
+        @Override
+        long sumOfSizes(final Chunk<?>[] chunks) {
             long sum = 0;
-            for (final var chunk : array) {
+            for (final var chunk : chunks) {
                 sum += chunk.subtreeSize;
             }
             return sum;
         }
 
         @Override
-        SplitPoint findSplitPoint(final Chunk<T>[] array, final long index, final long initialAccumulator) {
-            var accumulator = initialAccumulator;
-            int i = 0;
-            final var length = array.length;
-            for (; i < length; i += 1) {
-                accumulator += array[i].subtreeSize;
-                if (index < accumulator) {
-                    break;
+        SplitPoint findSplitPoint(final Chunk<?>[] chunks, final long index) {
+            long accumulator = 0;
+            final var length = chunks.length;
+            for (int i = 0; i < length; i += 1) {
+                final var nextAccumulator = accumulator + chunks[i].subtreeSize;
+                if (index < nextAccumulator) {
+                    return new SplitPoint(i, index - accumulator, accumulator);
                 }
+                accumulator = nextAccumulator;
             }
-            return new SplitPoint(i, accumulator);
+            throw new UnreachableCodeReachedError("Fell through a chunk array trying to find the split point");
         }
 
         @Override
@@ -154,7 +152,7 @@ abstract sealed class Tag<T, Phantom> {
             return (Chunk<T>[]) new Chunk<?>[]{object};
         }
 
+        private static final OfChunk<?> instance = new OfChunk<>();
         private static final Chunk<?>[] emptyArray = new Chunk<?>[0];
-        private static final ChunkImpl<?> instance = new ChunkImpl<>();
     }
 }

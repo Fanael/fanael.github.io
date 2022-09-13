@@ -9,12 +9,13 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
+import org.checkerframework.checker.initialization.qual.UnknownInitialization;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -53,7 +54,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * size of a node is 28, to strike a balance between tree depth and cache friendliness on one hand, and copying costs
  * of update operations on the other.
  */
-public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
+public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
     Seq(final long subtreeSize) {
         assert subtreeSize >= 0;
         this.subtreeSize = subtreeSize;
@@ -115,7 +116,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
     @SuppressWarnings("unchecked")
     public static <T> Seq<T> fromIterable(final Iterable<? extends T> iterable) {
         if (iterable instanceof Seq<? extends T> seq) {
-            return (Seq<T>) seq; // This cast is fine because Seq is immutable.
+            return (Seq<T>) seq; // Since Seq is immutable, casting <? extends T> to <T> is fine.
         }
         final var builder = new Builder<T>();
         for (final var item : iterable) {
@@ -146,14 +147,6 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         return builder.toSeq();
     }
 
-    static NoSuchElementException noSuchElement(final String message) {
-        throw new NoSuchElementException(message);
-    }
-
-    static UnsupportedOperationException unsupportedModification() {
-        throw new UnsupportedOperationException("Sequences don't support in-place mutation");
-    }
-
     /**
      * Returns the hash code of this sequence. The algorithm used to compute the hash code is unspecified.
      * <p>
@@ -162,9 +155,9 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
     @Override
     @SuppressWarnings("ObjectInstantiationInEqualsHashCode")
     public final int hashCode() {
-        final var accumulator = new HashCodeAccumulator<T>();
+        final var accumulator = new HashCodeAccumulator();
         forEachArray(accumulator);
-        return accumulator.hashCode;
+        return accumulator.hash;
     }
 
     /**
@@ -190,16 +183,9 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      */
     @Override
     public final String toString() {
-        if (isEmpty()) {
-            return "[]";
-        }
-
-        final var builder = new StringBuilder();
-        builder.append('[');
-        forEachArray(array -> ArrayOps.forEach(array, element -> builder.append(element).append(", ")));
-        builder.setLength(builder.length() - 2); // Remove final separator.
-        builder.append(']');
-        return builder.toString();
+        final var accumulator = new StringAccumulator();
+        forEachArray(accumulator);
+        return accumulator.finish();
     }
 
     /**
@@ -235,7 +221,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      */
     @Override
     public final Spliterator<T> spliterator() {
-        return Spliterators.spliterator(iterator(), subtreeSize, Spliterator.ORDERED | Spliterator.IMMUTABLE);
+        return new SpliteratorImpl<>(this);
     }
 
     /**
@@ -479,10 +465,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      *
      * @throws IndexOutOfBoundsException if the index is out of range
      */
-    public final T get(final long index) {
-        // Check the index once here, let children assume it's always valid.
-        return getImpl(Objects.checkIndex(index, subtreeSize), 0).element;
-    }
+    public abstract T get(final long index);
 
     /**
      * Returns a copy of this sequence with the element at the given index replaced with the given new value.
@@ -505,10 +488,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      * @throws IndexOutOfBoundsException if the index is out of range
      */
     @CheckReturnValue
-    public final Split<T> splitAt(final long index) {
-        // Check the index once here, let children assume it's always valid.
-        return splitAtImpl(Objects.checkFromToIndex(index, subtreeSize, subtreeSize));
-    }
+    public abstract Split<T> splitAt(final long index);
 
     /**
      * Returns a copy of this sequence with elements sorted according to the given comparator.
@@ -519,7 +499,9 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
      */
     @CheckReturnValue
     public final Seq<T> sorted(final Comparator<? super T> comparator) {
-        return sortedImpl(this, comparator);
+        final var sequences = new Builder<Seq<T>>();
+        forEachArray(array -> sequences.append(insertionSort(array, comparator)));
+        return mergePairs(sequences.toSeq(), comparator);
     }
 
     /**
@@ -585,19 +567,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         throw unsupportedModification();
     }
 
-    abstract void forEachArray(ArrayConsumer<T> action);
-
-    abstract GetResult<T> getImpl(long index, long accumulator);
-
-    abstract Split<T> splitAtImpl(long index);
-
-    abstract boolean eligibleForInsertionSortImpl();
-
-    abstract T[] toSmallArray();
-
-    final boolean eligibleForInsertionSort() {
-        return subtreeSize <= maxChunkLength && eligibleForInsertionSortImpl();
-    }
+    abstract void forEachArray(ArrayConsumer<? super T> action);
 
     final long computeNewSize(final long delta) {
         try {
@@ -632,33 +602,21 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         return (int) subtreeSize;
     }
 
-    private static <T> Seq<T> sortedImpl(
-        final Seq<T> seq,
-        final Comparator<? super T> comparator
-    ) {
-        final var size = seq.subtreeSize;
-        if (size <= 1) {
-            return seq;
+    private static <T> Seq<T> mergePairs(final Seq<Seq<T>> sequences, final Comparator<? super T> comparator) {
+        var remaining = sequences;
+        while (remaining.subtreeSize > 1) {
+            final var builder = new Builder<Seq<T>>();
+            for (final var it = remaining.iterator(); it.hasNext(); ) {
+                final var first = it.next();
+                final var merged = it.hasNext() ? merge(first, it.next(), comparator) : first;
+                builder.append(merged);
+            }
+            remaining = builder.toSeq();
         }
-        if (seq.eligibleForInsertionSort()) {
-            // No point in splitting any further.
-            final var array = seq.toSmallArray();
-            insertionSort(array, comparator);
-            // NB: directly creating a shallow sequence from a freshly-created array here is fine, as we don't retain
-            // any references to the array.
-            return Shallow.ofUnits(array);
-        }
-        final var split = seq.splitAt(size / 2);
-        final var left = sortedImpl(split.front, comparator);
-        final var right = sortedImpl(split.back, comparator);
-        return merge(left, right, comparator);
+        return remaining.first();
     }
 
-    private static <T> Seq<T> merge(
-        final Seq<T> left,
-        final Seq<T> right,
-        final Comparator<? super T> comparator
-    ) {
+    private static <T> Seq<T> merge(final Seq<T> left, final Seq<T> right, final Comparator<? super T> comparator) {
         if (left.isEmpty()) {
             return right;
         }
@@ -692,7 +650,19 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         }
     }
 
-    private static <T> void insertionSort(final T[] array, final Comparator<? super T> comparator) {
+    private static <T> Seq<T> insertionSort(final T[] array, final Comparator<? super T> comparator) {
+        return switch (array.length) {
+            case 0 -> empty();
+            case 1 -> of(array[0]);
+            default -> {
+                final var newArray = array.clone();
+                insertionSortInPlace(newArray, comparator);
+                yield Deep.fromSingleArray(Tag.unit(), newArray.length, newArray, Chunk.maxLength);
+            }
+        };
+    }
+
+    private static <T> void insertionSortInPlace(final T[] array, final Comparator<? super T> comparator) {
         final var length = array.length;
         for (int i = 1; i < length; i += 1) {
             for (int k = i; k > 0 && comparator.compare(array[k - 1], array[k]) > 0; k -= 1) {
@@ -703,22 +673,14 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         }
     }
 
-    // We want array objects that are 32 elements big, leaving 4 references worth of space for the object header and
-    // the array length. In current versions of the HotSpot VM, with 4 byte references, this makes max-sized arrays
-    // exactly 128 bytes long, and with 8 byte references is just one element short of 256 bytes, which is roughly
-    // 1 to 4 cache lines worth of data on common hardware.
-    static final int maxChunkLength = 28;
-    static final int minChunkLength = maxChunkLength / 2;
+    private static UnsupportedOperationException unsupportedModification() {
+        throw new UnsupportedOperationException("Sequences don't support in-place mutation");
+    }
 
     final long subtreeSize;
 
     // Some JVMs are unable to create arrays of exactly Integer.MAX_VALUE elements, so give them some slack.
     private static final int maxArraySize = Integer.MAX_VALUE - 8;
-
-    @FunctionalInterface
-    interface ArrayConsumer<T> {
-        void accept(T[] array);
-    }
 
     /**
      * The iterator over a sequence.
@@ -730,7 +692,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
         }
 
         static NoSuchElementException noMoreElements() {
-            throw noSuchElement("No more elements");
+            throw SeqImpl.noSuchElement("No more elements");
         }
 
         /**
@@ -816,7 +778,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
 
         abstract void forEachRemainingImpl(Consumer<? super T> action);
 
-        abstract TaggedSeq<T, Object> restImpl();
+        abstract SeqImpl<T, @Nullable Object> restImpl();
     }
 
     /**
@@ -842,7 +804,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
          */
         @SuppressWarnings("unchecked")
         public Builder(final Seq<T> sequence) {
-            buffer = (T[]) new Object[maxChunkLength];
+            buffer = (T[]) new Object[Chunk.maxLength];
             this.sequence = sequence;
         }
 
@@ -918,20 +880,101 @@ public abstract sealed class Seq<T> implements Collection<T> permits TaggedSeq {
     public record Split<T>(Seq<T> front, Seq<T> back) {
     }
 
-    record GetResult<T>(T element, long accumulator) {
+    private static final class SpliteratorImpl<T> implements Spliterator<T> {
+        private SpliteratorImpl(final Seq<T> sequence) {
+            setSequence(sequence);
+        }
+
+        @Override
+        public boolean tryAdvance(final Consumer<? super T> action) {
+            Objects.requireNonNull(action); // Check in case there are no elements left.
+            if (!iterator.hasNext()) {
+                return false;
+            }
+            action.accept(iterator.next());
+            return true;
+        }
+
+        @Override
+        public void forEachRemaining(final Consumer<? super T> action) {
+            iterator.forEachRemaining(action);
+        }
+
+        @Override
+        public @Nullable Spliterator<T> trySplit() {
+            final var size = remainingSize();
+            if (size < 2) {
+                return null;
+            }
+            final var split = iterator.rest().splitAt(size / 2);
+            final var result = new SpliteratorImpl<>(split.front());
+            setSequence(split.back());
+            return result;
+        }
+
+        @Override
+        public long estimateSize() {
+            return remainingSize();
+        }
+
+        @Override
+        public long getExactSizeIfKnown() {
+            return remainingSize();
+        }
+
+        @Override
+        public int characteristics() {
+            return SIZED | SUBSIZED | ORDERED | IMMUTABLE;
+        }
+
+        private long remainingSize() {
+            return sequenceSize - iterator.nextIndex();
+        }
+
+        @EnsuresNonNull("iterator")
+        private void setSequence(@UnknownInitialization SpliteratorImpl<T>this, final Seq<T> sequence) {
+            iterator = sequence.iterator();
+            sequenceSize = sequence.subtreeSize;
+        }
+
+        private Itr<T> iterator;
+        private long sequenceSize;
     }
 
-    private static final class HashCodeAccumulator<T> implements ArrayConsumer<T> {
+    private static final class HashCodeAccumulator implements ArrayConsumer<@Nullable Object> {
         @Override
-        public void accept(final T[] array) {
-            int hash = hashCode;
+        public void accept(final @Nullable Object[] array) {
+            int hash = this.hash;
             for (final var item : array) {
                 hash = 31 * hash + Objects.hashCode(item);
             }
-            hashCode = hash;
+            this.hash = hash;
         }
 
-        private int hashCode = 1;
+        private int hash = 1;
+    }
+
+    private static final class StringAccumulator implements ArrayConsumer<@Nullable Object> {
+        @Override
+        public void accept(final @Nullable Object[] array) {
+            boolean needsSeparator = this.needsSeparator;
+            for (final var element : array) {
+                if (needsSeparator) {
+                    builder.append(", ");
+                }
+                needsSeparator = true;
+                builder.append(element);
+            }
+            this.needsSeparator = needsSeparator;
+        }
+
+        private String finish() {
+            builder.append(']');
+            return builder.toString();
+        }
+
+        private final StringBuilder builder = new StringBuilder("[");
+        private boolean needsSeparator = false;
     }
 
     private static final class ArrayFiller<T extends U, U> implements ArrayConsumer<T> {

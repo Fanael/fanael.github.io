@@ -2,32 +2,28 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package greenspun.util.collection.seq;
 
-import java.util.function.Function;
-
 final class Chunk<T> {
-    Chunk(final Tag<T, ?> tag, final T[] values) {
-        this(tag.measureArray(values), values);
-    }
-
     private Chunk(final long subtreeSize, final T[] values) {
-        assert values.length >= Seq.minChunkLength && values.length <= Seq.maxChunkLength;
+        assert values.length >= minLength && values.length <= maxLength;
         this.subtreeSize = subtreeSize;
         this.values = values;
     }
 
-    static <T> Tag.Updater<Chunk<T>> makeUpdater(final Tag<T, ?> tag, final long index, final Tag.Updater<T> updater) {
-        return (accumulator, chunk) -> {
-            final var splitPoint = tag.findSplitPoint(chunk.values, index, accumulator);
-            final var newValues = tag.updatedArray(chunk.values, splitPoint, updater);
-            return new Chunk<>(chunk.subtreeSize, newValues);
-        };
+    static <T> Chunk<T> make(final Tag<T, ? super T> tag, final T[] values) {
+        return new Chunk<>(tag.sumOfSizes(values), values);
     }
 
-    <U> Chunk<U> map(final Tag<U, ?> tag, final Function<? super T, ? extends U> function) {
-        final var newValues = ArrayOps.map(values, function);
-        assert tag.measureArray(newValues) == subtreeSize;
-        return new Chunk<>(subtreeSize, newValues);
+    static <T> Chunk<T> make(final Tag<T, ? super T> tag, final long subtreeSize, final T[] values) {
+        assert subtreeSize == tag.sumOfSizes(values);
+        return new Chunk<>(subtreeSize, values);
     }
+
+    // We want array objects that are 32 elements big, leaving 4 references worth of space for the object header and
+    // the array length. In current versions of the HotSpot VM, with 4 byte references, this makes max-sized arrays
+    // exactly 128 bytes long, and with 8 byte references is just one element short of 256 bytes, which is roughly
+    // 1 to 4 cache lines worth of data on common hardware.
+    static final int maxLength = 28;
+    static final int minLength = maxLength / 2;
 
     final long subtreeSize;
     final T[] values;

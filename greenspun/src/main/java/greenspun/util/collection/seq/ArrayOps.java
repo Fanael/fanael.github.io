@@ -5,7 +5,6 @@ package greenspun.util.collection.seq;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -17,9 +16,9 @@ final class ArrayOps {
         forEachFrom(array, 0, action);
     }
 
-    static <T> void forEachFrom(final T[] array, final int start, final Consumer<? super T> action) {
+    static <T> void forEachFrom(final T[] array, final int startIndex, final Consumer<? super T> action) {
         final var length = array.length;
-        for (int i = start; i < length; i += 1) {
+        for (int i = startIndex; i < length; i += 1) {
             action.accept(array[i]);
         }
     }
@@ -31,15 +30,6 @@ final class ArrayOps {
             }
         }
         return false;
-    }
-
-    static <T, U> U[] map(final T[] array, final Function<? super T, ? extends U> function) {
-        final var length = array.length;
-        @SuppressWarnings("unchecked") final var newArray = (U[]) newArray(array, length);
-        for (int i = 0; i < length; i += 1) {
-            newArray[i] = function.apply(array[i]);
-        }
-        return newArray;
     }
 
     static <T> T[] updated(final T[] array, final int index, final T element) {
@@ -61,15 +51,14 @@ final class ArrayOps {
     }
 
     static <T> T[] prependedSlice(final T[] array, final T object) {
-        return prependedImpl(array, object, array.length - Seq.maxChunkLength);
+        return prependedImpl(array, object, array.length - Chunk.maxLength);
     }
 
     @SuppressWarnings("nullness:return") // We know we've filled the array, but CF doesn't.
     static <T> T[] appendedSlice(final T[] array, final T object) {
-        final var elementsToCopy = array.length - Seq.maxChunkLength;
-        final @Nullable T[] newArray = newArray(array, elementsToCopy + 1);
-        System.arraycopy(array, Seq.maxChunkLength, newArray, 0, elementsToCopy);
-        newArray[elementsToCopy] = object;
+        final var oldLength = array.length;
+        final @Nullable T[] newArray = Arrays.copyOfRange(array, Chunk.maxLength, oldLength + 1);
+        newArray[oldLength - Chunk.maxLength] = object;
         return newArray;
     }
 
@@ -120,6 +109,15 @@ final class ArrayOps {
     }
 
     @SuppressWarnings("nullness:return") // We know we've filled the array, but CF doesn't.
+    private static <T> T[] prependedRange(final T[] front, final T[] back, final int frontStart) {
+        final var frontLength = front.length;
+        final var backLength = back.length;
+        final @Nullable T[] newArray = Arrays.copyOfRange(front, frontStart, frontLength + backLength);
+        System.arraycopy(back, 0, newArray, frontLength - frontStart, backLength);
+        return newArray;
+    }
+
+    @SuppressWarnings("nullness:return") // We know we've filled the array, but CF doesn't.
     private static <T> T[] appendedRange(final T[] front, final T[] back, final int backEnd) {
         final var frontLength = front.length;
         final var newLength = frontLength + backEnd;
@@ -128,17 +126,6 @@ final class ArrayOps {
         }
         final @Nullable T[] newArray = Arrays.copyOf(front, newLength);
         System.arraycopy(back, 0, newArray, frontLength, backEnd);
-        return newArray;
-    }
-
-    @SuppressWarnings("nullness:return") // We know we've filled the array, but CF doesn't.
-    private static <T> T[] prependedRange(final T[] front, final T[] back, final int frontStart) {
-        final var frontLength = front.length;
-        final var backLength = back.length;
-        final var frontElementCount = frontLength - frontStart;
-        final @Nullable T[] newArray = newArray(front, back.length + frontLength - frontStart);
-        System.arraycopy(front, frontStart, newArray, 0, frontElementCount);
-        System.arraycopy(back, 0, newArray, frontElementCount, backLength);
         return newArray;
     }
 

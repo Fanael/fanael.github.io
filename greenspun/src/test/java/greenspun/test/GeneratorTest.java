@@ -13,7 +13,7 @@ import greenspun.generator.Generator;
 import greenspun.pygments.PygmentsCache;
 import greenspun.pygments.PygmentsServer;
 import greenspun.pygments.ServerCodeTemporaryFile;
-import org.assertj.core.api.Assertions;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -23,7 +23,7 @@ final class GeneratorTest {
         runGenerator(destinationDirectory);
         final var referenceFiles = getFileList(referenceDirectoryPath);
         final var actualFiles = getFileList(destinationDirectory);
-        Assertions.assertThat(actualFiles).isEqualTo(referenceFiles);
+        assertThat(actualFiles).isEqualTo(referenceFiles);
         for (final var path : referenceFiles) {
             compareFile(referenceDirectoryPath.resolve(path), destinationDirectory.resolve(path));
         }
@@ -49,9 +49,9 @@ final class GeneratorTest {
 
     private static void compareFile(final Path referenceFilePath, final Path actualFilePath) {
         if (Files.isDirectory(referenceFilePath)) {
-            Assertions.assertThat(actualFilePath).isDirectory();
+            assertThat(actualFilePath).isDirectory();
         } else {
-            Assertions.assertThat(actualFilePath)
+            assertThat(actualFilePath)
                 .usingCharset(StandardCharsets.UTF_8)
                 .hasSameTextualContentAs(referenceFilePath, StandardCharsets.UTF_8);
         }
