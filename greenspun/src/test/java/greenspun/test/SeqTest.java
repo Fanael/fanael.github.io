@@ -5,12 +5,15 @@ package greenspun.test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.stream.LongStream;
 import greenspun.util.collection.seq.Seq;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -236,6 +239,32 @@ final class SeqTest {
         }
     }
 
+    @Test
+    @SuppressWarnings("CollectionAddedToSelf")
+    void canCreateSequenceOfMoreThanIntMaxElements() {
+        var seq = Seq.of(0);
+        for (int i = 0; i < 62; i += 1) {
+            seq = seq.concat(seq);
+        }
+        assertThat(seq).hasSize(Integer.MAX_VALUE);
+        assertThat(seq.exactSize()).isEqualTo(1L << 62);
+        assertOOMThrown(seq, (s) -> s.concat(s));
+        seq = Seq.empty();
+        for (int i = 0; i < 63; i += 1) {
+            seq = seq.concat(seq).appended(i);
+        }
+        assertThat(seq).hasSize(Integer.MAX_VALUE);
+        assertThat(seq.exactSize()).isEqualTo((1L << 63) - 1);
+        assertOOMThrown(seq, (s) -> s.appended(0));
+        seq = Seq.empty();
+        for (int i = 0; i < 63; i += 1) {
+            seq = seq.concat(seq).prepended(i);
+        }
+        assertThat(seq).hasSize(Integer.MAX_VALUE);
+        assertThat(seq.exactSize()).isEqualTo((1L << 63) - 1);
+        assertOOMThrown(seq, (s) -> s.prepended(0));
+    }
+
     @ParameterizedTest(name = sizedTestDisplayName)
     @ValueSource(ints = {25, 250, 2_500, 25_000, 250_000})
     void getWorks(final int size) {
@@ -305,6 +334,20 @@ final class SeqTest {
             .isSortedAccordingTo(Comparator.comparingInt(IntPair::first).thenComparingInt(IntPair::second));
     }
 
+    @Test
+    void operationsOnEmptyThrow() {
+        final var empty = Seq.empty();
+        assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(empty::first);
+        assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(empty::last);
+        assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(() -> ignore(empty.updatedFirst(this)));
+        assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(() -> ignore(empty.updatedLast(this)));
+        assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(() -> ignore(empty.withoutFirst()));
+        assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(() -> ignore(empty.withoutLast()));
+        final var iterator = empty.iterator();
+        assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(iterator::next);
+        assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(iterator::peek);
+    }
+
     private static Seq<Integer> generateInts(final int size) {
         return generateInts(0, size);
     }
@@ -346,6 +389,14 @@ final class SeqTest {
     private static <T> Seq<T> checkSize(final Seq<T> seq, final int expectedSize) {
         assertThat(seq).hasSize(expectedSize);
         return seq;
+    }
+
+    // Extracted to a function so that seq can be captured by a lambda.
+    private static <T> void assertOOMThrown(final Seq<T> seq, final Function<? super Seq<T>, ?> function) {
+        assertThatExceptionOfType(OutOfMemoryError.class).isThrownBy(() -> function.apply(seq));
+    }
+
+    private static void ignore(final @Nullable Object ignored) {
     }
 
     private static final String seededTestDisplayName = "{displayName} [{index}] seed = {0}";

@@ -453,7 +453,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
      * <p>
      * Complexity: amortized O(log(min(m,n))) time, worst-case O(log(m+n)) time.
      *
-     * @throws IllegalStateException if the resulting sequence would be larger than {@link Long#MAX_VALUE}.
+     * @throws OutOfMemoryError if the resulting sequence would be larger than {@link Long#MAX_VALUE}.
      */
     @CheckReturnValue
     public abstract Seq<T> concat(Seq<? extends T> other);
