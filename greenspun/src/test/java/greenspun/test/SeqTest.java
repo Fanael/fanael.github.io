@@ -396,6 +396,7 @@ final class SeqTest {
         assertThatExceptionOfType(OutOfMemoryError.class).isThrownBy(() -> function.apply(seq));
     }
 
+    @SuppressWarnings("EmptyMethod")
     private static void ignore(final @Nullable Object ignored) {
     }
 
