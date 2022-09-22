@@ -333,33 +333,37 @@ figure, .code-block {
     white-space: normal;
 }
 
-@supports (display: grid) {
-    .cx-numbered {
-        counter-reset: line-number;
-        display: grid;
-        grid-template-columns: max-content auto;
-    }
+.cx-numbered {
+    counter-reset: line-number;
+    display: table;
+    min-width: 100%;
+}
 
-    .cx-ln {
-        border-right: thin solid #aaa;
-        color: #555;
-        counter-increment: line-number;
-        margin-right: 0.5ch;
-        padding-right: 0.5ch;
-        text-align: right;
-    }
+.cx-l {
+    counter-increment: line-number;
+    display: table-row;
+    transition: background-color 0.2s;
+}
 
-    .cx-ln::before {
-        content: counter(line-number);
-    }
+.cx-l:hover {
+    background-color: rgba(196, 196, 179, 0.267);
+}
 
-    .cx-ln + * {
-        transition: background-color 0.2s;
-    }
+.cx-l::before, .cx-l > * {
+    display: table-cell;
+}
 
-    .cx-ln + :hover, .cx-ln:hover + * {
-        background-color: rgba(196, 196, 179, 0.267);
-    }
+.cx-l::before {
+    border-right: thin solid #aaa;
+    color: #555;
+    content: counter(line-number);
+    padding-right: 0.5ch;
+    text-align: right;
+}
+
+.cx-l > * {
+    width: 100%;
+    padding-left: 0.5ch;
 }
 
 .c-k, .c-se {
@@ -603,11 +607,11 @@ button {
         color: #c292d0;
     }
 
-    .c-c, #footer li, article header p, .cx-ln {
+    .c-c, #footer li, article header p, .cx-l::before {
         color: #a5a5a5;
     }
 
-    figure, .code-block, .cx-language, .cx-ln, td, th {
+    figure, .code-block, .cx-language, .cx-l::before, td, th {
         border-color: #888;
     }
 
@@ -619,7 +623,7 @@ button {
         background-color: #111;
     }
 
-    tbody > tr:nth-child(2n), .cx-ln + :hover, .cx-ln:hover + * {
+    tbody > tr:nth-child(2n), .cx-l:hover {
         background-color: #1d1d1d;
     }
 

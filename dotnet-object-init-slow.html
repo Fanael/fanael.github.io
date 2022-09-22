@@ -1,191 +1,191 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="Some custom Common Lisp"><meta name="description" content="A dive into .NET's surprisingly slow initialization of objects with reference fields compared to OpenJDK"><script defer src="/static/fixes.js"></script><link rel="alternate" href="/feed.xml" title="Fanael's random ruminations" type="application/rss+xml"><link rel="stylesheet" href="/static/theme.css"><link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/"><title>.NET object initialization is surprisingly slow - Fanael's random ruminations</title></head><body><header id="top-header"><a id="skip-nav" class="at-only" href="#main">Skip to main content</a><span>Fanael's random ruminations</span></header><nav aria-label="Primary"><ul id="top-nav"><li><a href="/">Main page</a></li><li><a href="/archives/">Archives</a></li><li><a href="https://github.com/Fanael/fanael.github.io/">GitHub</a></li><li><a rel="author" href="/pages/about.html">About</a></li></ul></nav><main id="main"><article><header><h1><a class="section-link" href="#main"><span>.NET object initialization is surprisingly slow</span><span aria-hidden="true"> §</span></a></h1><p>Published on the <time datetime="2022-08-18">18th of August 2022</time></p><p>Topics: <a href="/archives/topic-java.html">java</a>, <a href="/archives/topic-dot-net.html">dot-net</a>, <a href="/archives/topic-garbage-collection.html">garbage-collection</a></p></header><p>…sometimes, at least. When compared to Java under OpenJDK.</p><p>I was performing some experiments with various ways of implementing <a href="https://en.wikipedia.org/wiki/Persistent_data_structure">persistent</a> random-access sequences. At one point, after implementing some of them in Java, I had the brilliant idea to try and implement some of them in C# as well and see how performance compares.</p><p>Unfortunately, this comparison was not very favorable towards C#: it consistently performed around 4-6× slower, <em>four to six times</em>, than the <em>same</em> data structure in Java. That was certainly… <em>not</em> what I expected. I was expecting the performance to be very close, if not C#-favored. After all, the Common Language Runtime supports value types, whereas the Java Virtual Machine at the moment does not, and some of the data structures I tested can benefit from reduced indirection.</p><p>Profiling revealed that the hottest functions were those that created new objects. While this does make sense, as persistent data structures using path copying <em>do</em> create many objects, spending north of 80% wall clock time on <em>just</em> allocating new objects, instead of on actual logic, is certainly a lot.</p><p>The next step I took to understand why those functions take so much time was, naturally, looking at the generated code. The differences were quite stark, and explained the performance gap almost immediately, so why don't we take a look?</p><nav class="toc" aria-labelledby="toc-label"><span id="toc-label">Table of contents</span><ol><li><a href="#setup">The setup</a></li><li><a href="#openjdk-generated-code">OpenJDK generated code</a></li><li><a href="#dot-net-generated-code">.NET generated code</a></li></ol></nav><section id="setup"><h2><a class="section-link" href="#setup"><span>The setup</span><span aria-hidden="true"> §</span></a></h2><p>But first, let's come up with a minimal yet representative micro­benchmark that successfully shows the speed difference between the two platforms. I'll show the Java version, the C# translation is trivial and therefore left as an exercise for the reader.</p><pre class="code-block"><span class="cx-language">Java</span>
-<code class="cx-numbered"><span class="cx-ln"></span><span><span class="c-k">public</span> <span class="c-k">final</span> <span class="c-k">class</span> <span class="c-nc">Main</span> {
-</span><span class="cx-ln"></span><span>    <span class="c-k">private</span> <span class="c-nf">Main</span>() {
-</span><span class="cx-ln"></span><span>    }
-</span><span class="cx-ln"></span><span>
-</span><span class="cx-ln"></span><span>    <span class="c-k">public</span> <span class="c-k">static</span> <span class="c-k">void</span> <span class="c-nf">main</span>(<span class="c-k">final</span> String[] args) {
-</span><span class="cx-ln"></span><span>        measure(<span class="c-m">25_000</span>); <span class="c-c">// warm-up</span>
-</span><span class="cx-ln"></span><span>        measure(<span class="c-m">25_000_000</span>);
-</span><span class="cx-ln"></span><span>    }
-</span><span class="cx-ln"></span><span>
-</span><span class="cx-ln"></span><span>    <span class="c-k">private</span> <span class="c-k">static</span> <span class="c-k">void</span> <span class="c-nf">measure</span>(<span class="c-k">final</span> <span class="c-k">int</span> repeats) {
-</span><span class="cx-ln"></span><span>        <span class="c-k">final</span> <span class="c-k">var</span> startTime = System.nanoTime();
-</span><span class="cx-ln"></span><span>        <span class="c-k">for</span> (<span class="c-k">int</span> i = <span class="c-m">0</span>; i &lt; repeats; i += <span class="c-m">1</span>) {
-</span><span class="cx-ln"></span><span>            build(<span class="c-m">8</span>, i);
-</span><span class="cx-ln"></span><span>        }
-</span><span class="cx-ln"></span><span>        <span class="c-k">final</span> <span class="c-k">var</span> endTime = System.nanoTime();
-</span><span class="cx-ln"></span><span>        System.out.format(<span class="c-s">"Took %.3f s\n"</span>, (endTime - startTime) / <span class="c-m">1.0e9</span>);
-</span><span class="cx-ln"></span><span>    }
-</span><span class="cx-ln"></span><span>
-</span><span class="cx-ln"></span><span>    <span class="c-k">private</span> <span class="c-k">static</span> Foo <span class="c-nf">build</span>(<span class="c-k">final</span> <span class="c-k">int</span> level, <span class="c-k">final</span> <span class="c-k">int</span> value) {
-</span><span class="cx-ln"></span><span>        <span class="c-k">if</span> (level &lt; <span class="c-m">0</span>) {
-</span><span class="cx-ln"></span><span>            <span class="c-k">return</span> <span class="c-k">null</span>;
-</span><span class="cx-ln"></span><span>        }
-</span><span class="cx-ln"></span><span>        <span class="c-k">final</span> <span class="c-k">var</span> child = build(level - <span class="c-m">1</span>, value);
-</span><span class="cx-ln"></span><span>        <span class="c-k">return</span> <span class="c-k">new</span> Foo(value, child, child, child, child);
-</span><span class="cx-ln"></span><span>    }
-</span><span class="cx-ln"></span><span>
-</span><span class="cx-ln"></span><span>    <span class="c-k">private</span> <span class="c-k">record</span> <span class="c-nc">Foo</span>(<span class="c-k">int</span> value, Foo one, Foo two, Foo three, Foo four) {
-</span><span class="cx-ln"></span><span>    }
-</span><span class="cx-ln"></span><span>}
-</span></code></pre><p>This code creates a nondescript quaternary tree of height 8 with significant node sharing, immediately throws it away, then repeats that process a bunch of times. Almost no logic at all, just memory allocations.</p><div class="info"><p>This is <em>not</em> a good way to do micro­benchmarking on platforms with optimizing compilers: for example, one problem is that the compiler could realize that the call to <code>build</code> does nothing apart from allocating a bunch of useless objects, and therefore could be completely eliminated.</p><p>I was careful enough to disable inlining of <code>build</code> using <code>-XX:CompileCommand</code>, which is enough to inhibit allocation elision <em>in this case, on the current version of OpenJDK</em>, then <em>verified</em> the generated code to see if the compiler didn't do anything destructive anyway. If you're not a trained professional who likes living dangerously, you should prefer libraries like the <a href="https://github.com/openjdk/jmh">Java micro­benchmark harness</a> instead, which take care of those nasty optimizing compilers. And handle just-in-time compiler warm-up better. And more.</p></div><p>Running this flawed microbenchmark on my Zen 2 desktop yields the following results:</p><figure><figcaption>Measured execution times</figcaption><div class="holder"><table><thead><tr><th>Language<th>Runtime<th>Operating system<th>Average time<th>95% confidence interval</tr></thead><tbody><tr><th>Java<td>OpenJDK 18.0.2<td>Debian<td>897 ms<td>[888.5 ms, 905.9 ms]</tr><tr><th>C#<td>.NET 6.0.8<td>Windows<td>2942 ms<td>[2575 ms, 3308.4 ms]</tr></tbody></table></div></figure><p>.NET ends up taking <strong>over three times as much time on average</strong>, with large standard deviation, which is close to my prior observations. Same version of .NET under Linux is even slower, likely because <a href="https://github.com/dotnet/runtime/issues/67776"> it does not have assembly intrinsics for some operations on non-Windows platforms</a> yet.</p><p>Enough waffling about, let's take a look at the disassembly, shall we?</p></section><section id="openjdk-generated-code"><h2><a class="section-link" href="#openjdk-generated-code"><span>OpenJDK generated code</span><span aria-hidden="true"> §</span></a></h2><pre class="code-block"><span class="cx-language">x86 assembly</span>
-<code class="cx-numbered"><span class="cx-ln"></span><span>build:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsp</span> - <span class="c-m">0x14000</span>], <span class="c-nb">eax</span> <span class="c-c">; probe for stack overflow</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">push</span> <span class="c-nb">rbp</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">sub</span> <span class="c-nb">rsp</span>, <span class="c-m">32</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">ebp</span>, <span class="c-nb">edx</span> <span class="c-c">; save the integer value for later</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">test</span> <span class="c-nb">esi</span>, <span class="c-nb">esi</span> <span class="c-c">; reached base case?</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">jl</span> .return_null
-</span><span class="cx-ln"></span><span>    <span class="c-nf">dec</span> <span class="c-nb">esi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-k">db</span> <span class="c-m">0x66</span>, <span class="c-m">0x66</span> <span class="c-c">; align the address in the call…</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">nop</span> <span class="c-c">; …for possible patching</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">call</span> build
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsp</span>], <span class="c-nb">rax</span> <span class="c-c">; save the child in case we need to call into runtime</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, [<span class="c-nb">r15</span> + <span class="c-m">0xF0</span>] <span class="c-c">; load thread allocation pointer</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r10</span>, <span class="c-nb">rax</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">add</span> <span class="c-nb">r10</span>, <span class="c-m">32</span> <span class="c-c">; bump the pointer by object size</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">cmp</span> <span class="c-nb">r10</span>, [<span class="c-nb">r15</span> + <span class="c-m">0x100</span>] <span class="c-c">; compare it against thread allocation limit</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">jae</span> .allocate_through_runtime
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">r15</span> + <span class="c-m">0xF0</span>], <span class="c-nb">r10</span> <span class="c-c">; store updated allocation pointer</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">prefetchnta</span> [<span class="c-nb">r10</span> + <span class="c-m">0x100</span>] <span class="c-c">; prefetch for future allocations</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-k">qword</span> [<span class="c-nb">rax</span>], <span class="c-m">1</span> <span class="c-c">; store mark word of the newly allocated object</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-k">dword</span> [<span class="c-nb">rax</span> + <span class="c-m">8</span>], <span class="c-m">0xC031F0</span> <span class="c-c">; store the Main$Foo class word</span>
-</span><span class="cx-ln"></span><span>.fill_object:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span> + <span class="c-m">12</span>], <span class="c-nb">ebp</span> <span class="c-c">; store the integer value field</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r10</span>, [<span class="c-nb">rsp</span>] <span class="c-c">; reload the saved child reference</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r11</span>, <span class="c-nb">r10</span> <span class="c-c">; lol C2, redundant move</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span> + <span class="c-m">16</span>], <span class="c-nb">r11d</span> <span class="c-c">; store field one…</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span> + <span class="c-m">20</span>], <span class="c-nb">r11d</span> <span class="c-c">; …two…</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span> + <span class="c-m">24</span>], <span class="c-nb">r11d</span> <span class="c-c">; …three…</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span> + <span class="c-m">28</span>], <span class="c-nb">r11d</span> <span class="c-c">; …and finally four</span>
-</span><span class="cx-ln"></span><span>.epilogue:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">add</span> <span class="c-nb">rsp</span>, <span class="c-m">32</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">pop</span> <span class="c-nb">rbp</span>
-</span><span class="cx-ln"></span><span>.stack_watermark_check:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">cmp</span> <span class="c-nb">rsp</span>, [<span class="c-nb">r15</span> + <span class="c-m">0x338</span>] <span class="c-c">; poll stack watermark barrier</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">ja</span> .stack_watermark_safepoint
-</span><span class="cx-ln"></span><span>    <span class="c-nf">ret</span>
-</span><span class="cx-ln"></span><span>
-</span><span class="cx-ln"></span><span>.return_null:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">xor</span> <span class="c-nb">eax</span>, <span class="c-nb">eax</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">jmp</span> .epilogue
-</span><span class="cx-ln"></span><span>
-</span><span class="cx-ln"></span><span>.allocate_through_runtime:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rsi</span>, <span class="c-m">0x800C031F0</span> <span class="c-c">; Main$Foo class metadata</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">call</span> _new_instance_Java
-</span><span class="cx-ln"></span><span>    <span class="c-nf">jmp</span> .fill_object
-</span><span class="cx-ln"></span><span>
-</span><span class="cx-ln"></span><span>.stack_watermark_safepoint:
-</span><span class="cx-ln"></span><span>    <span class="c-c">; stack pointer above high water mark, need to enter safepoint</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r10</span>, .stack_watermark_check
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">r15</span> + <span class="c-m">0x350</span>], <span class="c-nb">r10</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">jmp</span> SafepointBlob
-</span></code></pre><p>What we see here is pretty sensible. Sure, there's a couple of minor imperfections here and there, but overall C2, the HotSpot virtual machine optimizing compiler, did a good job. The code is laid out in such a way that <a href="https://shipilev.net/jvm/anatomy-quarks/28-frequency-based-code-layout/">the common case has no taken branches</a>. Allocation is dealt with by <a href="https://shipilev.net/jvm/anatomy-quarks/4-tlab-allocation/">bumping a pointer</a>. The address of the thread-local context is kept in <code>r15</code>, so there's no need to load it from anywhere.</p><p>Note that object references occupy 4 bytes of space in our object, not 8 like native pointers: on 64-bit platforms, HotSpot can, under certain conditions, <a href="https://shipilev.net/jvm/anatomy-quarks/23-compressed-references/">compress the references</a>. The speed penalty caused by decoding compressed references ranges from none to minuscule on common platforms, so this saves memory and improves cache utilization at very little cost.</p><p>Most importantly, though, object initialization is as simple as it gets: after filling the object header, the fields are initialized with simple memory stores. There are no garbage collector write barriers of any kind here: the compiler realized it's storing fields of a freshly-allocated object, which must be in the young generation by definition, so barriers can be safely elided.</p><p>To show that barrier elision is an optimization, we can tell the runtime to not inline the constructor of our record and look at its disassembly, here with the parallel garbage collector, because its <a href="https://shipilev.net/jvm/anatomy-quarks/13-intergenerational-barriers/">inter­generational write barrier</a> is relatively simple:</p><pre class="code-block"><span class="cx-language">x86 assembly</span>
-<code class="cx-numbered"><span class="cx-ln"></span><span>constructor_disabled_inlining:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">sub</span> <span class="c-nb">rsp</span>, <span class="c-m">24</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsp</span> + <span class="c-m">16</span>], <span class="c-nb">rbp</span> <span class="c-c">; probably should've been a push</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsi</span> + <span class="c-m">12</span>], <span class="c-nb">edx</span> <span class="c-c">; store the integer field</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r10</span>, <span class="c-nb">rsi</span> <span class="c-c">; copy the address for card table marking</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r11</span>, <span class="c-nb">rcx</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsi</span> + <span class="c-m">16</span>], <span class="c-nb">r11d</span> <span class="c-c">; store field one…</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">shr</span> <span class="c-nb">r10</span>, <span class="c-m">9</span> <span class="c-c">; compute card table entry index</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsi</span> + <span class="c-m">20</span>], <span class="c-nb">r8d</span> <span class="c-c">; …two…</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r8</span>, <span class="c-nb">r9</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsi</span> + <span class="c-m">24</span>], <span class="c-nb">r8d</span> <span class="c-c">; …three…</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r8</span>, <span class="c-nb">rdi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsi</span> + <span class="c-m">28</span>], <span class="c-nb">r8d</span> <span class="c-c">; …and finally four</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r11</span>, <span class="c-m">0x7F1ACAE2F000</span> <span class="c-c">; card table base address</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">r11</span> + <span class="c-nb">r10</span>], <span class="c-nb">r12b</span> <span class="c-c">; mark card table entry (r12 = 0)</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">add</span> <span class="c-nb">rsp</span>, <span class="c-m">16</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">pop</span> <span class="c-nb">rbp</span> <span class="c-c">; see, told you saving rbp should've been a push</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">cmp</span> <span class="c-nb">rsp</span>, [<span class="c-nb">r15</span> + <span class="c-m">0x338</span>] <span class="c-c">; poll stack watermark barrier</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">ja</span> .stack_watermark_safepoint
-</span><span class="cx-ln"></span><span>    <span class="c-nf">ret</span>
-</span></code></pre><p>We can clearly see a card-marking write barrier at the end. A more naïve compiler would emit a barrier after every write of a reference field, and the baseline compiler C1 does exactly that, but C2 was able to coalesce those barriers into one.</p></section><section id="dot-net-generated-code"><h2><a class="section-link" href="#dot-net-generated-code"><span>.NET generated code</span><span aria-hidden="true"> §</span></a></h2><pre class="code-block"><span class="cx-language">x86 assembly</span>
-<code class="cx-numbered"><span class="cx-ln"></span><span>Build:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">push</span> <span class="c-nb">rdi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">push</span> <span class="c-nb">rsi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">push</span> <span class="c-nb">rbx</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">sub</span> <span class="c-nb">rsp</span>, <span class="c-m">32</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">esi</span>, <span class="c-nb">edx</span> <span class="c-c">; save the integer value for later</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">test</span> <span class="c-nb">ecx</span>, <span class="c-nb">ecx</span> <span class="c-c">; reached base case?</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">jge</span> .recursive_call
-</span><span class="cx-ln"></span><span>    <span class="c-nf">xor</span> <span class="c-nb">eax</span>, <span class="c-nb">eax</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">add</span> <span class="c-nb">rsp</span>, <span class="c-m">32</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">pop</span> <span class="c-nb">rbx</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">pop</span> <span class="c-nb">rsi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">pop</span> <span class="c-nb">rdi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">ret</span>
-</span><span class="cx-ln"></span><span>.recursive_call:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">dec</span> <span class="c-nb">ecx</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">edx</span>, <span class="c-nb">esi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">call</span> stub_for_Build <span class="c-c">; which is just "jmp Build"</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rdi</span>, <span class="c-nb">rax</span> <span class="c-c">; save the child in callee-saved register</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rcx</span>, <span class="c-m">0x7FFF74422F40</span> <span class="c-c">; Main.Foo class metadata</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">call</span> CORINFO_HELP_NEWSFAST
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rbx</span>, <span class="c-nb">rax</span> <span class="c-c">; save the new object in callee-saved register</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rbx</span> + <span class="c-m">40</span>], <span class="c-nb">esi</span> <span class="c-c">; store the integer value field</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">lea</span> <span class="c-nb">rcx</span>, [<span class="c-nb">rbx</span> + <span class="c-m">8</span>]
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rdx</span>, <span class="c-nb">rdi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">call</span> CORINFO_HELP_ASSIGN_REF <span class="c-c">; store field one…</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">lea</span> <span class="c-nb">rcx</span>, [<span class="c-nb">rbx</span> + <span class="c-m">16</span>]
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rdx</span>, <span class="c-nb">rdi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">call</span> CORINFO_HELP_ASSIGN_REF <span class="c-c">; …two…</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">lea</span> <span class="c-nb">rcx</span>, [<span class="c-nb">rbx</span> + <span class="c-m">24</span>]
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rdx</span>, <span class="c-nb">rdi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">call</span> CORINFO_HELP_ASSIGN_REF <span class="c-c">; …three…</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">lea</span> <span class="c-nb">rcx</span>, [<span class="c-nb">rbx</span> + <span class="c-m">32</span>]
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rdx</span>, <span class="c-nb">rdi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">call</span> CORINFO_HELP_ASSIGN_REF <span class="c-c">; …and finally four</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, <span class="c-nb">rbx</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">add</span> <span class="c-nb">rsp</span>, <span class="c-m">32</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">pop</span> <span class="c-nb">rbx</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">pop</span> <span class="c-nb">rsi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">pop</span> <span class="c-nb">rdi</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">ret</span>
-</span></code></pre><p>Uh-oh. Are those function calls for allocation and reference field assignment? Presumably the reference field assignment function also performs write barrier shenanigans, seeing as the integer field is stored directly? Let's see what those functions look like, then, starting with allocation.</p><pre class="code-block"><span class="cx-language">x86 assembly</span>
-<code class="cx-numbered"><span class="cx-ln"></span><span>CORINFO_HELP_NEWSFAST:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">edx</span>, [<span class="c-nb">rcx</span> + <span class="c-m">4</span>] <span class="c-c">; load object size</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r11</span>, [rel _tls_index] <span class="c-c">; load the thread-local storage index</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, [<span class="c-nb">gs</span>:<span class="c-m">0x58</span>] <span class="c-c">; load TLS base from thread environment block</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, [<span class="c-nb">rax</span> + <span class="c-nb">r11</span> * <span class="c-m">8</span>] <span class="c-c">; load our TLS entry</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r11d</span>, CurrentThreadInfo - tls_start
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r11</span>, [<span class="c-nb">rax</span> + <span class="c-nb">r11</span>] <span class="c-c">; load the thread-local context pointer</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">r10</span>, [<span class="c-nb">r11</span> + <span class="c-m">0x60</span>] <span class="c-c">; load thread allocation limit</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, [<span class="c-nb">r11</span> + <span class="c-m">0x58</span>] <span class="c-c">; load thread allocation pointer</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">add</span> <span class="c-nb">rdx</span>, <span class="c-nb">rax</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">cmp</span> <span class="c-nb">rdx</span>, <span class="c-nb">r10</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">ja</span> .allocate_through_runtime
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">r11</span> + <span class="c-m">0x58</span>], <span class="c-nb">rdx</span> <span class="c-c">; store updated allocation pointer</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span>], <span class="c-nb">rcx</span> <span class="c-c">; store class metadata</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">ret</span>
-</span><span class="cx-ln"></span><span>.allocate_through_runtime:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">jmp</span> JIT_NEW
-</span></code></pre><p>Allocation turns out to be just pointer bumping after all. Unfortunately, to get to the thread-local context, we need to perform four memory loads first, two of which depend on previous loads; whereas OpenJDK just keeps it in a register. That, and the fact it's a function call, certainly introduces some additional cost, but not enough to explain the observed difference.</p><p>What about that reference field assignment then?</p><pre class="code-block"><span class="cx-language">x86 assembly</span>
-<code class="cx-numbered"><span class="cx-ln"></span><span>CORINFO_HELP_ASSIGN_REF:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> [<span class="c-nb">rcx</span>], <span class="c-nb">rdx</span> <span class="c-c">; perform the assignment</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">nop</span> <span class="c-k">dword</span> [<span class="c-nb">rax</span>] <span class="c-c">; align the address in mov for patching</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, <span class="c-m">0x1B9BA871018</span> <span class="c-c">; start of young generation?</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">cmp</span> <span class="c-nb">rdx</span>, <span class="c-nb">rax</span> <span class="c-c">; in bounds?</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">jb</span> .exit
-</span><span class="cx-ln"></span><span>    <span class="c-nf">nop</span> <span class="c-c">; align the address in mov for patching</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, <span class="c-m">0x1B9A34FAF60</span> <span class="c-c">; level 0 card table address</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">shr</span> <span class="c-nb">rcx</span>, <span class="c-m">11</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">cmp</span> <span class="c-k">byte</span> [<span class="c-nb">rcx</span> + <span class="c-nb">rax</span>], <span class="c-m">0xFF</span> <span class="c-c">; already marked?</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">jne</span> .update_card_table_0
-</span><span class="cx-ln"></span><span>    <span class="c-nf">rep</span> ret
-</span><span class="cx-ln"></span><span>.update_card_table_0:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-k">byte</span> [<span class="c-nb">rcx</span> + <span class="c-nb">rax</span>], <span class="c-m">0xFF</span> <span class="c-c">; mark the card table entry</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">shr</span> <span class="c-nb">rcx</span>, <span class="c-m">10</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">xchg</span> <span class="c-nb">ax</span>, <span class="c-nb">ax</span> <span class="c-c">; align the address in mov for patching</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, <span class="c-m">0x1B9DA81326C</span> <span class="c-c">; level 1 card table address</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">cmp</span> <span class="c-k">byte</span> [<span class="c-nb">rcx</span> + <span class="c-nb">rax</span>], <span class="c-m">0xFF</span> <span class="c-c">; already marked?</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">jne</span> .update_card_table_1
-</span><span class="cx-ln"></span><span>    <span class="c-nf">rep</span> ret
-</span><span class="cx-ln"></span><span>.update_card_table_1:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">mov</span> <span class="c-k">byte</span> [<span class="c-nb">rcx</span> + <span class="c-nb">rax</span>], <span class="c-m">0xFF</span> <span class="c-c">; mark the card table entry</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">ret</span>
-</span><span class="cx-ln"></span><span>    <span class="c-nf">nop</span> <span class="c-k">dword</span> [<span class="c-nb">rax</span>]
-</span><span class="cx-ln"></span><span>.exit:
-</span><span class="cx-ln"></span><span>    <span class="c-nf">rep</span> ret
-</span></code></pre><p>There it is! This, honestly, explains <em>everything</em>. Note the early out condition: it skips card marking work entirely only if the <em>value we're assigning</em> points into the <em>old</em> generation. Even if the referrer and the referent are both young, we still end up touching the card tables.</p><p>Note that card table updates are conditional: each entry is written to only if it's not already marked. This is done to avoid some <a href="https://en.wikipedia.org/wiki/False_sharing">false sharing</a> with multi-threaded mutators on multi­processor systems. It does introduce some branching, but in our case at least, those branches tend to be very predictable.</p><p>In the end, all of this work ends up hurting performance, making .NET slower than OpenJDK in this case. Yes, processors try to make any code fast anyway, but out-of-order execution is not magic. Processors can try to reorder instructions as much as they can to fill their execution units, but dependency chains restrict that, they still have to run every instruction, and inefficiencies can quickly add up.</p><p>Improvements to the just-in-time compiler, such as emitting certain crucial intrinsic operations like allocations and write barriers inline, and introducing the ability to coalesce and/or elide barriers, would certainly be welcome.</p></section></article></main><nav aria-label="Chronological, secondary"><ul id="order-nav"><li class="top"><a href="#skip-nav"><span aria-hidden="true">↑ </span>Top<span aria-hidden="true"> ↑</span></a></li><li class="prev"><a rel="prev" href="/dependency-breaking-xor-p6.html"><span aria-hidden="true">← </span>Older</a></li><li><a href="/archives/">Blog archives</a></li><li class="next"><a rel="next" href="/you-can-embrace-extend-extinguish-free-software.html">Newer<span aria-hidden="true"> →</span></a></li></ul></nav><footer><ul id="footer"><li><a href="/pages/offline-mode.html">Offline mode</a></li><li>Powered by HTML &amp; CSS</li><li>Copyright © 2019-2022 Fanael Linithien</li><li>Licensed under a <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a></li></ul></footer></body></html>
+<code class="cx-numbered"><span class="cx-l"><span><span class="c-k">public</span> <span class="c-k">final</span> <span class="c-k">class</span> <span class="c-nc">Main</span> {
+</span></span><span class="cx-l"><span>    <span class="c-k">private</span> <span class="c-nf">Main</span>() {
+</span></span><span class="cx-l"><span>    }
+</span></span><span class="cx-l"><span>
+</span></span><span class="cx-l"><span>    <span class="c-k">public</span> <span class="c-k">static</span> <span class="c-k">void</span> <span class="c-nf">main</span>(<span class="c-k">final</span> String[] args) {
+</span></span><span class="cx-l"><span>        measure(<span class="c-m">25_000</span>); <span class="c-c">// warm-up</span>
+</span></span><span class="cx-l"><span>        measure(<span class="c-m">25_000_000</span>);
+</span></span><span class="cx-l"><span>    }
+</span></span><span class="cx-l"><span>
+</span></span><span class="cx-l"><span>    <span class="c-k">private</span> <span class="c-k">static</span> <span class="c-k">void</span> <span class="c-nf">measure</span>(<span class="c-k">final</span> <span class="c-k">int</span> repeats) {
+</span></span><span class="cx-l"><span>        <span class="c-k">final</span> <span class="c-k">var</span> startTime = System.nanoTime();
+</span></span><span class="cx-l"><span>        <span class="c-k">for</span> (<span class="c-k">int</span> i = <span class="c-m">0</span>; i &lt; repeats; i += <span class="c-m">1</span>) {
+</span></span><span class="cx-l"><span>            build(<span class="c-m">8</span>, i);
+</span></span><span class="cx-l"><span>        }
+</span></span><span class="cx-l"><span>        <span class="c-k">final</span> <span class="c-k">var</span> endTime = System.nanoTime();
+</span></span><span class="cx-l"><span>        System.out.format(<span class="c-s">"Took %.3f s\n"</span>, (endTime - startTime) / <span class="c-m">1.0e9</span>);
+</span></span><span class="cx-l"><span>    }
+</span></span><span class="cx-l"><span>
+</span></span><span class="cx-l"><span>    <span class="c-k">private</span> <span class="c-k">static</span> Foo <span class="c-nf">build</span>(<span class="c-k">final</span> <span class="c-k">int</span> level, <span class="c-k">final</span> <span class="c-k">int</span> value) {
+</span></span><span class="cx-l"><span>        <span class="c-k">if</span> (level &lt; <span class="c-m">0</span>) {
+</span></span><span class="cx-l"><span>            <span class="c-k">return</span> <span class="c-k">null</span>;
+</span></span><span class="cx-l"><span>        }
+</span></span><span class="cx-l"><span>        <span class="c-k">final</span> <span class="c-k">var</span> child = build(level - <span class="c-m">1</span>, value);
+</span></span><span class="cx-l"><span>        <span class="c-k">return</span> <span class="c-k">new</span> Foo(value, child, child, child, child);
+</span></span><span class="cx-l"><span>    }
+</span></span><span class="cx-l"><span>
+</span></span><span class="cx-l"><span>    <span class="c-k">private</span> <span class="c-k">record</span> <span class="c-nc">Foo</span>(<span class="c-k">int</span> value, Foo one, Foo two, Foo three, Foo four) {
+</span></span><span class="cx-l"><span>    }
+</span></span><span class="cx-l"><span>}
+</span></span></code></pre><p>This code creates a nondescript quaternary tree of height 8 with significant node sharing, immediately throws it away, then repeats that process a bunch of times. Almost no logic at all, just memory allocations.</p><div class="info"><p>This is <em>not</em> a good way to do micro­benchmarking on platforms with optimizing compilers: for example, one problem is that the compiler could realize that the call to <code>build</code> does nothing apart from allocating a bunch of useless objects, and therefore could be completely eliminated.</p><p>I was careful enough to disable inlining of <code>build</code> using <code>-XX:CompileCommand</code>, which is enough to inhibit allocation elision <em>in this case, on the current version of OpenJDK</em>, then <em>verified</em> the generated code to see if the compiler didn't do anything destructive anyway. If you're not a trained professional who likes living dangerously, you should prefer libraries like the <a href="https://github.com/openjdk/jmh">Java micro­benchmark harness</a> instead, which take care of those nasty optimizing compilers. And handle just-in-time compiler warm-up better. And more.</p></div><p>Running this flawed microbenchmark on my Zen 2 desktop yields the following results:</p><figure><figcaption>Measured execution times</figcaption><div class="holder"><table><thead><tr><th>Language<th>Runtime<th>Operating system<th>Average time<th>95% confidence interval</tr></thead><tbody><tr><th>Java<td>OpenJDK 18.0.2<td>Debian<td>897 ms<td>[888.5 ms, 905.9 ms]</tr><tr><th>C#<td>.NET 6.0.8<td>Windows<td>2942 ms<td>[2575 ms, 3308.4 ms]</tr></tbody></table></div></figure><p>.NET ends up taking <strong>over three times as much time on average</strong>, with large standard deviation, which is close to my prior observations. Same version of .NET under Linux is even slower, likely because <a href="https://github.com/dotnet/runtime/issues/67776"> it does not have assembly intrinsics for some operations on non-Windows platforms</a> yet.</p><p>Enough waffling about, let's take a look at the disassembly, shall we?</p></section><section id="openjdk-generated-code"><h2><a class="section-link" href="#openjdk-generated-code"><span>OpenJDK generated code</span><span aria-hidden="true"> §</span></a></h2><pre class="code-block"><span class="cx-language">x86 assembly</span>
+<code class="cx-numbered"><span class="cx-l"><span>build:
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsp</span> - <span class="c-m">0x14000</span>], <span class="c-nb">eax</span> <span class="c-c">; probe for stack overflow</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">push</span> <span class="c-nb">rbp</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">sub</span> <span class="c-nb">rsp</span>, <span class="c-m">32</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">ebp</span>, <span class="c-nb">edx</span> <span class="c-c">; save the integer value for later</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">test</span> <span class="c-nb">esi</span>, <span class="c-nb">esi</span> <span class="c-c">; reached base case?</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">jl</span> .return_null
+</span></span><span class="cx-l"><span>    <span class="c-nf">dec</span> <span class="c-nb">esi</span>
+</span></span><span class="cx-l"><span>    <span class="c-k">db</span> <span class="c-m">0x66</span>, <span class="c-m">0x66</span> <span class="c-c">; align the address in the call…</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">nop</span> <span class="c-c">; …for possible patching</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">call</span> build
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsp</span>], <span class="c-nb">rax</span> <span class="c-c">; save the child in case we need to call into runtime</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, [<span class="c-nb">r15</span> + <span class="c-m">0xF0</span>] <span class="c-c">; load thread allocation pointer</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r10</span>, <span class="c-nb">rax</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">add</span> <span class="c-nb">r10</span>, <span class="c-m">32</span> <span class="c-c">; bump the pointer by object size</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">cmp</span> <span class="c-nb">r10</span>, [<span class="c-nb">r15</span> + <span class="c-m">0x100</span>] <span class="c-c">; compare it against thread allocation limit</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">jae</span> .allocate_through_runtime
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">r15</span> + <span class="c-m">0xF0</span>], <span class="c-nb">r10</span> <span class="c-c">; store updated allocation pointer</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">prefetchnta</span> [<span class="c-nb">r10</span> + <span class="c-m">0x100</span>] <span class="c-c">; prefetch for future allocations</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-k">qword</span> [<span class="c-nb">rax</span>], <span class="c-m">1</span> <span class="c-c">; store mark word of the newly allocated object</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-k">dword</span> [<span class="c-nb">rax</span> + <span class="c-m">8</span>], <span class="c-m">0xC031F0</span> <span class="c-c">; store the Main$Foo class word</span>
+</span></span><span class="cx-l"><span>.fill_object:
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span> + <span class="c-m">12</span>], <span class="c-nb">ebp</span> <span class="c-c">; store the integer value field</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r10</span>, [<span class="c-nb">rsp</span>] <span class="c-c">; reload the saved child reference</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r11</span>, <span class="c-nb">r10</span> <span class="c-c">; lol C2, redundant move</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span> + <span class="c-m">16</span>], <span class="c-nb">r11d</span> <span class="c-c">; store field one…</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span> + <span class="c-m">20</span>], <span class="c-nb">r11d</span> <span class="c-c">; …two…</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span> + <span class="c-m">24</span>], <span class="c-nb">r11d</span> <span class="c-c">; …three…</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span> + <span class="c-m">28</span>], <span class="c-nb">r11d</span> <span class="c-c">; …and finally four</span>
+</span></span><span class="cx-l"><span>.epilogue:
+</span></span><span class="cx-l"><span>    <span class="c-nf">add</span> <span class="c-nb">rsp</span>, <span class="c-m">32</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">pop</span> <span class="c-nb">rbp</span>
+</span></span><span class="cx-l"><span>.stack_watermark_check:
+</span></span><span class="cx-l"><span>    <span class="c-nf">cmp</span> <span class="c-nb">rsp</span>, [<span class="c-nb">r15</span> + <span class="c-m">0x338</span>] <span class="c-c">; poll stack watermark barrier</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">ja</span> .stack_watermark_safepoint
+</span></span><span class="cx-l"><span>    <span class="c-nf">ret</span>
+</span></span><span class="cx-l"><span>
+</span></span><span class="cx-l"><span>.return_null:
+</span></span><span class="cx-l"><span>    <span class="c-nf">xor</span> <span class="c-nb">eax</span>, <span class="c-nb">eax</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">jmp</span> .epilogue
+</span></span><span class="cx-l"><span>
+</span></span><span class="cx-l"><span>.allocate_through_runtime:
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rsi</span>, <span class="c-m">0x800C031F0</span> <span class="c-c">; Main$Foo class metadata</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">call</span> _new_instance_Java
+</span></span><span class="cx-l"><span>    <span class="c-nf">jmp</span> .fill_object
+</span></span><span class="cx-l"><span>
+</span></span><span class="cx-l"><span>.stack_watermark_safepoint:
+</span></span><span class="cx-l"><span>    <span class="c-c">; stack pointer above high water mark, need to enter safepoint</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r10</span>, .stack_watermark_check
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">r15</span> + <span class="c-m">0x350</span>], <span class="c-nb">r10</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">jmp</span> SafepointBlob
+</span></span></code></pre><p>What we see here is pretty sensible. Sure, there's a couple of minor imperfections here and there, but overall C2, the HotSpot virtual machine optimizing compiler, did a good job. The code is laid out in such a way that <a href="https://shipilev.net/jvm/anatomy-quarks/28-frequency-based-code-layout/">the common case has no taken branches</a>. Allocation is dealt with by <a href="https://shipilev.net/jvm/anatomy-quarks/4-tlab-allocation/">bumping a pointer</a>. The address of the thread-local context is kept in <code>r15</code>, so there's no need to load it from anywhere.</p><p>Note that object references occupy 4 bytes of space in our object, not 8 like native pointers: on 64-bit platforms, HotSpot can, under certain conditions, <a href="https://shipilev.net/jvm/anatomy-quarks/23-compressed-references/">compress the references</a>. The speed penalty caused by decoding compressed references ranges from none to minuscule on common platforms, so this saves memory and improves cache utilization at very little cost.</p><p>Most importantly, though, object initialization is as simple as it gets: after filling the object header, the fields are initialized with simple memory stores. There are no garbage collector write barriers of any kind here: the compiler realized it's storing fields of a freshly-allocated object, which must be in the young generation by definition, so barriers can be safely elided.</p><p>To show that barrier elision is an optimization, we can tell the runtime to not inline the constructor of our record and look at its disassembly, here with the parallel garbage collector, because its <a href="https://shipilev.net/jvm/anatomy-quarks/13-intergenerational-barriers/">inter­generational write barrier</a> is relatively simple:</p><pre class="code-block"><span class="cx-language">x86 assembly</span>
+<code class="cx-numbered"><span class="cx-l"><span>constructor_disabled_inlining:
+</span></span><span class="cx-l"><span>    <span class="c-nf">sub</span> <span class="c-nb">rsp</span>, <span class="c-m">24</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsp</span> + <span class="c-m">16</span>], <span class="c-nb">rbp</span> <span class="c-c">; probably should've been a push</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsi</span> + <span class="c-m">12</span>], <span class="c-nb">edx</span> <span class="c-c">; store the integer field</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r10</span>, <span class="c-nb">rsi</span> <span class="c-c">; copy the address for card table marking</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r11</span>, <span class="c-nb">rcx</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsi</span> + <span class="c-m">16</span>], <span class="c-nb">r11d</span> <span class="c-c">; store field one…</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">shr</span> <span class="c-nb">r10</span>, <span class="c-m">9</span> <span class="c-c">; compute card table entry index</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsi</span> + <span class="c-m">20</span>], <span class="c-nb">r8d</span> <span class="c-c">; …two…</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r8</span>, <span class="c-nb">r9</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsi</span> + <span class="c-m">24</span>], <span class="c-nb">r8d</span> <span class="c-c">; …three…</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r8</span>, <span class="c-nb">rdi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rsi</span> + <span class="c-m">28</span>], <span class="c-nb">r8d</span> <span class="c-c">; …and finally four</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r11</span>, <span class="c-m">0x7F1ACAE2F000</span> <span class="c-c">; card table base address</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">r11</span> + <span class="c-nb">r10</span>], <span class="c-nb">r12b</span> <span class="c-c">; mark card table entry (r12 = 0)</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">add</span> <span class="c-nb">rsp</span>, <span class="c-m">16</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">pop</span> <span class="c-nb">rbp</span> <span class="c-c">; see, told you saving rbp should've been a push</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">cmp</span> <span class="c-nb">rsp</span>, [<span class="c-nb">r15</span> + <span class="c-m">0x338</span>] <span class="c-c">; poll stack watermark barrier</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">ja</span> .stack_watermark_safepoint
+</span></span><span class="cx-l"><span>    <span class="c-nf">ret</span>
+</span></span></code></pre><p>We can clearly see a card-marking write barrier at the end. A more naïve compiler would emit a barrier after every write of a reference field, and the baseline compiler C1 does exactly that, but C2 was able to coalesce those barriers into one.</p></section><section id="dot-net-generated-code"><h2><a class="section-link" href="#dot-net-generated-code"><span>.NET generated code</span><span aria-hidden="true"> §</span></a></h2><pre class="code-block"><span class="cx-language">x86 assembly</span>
+<code class="cx-numbered"><span class="cx-l"><span>Build:
+</span></span><span class="cx-l"><span>    <span class="c-nf">push</span> <span class="c-nb">rdi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">push</span> <span class="c-nb">rsi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">push</span> <span class="c-nb">rbx</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">sub</span> <span class="c-nb">rsp</span>, <span class="c-m">32</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">esi</span>, <span class="c-nb">edx</span> <span class="c-c">; save the integer value for later</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">test</span> <span class="c-nb">ecx</span>, <span class="c-nb">ecx</span> <span class="c-c">; reached base case?</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">jge</span> .recursive_call
+</span></span><span class="cx-l"><span>    <span class="c-nf">xor</span> <span class="c-nb">eax</span>, <span class="c-nb">eax</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">add</span> <span class="c-nb">rsp</span>, <span class="c-m">32</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">pop</span> <span class="c-nb">rbx</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">pop</span> <span class="c-nb">rsi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">pop</span> <span class="c-nb">rdi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">ret</span>
+</span></span><span class="cx-l"><span>.recursive_call:
+</span></span><span class="cx-l"><span>    <span class="c-nf">dec</span> <span class="c-nb">ecx</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">edx</span>, <span class="c-nb">esi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">call</span> stub_for_Build <span class="c-c">; which is just "jmp Build"</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rdi</span>, <span class="c-nb">rax</span> <span class="c-c">; save the child in callee-saved register</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rcx</span>, <span class="c-m">0x7FFF74422F40</span> <span class="c-c">; Main.Foo class metadata</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">call</span> CORINFO_HELP_NEWSFAST
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rbx</span>, <span class="c-nb">rax</span> <span class="c-c">; save the new object in callee-saved register</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rbx</span> + <span class="c-m">40</span>], <span class="c-nb">esi</span> <span class="c-c">; store the integer value field</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">lea</span> <span class="c-nb">rcx</span>, [<span class="c-nb">rbx</span> + <span class="c-m">8</span>]
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rdx</span>, <span class="c-nb">rdi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">call</span> CORINFO_HELP_ASSIGN_REF <span class="c-c">; store field one…</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">lea</span> <span class="c-nb">rcx</span>, [<span class="c-nb">rbx</span> + <span class="c-m">16</span>]
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rdx</span>, <span class="c-nb">rdi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">call</span> CORINFO_HELP_ASSIGN_REF <span class="c-c">; …two…</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">lea</span> <span class="c-nb">rcx</span>, [<span class="c-nb">rbx</span> + <span class="c-m">24</span>]
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rdx</span>, <span class="c-nb">rdi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">call</span> CORINFO_HELP_ASSIGN_REF <span class="c-c">; …three…</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">lea</span> <span class="c-nb">rcx</span>, [<span class="c-nb">rbx</span> + <span class="c-m">32</span>]
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rdx</span>, <span class="c-nb">rdi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">call</span> CORINFO_HELP_ASSIGN_REF <span class="c-c">; …and finally four</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, <span class="c-nb">rbx</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">add</span> <span class="c-nb">rsp</span>, <span class="c-m">32</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">pop</span> <span class="c-nb">rbx</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">pop</span> <span class="c-nb">rsi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">pop</span> <span class="c-nb">rdi</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">ret</span>
+</span></span></code></pre><p>Uh-oh. Are those function calls for allocation and reference field assignment? Presumably the reference field assignment function also performs write barrier shenanigans, seeing as the integer field is stored directly? Let's see what those functions look like, then, starting with allocation.</p><pre class="code-block"><span class="cx-language">x86 assembly</span>
+<code class="cx-numbered"><span class="cx-l"><span>CORINFO_HELP_NEWSFAST:
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">edx</span>, [<span class="c-nb">rcx</span> + <span class="c-m">4</span>] <span class="c-c">; load object size</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r11</span>, [rel _tls_index] <span class="c-c">; load the thread-local storage index</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, [<span class="c-nb">gs</span>:<span class="c-m">0x58</span>] <span class="c-c">; load TLS base from thread environment block</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, [<span class="c-nb">rax</span> + <span class="c-nb">r11</span> * <span class="c-m">8</span>] <span class="c-c">; load our TLS entry</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r11d</span>, CurrentThreadInfo - tls_start
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r11</span>, [<span class="c-nb">rax</span> + <span class="c-nb">r11</span>] <span class="c-c">; load the thread-local context pointer</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">r10</span>, [<span class="c-nb">r11</span> + <span class="c-m">0x60</span>] <span class="c-c">; load thread allocation limit</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, [<span class="c-nb">r11</span> + <span class="c-m">0x58</span>] <span class="c-c">; load thread allocation pointer</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">add</span> <span class="c-nb">rdx</span>, <span class="c-nb">rax</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">cmp</span> <span class="c-nb">rdx</span>, <span class="c-nb">r10</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">ja</span> .allocate_through_runtime
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">r11</span> + <span class="c-m">0x58</span>], <span class="c-nb">rdx</span> <span class="c-c">; store updated allocation pointer</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rax</span>], <span class="c-nb">rcx</span> <span class="c-c">; store class metadata</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">ret</span>
+</span></span><span class="cx-l"><span>.allocate_through_runtime:
+</span></span><span class="cx-l"><span>    <span class="c-nf">jmp</span> JIT_NEW
+</span></span></code></pre><p>Allocation turns out to be just pointer bumping after all. Unfortunately, to get to the thread-local context, we need to perform four memory loads first, two of which depend on previous loads; whereas OpenJDK just keeps it in a register. That, and the fact it's a function call, certainly introduces some additional cost, but not enough to explain the observed difference.</p><p>What about that reference field assignment then?</p><pre class="code-block"><span class="cx-language">x86 assembly</span>
+<code class="cx-numbered"><span class="cx-l"><span>CORINFO_HELP_ASSIGN_REF:
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> [<span class="c-nb">rcx</span>], <span class="c-nb">rdx</span> <span class="c-c">; perform the assignment</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">nop</span> <span class="c-k">dword</span> [<span class="c-nb">rax</span>] <span class="c-c">; align the address in mov for patching</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, <span class="c-m">0x1B9BA871018</span> <span class="c-c">; start of young generation?</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">cmp</span> <span class="c-nb">rdx</span>, <span class="c-nb">rax</span> <span class="c-c">; in bounds?</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">jb</span> .exit
+</span></span><span class="cx-l"><span>    <span class="c-nf">nop</span> <span class="c-c">; align the address in mov for patching</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, <span class="c-m">0x1B9A34FAF60</span> <span class="c-c">; level 0 card table address</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">shr</span> <span class="c-nb">rcx</span>, <span class="c-m">11</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">cmp</span> <span class="c-k">byte</span> [<span class="c-nb">rcx</span> + <span class="c-nb">rax</span>], <span class="c-m">0xFF</span> <span class="c-c">; already marked?</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">jne</span> .update_card_table_0
+</span></span><span class="cx-l"><span>    <span class="c-nf">rep</span> ret
+</span></span><span class="cx-l"><span>.update_card_table_0:
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-k">byte</span> [<span class="c-nb">rcx</span> + <span class="c-nb">rax</span>], <span class="c-m">0xFF</span> <span class="c-c">; mark the card table entry</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">shr</span> <span class="c-nb">rcx</span>, <span class="c-m">10</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">xchg</span> <span class="c-nb">ax</span>, <span class="c-nb">ax</span> <span class="c-c">; align the address in mov for patching</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-nb">rax</span>, <span class="c-m">0x1B9DA81326C</span> <span class="c-c">; level 1 card table address</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">cmp</span> <span class="c-k">byte</span> [<span class="c-nb">rcx</span> + <span class="c-nb">rax</span>], <span class="c-m">0xFF</span> <span class="c-c">; already marked?</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">jne</span> .update_card_table_1
+</span></span><span class="cx-l"><span>    <span class="c-nf">rep</span> ret
+</span></span><span class="cx-l"><span>.update_card_table_1:
+</span></span><span class="cx-l"><span>    <span class="c-nf">mov</span> <span class="c-k">byte</span> [<span class="c-nb">rcx</span> + <span class="c-nb">rax</span>], <span class="c-m">0xFF</span> <span class="c-c">; mark the card table entry</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">ret</span>
+</span></span><span class="cx-l"><span>    <span class="c-nf">nop</span> <span class="c-k">dword</span> [<span class="c-nb">rax</span>]
+</span></span><span class="cx-l"><span>.exit:
+</span></span><span class="cx-l"><span>    <span class="c-nf">rep</span> ret
+</span></span></code></pre><p>There it is! This, honestly, explains <em>everything</em>. Note the early out condition: it skips card marking work entirely only if the <em>value we're assigning</em> points into the <em>old</em> generation. Even if the referrer and the referent are both young, we still end up touching the card tables.</p><p>Note that card table updates are conditional: each entry is written to only if it's not already marked. This is done to avoid some <a href="https://en.wikipedia.org/wiki/False_sharing">false sharing</a> with multi-threaded mutators on multi­processor systems. It does introduce some branching, but in our case at least, those branches tend to be very predictable.</p><p>In the end, all of this work ends up hurting performance, making .NET slower than OpenJDK in this case. Yes, processors try to make any code fast anyway, but out-of-order execution is not magic. Processors can try to reorder instructions as much as they can to fill their execution units, but dependency chains restrict that, they still have to run every instruction, and inefficiencies can quickly add up.</p><p>Improvements to the just-in-time compiler, such as emitting certain crucial intrinsic operations like allocations and write barriers inline, and introducing the ability to coalesce and/or elide barriers, would certainly be welcome.</p></section></article></main><nav aria-label="Chronological, secondary"><ul id="order-nav"><li class="top"><a href="#skip-nav"><span aria-hidden="true">↑ </span>Top<span aria-hidden="true"> ↑</span></a></li><li class="prev"><a rel="prev" href="/dependency-breaking-xor-p6.html"><span aria-hidden="true">← </span>Older</a></li><li><a href="/archives/">Blog archives</a></li><li class="next"><a rel="next" href="/you-can-embrace-extend-extinguish-free-software.html">Newer<span aria-hidden="true"> →</span></a></li></ul></nav><footer><ul id="footer"><li><a href="/pages/offline-mode.html">Offline mode</a></li><li>Powered by HTML &amp; CSS</li><li>Copyright © 2019-2022 Fanael Linithien</li><li>Licensed under a <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a></li></ul></footer></body></html>
