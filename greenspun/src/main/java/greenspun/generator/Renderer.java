@@ -434,14 +434,14 @@ public final class Renderer {
         }
 
         private void appendLine(final Seq<Node> nodes) {
-            newRootChildren.append(Constants.lineNumberMarker);
             newRootChildren.append(wrapLineContent(nodes));
         }
 
         private static Node.Element wrapLineContent(final Seq<Node> nodes) {
-            return (nodes.exactSize() == 1 && nodes.first() instanceof Node.Element element)
-                ? element
-                : Node.simple(Tag.SPAN, nodes);
+            final Seq<Node> children = (nodes.exactSize() == 1 && nodes.first() instanceof Node.Element)
+                ? nodes
+                : Seq.of(Node.simple(Tag.SPAN, nodes));
+            return new Node.Element(Tag.SPAN, Constants.codeLineAttributes, children);
         }
 
         private final Node.Element originalContainer;
@@ -592,7 +592,7 @@ public final class Renderer {
             Seq.of(new Node.Text("Table of contents"))
         );
 
-        private static final Node.Element lineNumberMarker = Node.empty(Tag.SPAN, Attribute.of("class", "cx-ln"));
+        private static final Seq<Attribute> codeLineAttributes = Seq.of(Attribute.of("class", "cx-l"));
 
         private static final Node.Text newLine = new Node.Text("\n");
 
