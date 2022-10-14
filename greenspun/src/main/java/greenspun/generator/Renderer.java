@@ -47,7 +47,7 @@ public final class Renderer {
         return new Node.Element(
             Tag.PRE,
             Seq.of(Attribute.of("class", "code-block")),
-            Seq.of(language, Constants.newLine).concat(renderLineNumbers(nodes))
+            Seq.<Node>of(language, Constants.newLine).concat(renderLineNumbers(nodes))
         );
     }
 
