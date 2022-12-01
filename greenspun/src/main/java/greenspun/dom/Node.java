@@ -20,13 +20,6 @@ public sealed interface Node {
     }
 
     /**
-     * Returns a new DOM element node representing the given tag, with given attribute and no children.
-     */
-    static Element empty(final Tag tag, final Attribute attribute) {
-        return new Element(tag, Seq.of(attribute), Seq.empty());
-    }
-
-    /**
      * Returns a new DOM element node representing the given tag, with given children and no attributes.
      */
     static Element simple(final Tag tag, final Seq<Node> children) {
