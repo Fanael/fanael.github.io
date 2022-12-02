@@ -51,7 +51,7 @@ public final class Sexps {
     public static Sexp.@Nullable Symbol asSymbol(final Sexp sexp) {
         return switch (sexp) {
             case Sexp.Symbol symbol -> symbol;
-            case Sexp.List list && list.value().isEmpty() -> Sexp.KnownSymbol.NIL;
+            case Sexp.List list when list.value().isEmpty() -> Sexp.KnownSymbol.NIL;
             default -> null;
         };
     }
