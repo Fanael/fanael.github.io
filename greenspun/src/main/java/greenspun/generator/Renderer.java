@@ -11,6 +11,7 @@ import greenspun.dom.Attribute;
 import greenspun.dom.Attributes;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
+import greenspun.sexp.Sexp;
 import greenspun.util.collection.seq.Seq;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -111,26 +112,11 @@ public final class Renderer {
     ) {
         return Seq.of(
             Node.simple(Tag.HEADER, Node.simple(Tag.H1, new Node.Text("Blog archives"))),
-            renderArchiveIndexSection("By date", quarters, quarter -> renderSimpleLink(
-                quarter.uri().toString(), "The " + quarter.quarter())),
-            renderArchiveIndexSection("By topic", topics, topic -> renderSimpleLink(
-                topic.uri().toString(), topic.topic())),
-            renderArchiveIndexSection("By article title", articles, article -> renderSimpleLink(
-                article.uri().toString(),
-                renderIsoDate(article.article().date()) + " — " + article.article().title()
-            ))
+            Constants.archiveIndexToc,
+            ArchiveIndexSection.byDate.render(quarters),
+            ArchiveIndexSection.byTopic.render(topics),
+            ArchiveIndexSection.byTitle.render(articles)
         );
-    }
-
-    private static <T> Node.Element renderArchiveIndexSection(
-        final String name,
-        final Seq<? extends T> elements,
-        final Function<? super @NonNull T, ? extends Node> linkFormatter
-    ) {
-        return Node.simple(Tag.SECTION, Seq.of(
-            Node.simple(Tag.H2, new Node.Text(name)),
-            Node.simple(Tag.UL, elements.map(element -> Node.simple(Tag.LI, linkFormatter.apply(element))))
-        ));
     }
 
     private Node.Element renderArchive(final String title, final String header, final Seq<ArchivedArticle> articles) {
@@ -225,7 +211,7 @@ public final class Renderer {
             contents.append(renderTableOfContents(children));
         }
         for (final var child : children) {
-            contents.append(renderSubsection(child, 2));
+            contents.append(renderSubsection(child, childOfRootLevel));
         }
         return Node.simple(Tag.ARTICLE, contents.toSeq());
     }
@@ -362,6 +348,8 @@ public final class Renderer {
         );
     }
 
+    private static final int childOfRootLevel = 2;
+
     private final HeaderRenderMode headerRenderMode;
 
     private static final class LineNumberRenderer {
@@ -457,6 +445,47 @@ public final class Renderer {
             private final @Nullable PendingElement parent;
             private final Seq.Builder<Node> newChildren = new Seq.Builder<>();
         }
+    }
+
+    private record ArchiveIndexSection<T>(
+        String id,
+        String heading,
+        Function<? super @NonNull T, Node.Element> linkFormatter
+    ) {
+        private Node.Element render(final Seq<? extends T> elements) {
+            return renderSubsection(
+                new Section(new Sexp.RegularSymbol(id), heading, Seq.empty(), Seq.of(
+                    Node.simple(Tag.UL, elements.map(element -> Node.simple(Tag.LI, linkFormatter.apply(element))))
+                )),
+                childOfRootLevel
+            );
+        }
+
+        // For rendering the archive index TOC.
+        private Section pseudoSection() {
+            return new Section(new Sexp.RegularSymbol(id), heading, Seq.empty(), Seq.empty());
+        }
+
+        private static final ArchiveIndexSection<ArchivedQuarter> byDate = new ArchiveIndexSection<>(
+            "by-date",
+            "By date",
+            quarter -> renderSimpleLink(quarter.uri().toString(), "The " + quarter.quarter())
+        );
+
+        private static final ArchiveIndexSection<ArchivedTopic> byTopic = new ArchiveIndexSection<>(
+            "by-topic",
+            "By topic",
+            topic -> renderSimpleLink(topic.uri().toString(), topic.topic())
+        );
+
+        private static final ArchiveIndexSection<ArchivedArticle> byTitle = new ArchiveIndexSection<>(
+            "by-title",
+            "By article title",
+            article -> renderSimpleLink(
+                article.uri().toString(),
+                renderIsoDate(article.article().date()) + " — " + article.article().title()
+            )
+        );
     }
 
     // Put constants in a separate class, so that they're created on first access rather than when the renderer class is
@@ -591,6 +620,12 @@ public final class Renderer {
             Seq.of(Attribute.of("id", "toc-label")),
             Seq.of(new Node.Text("Table of contents"))
         );
+
+        private static final Node.Element archiveIndexToc = renderTableOfContents(Seq.of(
+            ArchiveIndexSection.byDate.pseudoSection(),
+            ArchiveIndexSection.byTopic.pseudoSection(),
+            ArchiveIndexSection.byTitle.pseudoSection()
+        ));
 
         private static final Seq<Attribute> codeLineAttributes = Seq.of(Attribute.of("class", "cx-l"));
 

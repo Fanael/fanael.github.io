@@ -109,6 +109,15 @@ public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
     }
 
     /**
+     * Returns a new persistent sequence containing only the given five elements, in order.
+     * <p>
+     * Complexity: constant time.
+     */
+    public static <T> Seq<T> of(final T e1, final T e2, final T e3, final T e4, final T e5) {
+        return Shallow.ofUnits(e1, e2, e3, e4, e5);
+    }
+
+    /**
      * Returns a new persistent sequence containing the elements of the given iterable in iteration order.
      * <p>
      * Complexity: constant time if the iterable is already a {@code Seq}, linear time otherwise.
@@ -932,7 +941,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
         }
 
         @EnsuresNonNull("iterator")
-        private void setSequence(@UnknownInitialization SpliteratorImpl<T>this, final Seq<T> sequence) {
+        private void setSequence(@UnknownInitialization SpliteratorImpl<T> this, final Seq<T> sequence) {
             iterator = sequence.iterator();
             sequenceSize = sequence.subtreeSize;
         }
