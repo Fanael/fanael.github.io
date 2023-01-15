@@ -59,5 +59,6 @@ public final class Language {
         addLanguage(new Language("diff", "Unified diff"));
         addLanguage(new Language("java", "Java"));
         addLanguage(new Language("nasm", "x86 assembly"));
+        addLanguage(new Language("rust", "Rust"));
     }
 }
