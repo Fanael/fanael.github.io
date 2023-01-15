@@ -7,7 +7,7 @@ import com.github.spotbugs.snom.SpotBugsTask
 plugins {
     id "application"
     id "com.github.spotbugs" version "5.0.13"
-    id "org.checkerframework" version "0.6.20" apply false
+    id "org.checkerframework" version "0.6.21" apply false
 }
 
 ext.withCF = project.hasProperty("withCF")
@@ -22,16 +22,16 @@ repositories {
 
 dependencies {
     compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.3"
-    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.28.0"
+    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.29.0"
     compileOnly project(":auki")
     annotationProcessor project(":auki")
     testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.3"
     testAnnotationProcessor project(":auki")
-    testCompileOnly group: "org.checkerframework", name: "checker-qual", version: "3.28.0"
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.9.1"
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-params", version: "5.9.1"
-    testImplementation group: "org.assertj", name: "assertj-core", version: "3.23.1"
-    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.9.1"
+    testCompileOnly group: "org.checkerframework", name: "checker-qual", version: "3.29.0"
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.9.2"
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-params", version: "5.9.2"
+    testImplementation group: "org.assertj", name: "assertj-core", version: "3.24.1"
+    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.9.2"
 }
 
 spotbugs {
@@ -97,7 +97,6 @@ if (ext.withCF) {
                 "-AshowSuppressWarningsStrings",
                 "-AwarnUnneededSuppressions",
                 "-ArequirePrefixInWarningSuppressions",
-                "-ApermitUnsupportedJdkVersion",
         ]
         checkers = ["org.checkerframework.checker.nullness.NullnessChecker"]
     }
