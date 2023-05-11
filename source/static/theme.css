@@ -649,7 +649,7 @@ button {
 
 /* Print-friendly overrides */
 @media print {
-    nav, #skip-nav, .section-link > [aria-hidden] {
+    nav, #skip-nav, .section-link > [aria-hidden], #footer > :first-child {
         display: none;
     }
 
