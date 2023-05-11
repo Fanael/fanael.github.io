@@ -8,6 +8,6 @@ final class RenderConstants {
     }
 
     static final String siteTitle = "Fanael's random ruminations";
-    static final String copyrightLine = "Copyright © 2019-2022 Fanael Linithien";
+    static final String copyrightLine = "Copyright © 2019-2023 Fanael Linithien";
     static final String feedFileName = "feed.xml";
 }
