@@ -627,8 +627,12 @@ button {
         background-color: #1d1d1d;
     }
 
-    .code-block, .toc, thead, tfoot, table tr:hover {
+    .code-block, .toc, thead, tfoot {
         background-color: #262626;
+    }
+
+    table tr:hover {
+        background-color: #2b242b;
     }
 
     @supports (-webkit-background-clip: text) or (background-clip: text) {
