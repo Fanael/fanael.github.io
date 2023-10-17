@@ -29,4 +29,15 @@
     <Match>
         <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
     </Match>
+    <!-- We don't do finalizers, so constructor finalizer attacks are of no concern -->
+    <Match>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+    <!-- Miscellaneous warnings of dubious usefulness -->
+    <Match>
+        <Bug pattern="PI_DO_NOT_REUSE_PUBLIC_IDENTIFIERS_CLASS_NAMES"/>
+    </Match>
+    <Match>
+        <Bug pattern="PI_DO_NOT_REUSE_PUBLIC_IDENTIFIERS_FIELD_NAMES"/>
+    </Match>
 </FindBugsFilter>

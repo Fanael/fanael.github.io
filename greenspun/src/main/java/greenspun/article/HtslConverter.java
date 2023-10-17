@@ -47,7 +47,7 @@ public final class HtslConverter {
     }
 
     private Node convertForm(final Sexp form) {
-        if (form instanceof Sexp.String string) {
+        if (form instanceof final Sexp.String string) {
             return new Node.Text(string.value());
         }
         final var list = Sexps.asList(form);
@@ -93,8 +93,8 @@ public final class HtslConverter {
             final var name = key.symbolName().substring(1);
             final var value = it.hasNext() ? it.next() : Sexp.KnownSymbol.NIL;
             switch (value) {
-                case Sexp.String string -> result = Attributes.updated(result, Attribute.of(name, string.value()));
-                case Sexp.Integer integer -> result = Attributes.updated(result, Attribute.of(name, integer.value()));
+                case final Sexp.String s -> result = Attributes.updated(result, Attribute.of(name, s.value()));
+                case final Sexp.Integer i -> result = Attributes.updated(result, Attribute.of(name, i.value()));
                 default -> {
                     if (Sexps.isNil(value)) {
                         result = Attributes.updated(result, Attribute.of(name, false));
@@ -132,14 +132,14 @@ public final class HtslConverter {
             throw signalError("code-block accepts exactly one attribute, :language");
         }
         final var languageNameForm = attributes.last();
-        if (!(languageNameForm instanceof Sexp.String languageName)) {
+        if (!(languageNameForm instanceof final Sexp.String languageName)) {
             throw signalError("This doesn't appear to be a string: " + Sexps.prettyPrint(languageNameForm));
         }
         return Renderer.wrapCodeBlock(children.map(this::convertForm), languageName.value());
     }
 
     private Node expandHighlightedCode(final Seq<Sexp> attributes, final Seq<Sexp> children) {
-        if (children.exactSize() != 1 || !(children.first() instanceof Sexp.String codeNode)) {
+        if (children.exactSize() != 1 || !(children.first() instanceof final Sexp.String codeNode)) {
             throw signalError("highlighted-code accepts exactly one string child");
         }
         if (attributes.exactSize() != 2 || attributes.first() != Sexp.KnownSymbol.KW_LANGUAGE) {

@@ -100,7 +100,7 @@ public final class Renderer {
     }
 
     private static Seq<Node> renderLineNumbers(final Seq<Node> nodes) {
-        return (nodes.exactSize() == 1 && nodes.first() instanceof Node.Element parent)
+        return (nodes.exactSize() == 1 && nodes.first() instanceof final Node.Element parent)
             ? Seq.of(new LineNumberRenderer(parent).render())
             : nodes;
     }
@@ -369,8 +369,8 @@ public final class Renderer {
         private void renderElement(final PendingElement element) {
             for (final var child : element.original.children()) {
                 switch (child) {
-                    case Node.Text node -> renderText(node, element);
-                    case Node.Element node -> renderElement(new PendingElement(node, element));
+                    case final Node.Text node -> renderText(node, element);
+                    case final Node.Element node -> renderElement(new PendingElement(node, element));
                 }
             }
             closeElement(element);

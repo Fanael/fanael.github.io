@@ -141,11 +141,11 @@ public final class CollectionExecutorService {
             assert cause != null : "ExecutionException with no cause? @AssumeAssertion(nullness)";
             switch (cause) {
                 // Cross-thread unwind to a restart found, rethrow it to continue unwinding in the parent thread.
-                case Unwind unwind -> throw SneakyThrow.doThrow(unwind);
+                case final Unwind unwind -> throw SneakyThrow.doThrow(unwind);
                 // Continue looking, some other future will likely have a more concrete throwable.
-                case InterruptedException ignored -> foundInterrupt = true;
+                case final InterruptedException ignored -> foundInterrupt = true;
                 // Errors should be passed through directly.
-                case Error error -> throw error;
+                case final Error error -> throw error;
                 default -> throw new AssertionError("An exception escaped from a worker through a future", cause);
             }
         }

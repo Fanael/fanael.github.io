@@ -128,8 +128,8 @@ final class Deep<T extends C, C> extends SeqImpl<T, C> {
     @Override
     SeqImpl<T, C> concat(final Tag<T, C> tag, final SeqImpl<T, C> other) {
         return switch (other) {
-            case Shallow<T, C> shallow -> appendedShallow(tag, shallow);
-            case Deep<T, C> deep -> concatDeep(tag, deep);
+            case final Shallow<T, C> shallow -> appendedShallow(tag, shallow);
+            case final Deep<T, C> deep -> concatDeep(tag, deep);
         };
     }
 

@@ -43,6 +43,7 @@ final class SeqTest {
     }
 
     @Test
+    @SuppressWarnings("EqualsWithItself")
     void equalsWorks() {
         assertThat(Seq.empty()).isEqualTo(Seq.empty());
         assertThat(Seq.empty()).isNotEqualTo(Seq.of(5));

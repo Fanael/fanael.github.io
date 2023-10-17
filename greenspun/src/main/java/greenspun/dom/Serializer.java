@@ -47,8 +47,8 @@ public final class Serializer {
 
     private void serializeNode(final Node node) throws IOException {
         switch (node) {
-            case Node.Text text -> serializeString(text.text(), TextEscaper.instance);
-            case Node.Element element -> {
+            case final Node.Text text -> serializeString(text.text(), TextEscaper.instance);
+            case final Node.Element element -> {
                 final var tag = element.tag();
                 final var tagSerializer = tag.elementSerializer();
                 if (tagSerializer == null) {
@@ -68,18 +68,18 @@ public final class Serializer {
     private void serializeAttributes(final Seq<Attribute> attributes) throws IOException {
         for (final var attribute : attributes) {
             switch (attribute) {
-                case Attribute.Boolean booleanAttr -> {
+                case final Attribute.Boolean booleanAttr -> {
                     if (booleanAttr.value()) {
                         serializeAttributeName(booleanAttr.name());
                     }
                 }
-                case Attribute.Integer integerAttr -> {
+                case final Attribute.Integer integerAttr -> {
                     serializeAttributeName(integerAttr.name());
                     writer.write("=\"");
                     writer.write(integerAttr.value().toString());
                     writer.write('"');
                 }
-                case Attribute.String stringAttr -> {
+                case final Attribute.String stringAttr -> {
                     serializeAttributeName(stringAttr.name());
                     writer.write("=\"");
                     serializeString(stringAttr.value(), AttributeEscaper.instance);

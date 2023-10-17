@@ -55,7 +55,7 @@ public final class Attributes {
             final var attr = it.next();
             if ("class".equals(attr.name())) {
                 final var index = it.previousIndex();
-                if (attr instanceof Attribute.String string) {
+                if (attr instanceof final Attribute.String string) {
                     return attributes.updated(index, Attribute.of("class", string.value() + ' ' + className));
                 } else {
                     // Non-string class attribute are most likely a mistake, just ignore them.

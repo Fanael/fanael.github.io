@@ -71,7 +71,7 @@ public final class Trace implements AutoCloseable {
 
     @SuppressWarnings("MethodOnlyUsedFromInnerClass")
     private String message() {
-        return (messageOrSupplier instanceof String string) ? string : runSupplier();
+        return (messageOrSupplier instanceof final String string) ? string : runSupplier();
     }
 
     private String runSupplier() {

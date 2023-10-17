@@ -239,7 +239,7 @@ public enum Tag {
         @Override
         public void verify(final Verifier.AttributeVerificationContext context) {
             Verifier.attributeIsString.verify(context);
-            if (context.attribute() instanceof Attribute.String string && !allowed.contains(string.value())) {
+            if (context.attribute() instanceof final Attribute.String string && !allowed.contains(string.value())) {
                 context.recordError("invalid value, expected one of " + allowed);
             }
         }
@@ -249,7 +249,7 @@ public enum Tag {
         @Override
         public void verify(final Verifier.AttributeVerificationContext context) {
             Verifier.attributeIsString.verify(context);
-            if (context.attribute() instanceof Attribute.String string &&
+            if (context.attribute() instanceof final Attribute.String string &&
                 !datetimePattern.matcher(string.value()).matches()) {
                 context.recordError("invalid date format, YYYY-MM-DD expected");
             }

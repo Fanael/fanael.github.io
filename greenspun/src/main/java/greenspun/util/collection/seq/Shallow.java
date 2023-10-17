@@ -119,8 +119,8 @@ final class Shallow<T extends C, C> extends SeqImpl<T, C> {
             return other;
         }
         return switch (other) {
-            case Shallow<T, C> shallow -> concatShallow(tag, shallow);
-            case Deep<T, C> deep -> deep.prependedShallow(tag, this);
+            case final Shallow<T, C> shallow -> concatShallow(tag, shallow);
+            case final Deep<T, C> deep -> deep.prependedShallow(tag, this);
         };
     }
 

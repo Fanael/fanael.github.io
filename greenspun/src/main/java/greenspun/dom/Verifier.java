@@ -39,8 +39,8 @@ public final class Verifier {
 
     private void verify(final Node node, final Context context) {
         switch (node) {
-            case Node.Text ignored -> verifyTextNode(context);
-            case Node.Element element -> verifyElement(element, context);
+            case final Node.Text ignored -> verifyTextNode(context);
+            case final Node.Element element -> verifyElement(element, context);
         }
     }
 
@@ -78,7 +78,7 @@ public final class Verifier {
             }
         }
 
-        if (Attributes.get(element.attributes(), "id") instanceof Attribute.String id) {
+        if (Attributes.get(element.attributes(), "id") instanceof final Attribute.String id) {
             final var value = id.value();
             if (!foundIds.add(value)) {
                 recordAttributeError(tag, "id", "duplicate ID found: '" + value + '\'');
@@ -148,9 +148,9 @@ public final class Verifier {
     @SuppressWarnings("nullness:switch.expression") // CF doesn't quite get pattern matching switch right.
     private static @Nullable Context getEffectiveChildContext(final Tag tag, final Context context) {
         return switch (tag.childContext()) {
-            case Context c -> c;
-            case ChildContext.None ignored -> null;
-            case ChildContext.Transparent ignored -> context;
+            case final Context c -> c;
+            case final ChildContext.None ignored -> null;
+            case final ChildContext.Transparent ignored -> context;
         };
     }
 
@@ -198,7 +198,7 @@ public final class Verifier {
     private static final class AriaHiddenVerifier implements AttributeVerifier {
         @Override
         public void verify(final AttributeVerificationContext context) {
-            if (!(context.attribute instanceof Attribute.String string) || !"true".equals(string.value())) {
+            if (!(context.attribute instanceof final Attribute.String string) || !"true".equals(string.value())) {
                 context.recordError("aria-hidden only accepts value of \"true\"");
             }
         }

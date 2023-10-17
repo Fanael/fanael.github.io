@@ -124,7 +124,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
      */
     @SuppressWarnings("unchecked")
     public static <T> Seq<T> fromIterable(final Iterable<? extends T> iterable) {
-        if (iterable instanceof Seq<? extends T> seq) {
+        if (iterable instanceof final Seq<? extends T> seq) {
             return (Seq<T>) seq; // Since Seq is immutable, casting <? extends T> to <T> is fine.
         }
         final var builder = new Builder<T>();
@@ -146,7 +146,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
         final Iterable<? extends T> iterable,
         final Function<? super T, ? extends U> function
     ) {
-        if (iterable instanceof Seq<? extends T> seq) {
+        if (iterable instanceof final Seq<? extends T> seq) {
             return seq.map(function);
         }
         final var builder = new Builder<U>();
@@ -179,7 +179,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
      */
     @Override
     public final boolean equals(final @Nullable Object object) {
-        return object instanceof Seq<?> other && equalsImpl(other);
+        return object instanceof final Seq<?> other && equalsImpl(other);
     }
 
     /**
@@ -203,7 +203,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
      * Complexity: constant time.
      */
     @Override
-    public abstract Itr<T> iterator();
+    public abstract @NonNull Itr<T> iterator();
 
     /**
      * Performs the given action on each element of this sequence, in iteration order.
@@ -283,7 +283,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
      * @throws OutOfMemoryError if this sequence is too large to fit in an array
      */
     @Override
-    public final Object[] toArray() {
+    public final Object @NonNull [] toArray() {
         return toArray(Object[]::new);
     }
 

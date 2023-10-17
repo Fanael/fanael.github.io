@@ -24,7 +24,7 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
     @Override
     public void handle(final SignaledCondition condition) {
         if (!condition.isFatal()) {
-            if (condition.condition() instanceof SuppressedExceptionCondition c) {
+            if (condition.condition() instanceof final SuppressedExceptionCondition c) {
                 showSuppressedExceptionCondition(c);
             }
             return;

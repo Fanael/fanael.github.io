@@ -17,14 +17,14 @@ public final class Sexps {
      * Returns the integer the given {@code sexp} represents, or {@code null} if it doesn't represent an integer.
      */
     public static @Nullable BigInteger asInteger(final Sexp sexp) {
-        return (sexp instanceof Sexp.Integer integer) ? integer.value() : null;
+        return (sexp instanceof final Sexp.Integer integer) ? integer.value() : null;
     }
 
     /**
      * Returns the string the given {@code sexp} represents, or {@code null} if it doesn't represent a string.
      */
     public static @Nullable String asString(final Sexp sexp) {
-        return (sexp instanceof Sexp.String string) ? string.value() : null;
+        return (sexp instanceof final Sexp.String string) ? string.value() : null;
     }
 
     /**
@@ -33,7 +33,7 @@ public final class Sexps {
      * Note that the known symbol {@code nil} represents an empty list.
      */
     public static @Nullable Seq<Sexp> asList(final Sexp sexp) {
-        if (sexp instanceof Sexp.List list) {
+        if (sexp instanceof final Sexp.List list) {
             return list.value();
         } else if (sexp == Sexp.KnownSymbol.NIL) {
             return Seq.empty();
@@ -50,8 +50,8 @@ public final class Sexps {
     @SuppressWarnings("nullness:switch.expression") // CF doesn't quite get pattern matching switch right.
     public static Sexp.@Nullable Symbol asSymbol(final Sexp sexp) {
         return switch (sexp) {
-            case Sexp.Symbol symbol -> symbol;
-            case Sexp.List list when list.value().isEmpty() -> Sexp.KnownSymbol.NIL;
+            case final Sexp.Symbol symbol -> symbol;
+            case final Sexp.List list when list.value().isEmpty() -> Sexp.KnownSymbol.NIL;
             default -> null;
         };
     }
@@ -62,7 +62,7 @@ public final class Sexps {
      * A Lisp keyword is any symbol whose name begins with a colon.
      */
     public static Sexp.@Nullable Symbol asKeyword(final Sexp sexp) {
-        return (sexp instanceof Sexp.Symbol symbol && symbol.symbolName().startsWith(":")) ? symbol : null;
+        return (sexp instanceof final Sexp.Symbol symbol && symbol.symbolName().startsWith(":")) ? symbol : null;
     }
 
     /**
@@ -71,7 +71,7 @@ public final class Sexps {
      * Note that empty lists represent {@code nil}.
      */
     public static boolean isNil(final Sexp sexp) {
-        return sexp == Sexp.KnownSymbol.NIL || (sexp instanceof Sexp.List list && list.value().isEmpty());
+        return sexp == Sexp.KnownSymbol.NIL || (sexp instanceof final Sexp.List list && list.value().isEmpty());
     }
 
     /**
@@ -90,10 +90,10 @@ public final class Sexps {
 
         private void appendDispatch(final Sexp sexp, final int level) {
             switch (sexp) {
-                case Sexp.Integer integer -> append(integer.value());
-                case Sexp.String string -> append(string.value());
-                case Sexp.List list -> append(list.value(), level);
-                case Sexp.Symbol symbol -> append(symbol);
+                case final Sexp.Integer integer -> append(integer.value());
+                case final Sexp.String string -> append(string.value());
+                case final Sexp.List list -> append(list.value(), level);
+                case final Sexp.Symbol symbol -> append(symbol);
             }
         }
 

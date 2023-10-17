@@ -6,8 +6,8 @@ import com.github.spotbugs.snom.SpotBugsTask
 
 plugins {
     id "application"
-    id "com.github.spotbugs" version "5.0.14"
-    id "org.checkerframework" version "0.6.27" apply false
+    id "com.github.spotbugs" version "5.2.0"
+    id "org.checkerframework" version "0.6.34" apply false
 }
 
 ext.withCF = project.hasProperty("withCF")
@@ -21,21 +21,21 @@ repositories {
 }
 
 dependencies {
-    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.3"
-    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.34.0"
+    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.0"
+    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.39.0"
     compileOnly project(":auki")
     annotationProcessor project(":auki")
-    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.7.3"
+    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.0"
     testAnnotationProcessor project(":auki")
-    testCompileOnly group: "org.checkerframework", name: "checker-qual", version: "3.34.0"
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.9.3"
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-params", version: "5.9.3"
+    testCompileOnly group: "org.checkerframework", name: "checker-qual", version: "3.39.0"
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.10.0"
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-params", version: "5.10.0"
     testImplementation group: "org.assertj", name: "assertj-core", version: "3.24.2"
-    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.9.3"
+    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.10.0"
 }
 
 spotbugs {
-    toolVersion.set "4.7.3"
+    toolVersion.set "4.8.0"
     showProgress.set true
     includeFilter.set file("spotbugs-include.xml")
     excludeFilter.set file("spotbugs-exclude.xml")
@@ -49,30 +49,19 @@ application {
 }
 
 java.toolchain {
-    languageVersion = JavaLanguageVersion.of(20)
+    languageVersion = JavaLanguageVersion.of(21)
 }
 
 jar.manifest.attributes "Main-Class": application.mainClass.get()
 
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += [
-            "--enable-preview",
             "-Xlint",
-            "-Xlint:-preview,-processing,-requires-automatic,-serial",
+            "-Xlint:-processing,-requires-automatic,-serial",
     ]
 }
 
-tasks.withType(Test).configureEach {
-    jvmArgs += "--enable-preview"
-}
-
-tasks.withType(JavaExec).configureEach {
-    jvmArgs += "--enable-preview"
-}
-
 javadoc {
-    options.addBooleanOption("-enable-preview", true)
-    options.addStringOption("-release", java.toolchain.languageVersion.get().toString())
     options.addStringOption("-show-module-contents", "all")
 }
 

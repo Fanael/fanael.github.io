@@ -32,7 +32,7 @@ final class DomainRelativeUri {
 
     @Override
     public boolean equals(final @Nullable Object object) {
-        return object instanceof DomainRelativeUri other && string.equals(other.string);
+        return object instanceof final DomainRelativeUri other && string.equals(other.string);
     }
 
     @Override
