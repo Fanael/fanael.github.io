@@ -363,4 +363,4 @@ int WINAPI TryEnterCriticalSection_compat(CRITICAL_SECTION* cs);
     :height 744
     :alt "Arena 1.1 running a match between SOS 5 playing white and current Stockfish playing black, with white to move. Stockfish has a material advantage of one pawn. Both engines agree that black is better.")
    "SOS 5 for Arena (white) playing against current Stockfish (black) under Arena 1.1, running on Windows 98")
-  (p "Now I can watch Stockfish demolish the old engines shipped with a 16-year-old chess program, running under a 22-year-old operating system, on 18-year-old hardware, in peace."))
+  (p "Now I can watch Stockfish demolish the old engines shipped with a 16-year-old chess program, running under a 22-year-old operating system, on 18-year-old hardware."))

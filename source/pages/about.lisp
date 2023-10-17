@@ -14,7 +14,7 @@
   (p "I used to be pretty active in the Emacs community, so "
      ((a :href "https://github.com/Fanael/") "my GitHub profile")
      " is dominated by my Emacs packages. I'm no longer as active due to health issues, but I still use Emacs a lot.")
-  (p "I'm a non-binary person, third person pronouns she/her. Anybody concerned about it is more than welcome to shove their opinion up their "
+  (p "I'm a non-binary person, third person pronouns she/her or fae/faer. Anybody concerned about it is more than welcome to shove their opinion up their "
      (code "/dev/null")
      "."))
 
