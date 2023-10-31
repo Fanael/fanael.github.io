@@ -33,7 +33,7 @@ public final class Processor extends AbstractProcessor {
 
     private void verifyAllClasses(final Iterable<? extends Element> elements) {
         for (final var element : elements) {
-            if (element instanceof TypeElement type) {
+            if (element instanceof final TypeElement type) {
                 verifyClass(type);
             }
         }
@@ -131,7 +131,7 @@ public final class Processor extends AbstractProcessor {
 
     private static void forAllMethods(final TypeElement type, final Consumer<ExecutableElement> consumer) {
         for (final var child : type.getEnclosedElements()) {
-            if (child instanceof ExecutableElement codeElement && codeElement.getKind() == ElementKind.METHOD) {
+            if (child instanceof final ExecutableElement codeElement && codeElement.getKind() == ElementKind.METHOD) {
                 consumer.accept(codeElement);
             }
         }
