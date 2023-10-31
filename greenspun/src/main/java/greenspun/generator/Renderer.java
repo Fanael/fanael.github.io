@@ -538,7 +538,7 @@ public final class Renderer {
                         ),
                         Seq.of(new Node.Text("Skip to main content"))
                     ),
-                    Node.simple(Tag.SPAN, new Node.Text(RenderConstants.siteTitle))
+                    Node.simple(Tag.DIV, new Node.Text(RenderConstants.siteTitle))
                 )
             ),
             new Node.Element(
