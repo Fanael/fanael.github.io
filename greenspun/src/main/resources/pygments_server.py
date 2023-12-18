@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright © 2019-2022  Fanael Linithien
+# Copyright © 2019-2023  Fanael Linithien
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # pylint: disable=missing-function-docstring, missing-class-docstring
 '''
@@ -133,7 +133,7 @@ def read_multiline_string(source: TextSource) -> str:
     return '\n'.join(source_lines)
 
 def print_exception(exception: Exception, sink: TextSink) -> None:
-    print(':error')
+    sink.write(':error\n')
     trace = traceback.format_exception(type(exception), exception, exception.__traceback__)
     print_multiline_string(''.join(trace), sink)
 
