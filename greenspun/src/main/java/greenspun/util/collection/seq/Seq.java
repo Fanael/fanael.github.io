@@ -303,7 +303,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
      */
     @Override
     // The semantics of this method are too complex to express in CF terms.
-    @SuppressWarnings({"nullness:override.param", "nullness:conditional", "nullness:return"})
+    @SuppressWarnings({"nullness:override.param", "nullness:conditional", "nullness:return", "keyfor:override.return"})
     public final <U> U @NonNull [] toArray(final U[] array) {
         final var length = getEffectiveArraySize();
         final @Nullable U[] usedArray = (array.length >= length) ? array : ArrayOps.newArray(array, length);
@@ -324,6 +324,7 @@ public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
      * @throws OutOfMemoryError if this sequence is too large to fit in an array
      */
     @Override
+    @SuppressWarnings("keyfor:override.return") // CF incorrectly infers the return type.
     public final <U> U[] toArray(final IntFunction<U[]> generator) {
         final var array = generator.apply(getEffectiveArraySize());
         forEachArray(new ArrayFiller<>(array));

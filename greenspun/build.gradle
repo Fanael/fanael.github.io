@@ -6,8 +6,8 @@ import com.github.spotbugs.snom.SpotBugsTask
 
 plugins {
     id "application"
-    id "com.github.spotbugs" version "6.0.2"
-    id "org.checkerframework" version "0.6.36" apply false
+    id "com.github.spotbugs" version "6.0.4"
+    id "org.checkerframework" version "0.6.37" apply false
 }
 
 ext.withCF = project.hasProperty("withCF")
@@ -21,13 +21,13 @@ repositories {
 }
 
 dependencies {
-    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.2"
-    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.41.0"
+    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.3"
+    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.42.0"
     compileOnly project(":auki")
     annotationProcessor project(":auki")
-    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.2"
+    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.3"
     testAnnotationProcessor project(":auki")
-    testCompileOnly group: "org.checkerframework", name: "checker-qual", version: "3.41.0"
+    testCompileOnly group: "org.checkerframework", name: "checker-qual", version: "3.42.0"
     testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.10.1"
     testImplementation group: "org.junit.jupiter", name: "junit-jupiter-params", version: "5.10.1"
     testImplementation group: "org.assertj", name: "assertj-core", version: "3.24.2"
@@ -35,7 +35,7 @@ dependencies {
 }
 
 spotbugs {
-    toolVersion.set "4.8.2"
+    toolVersion.set "4.8.3"
     showProgress.set true
     includeFilter.set file("spotbugs-include.xml")
     excludeFilter.set file("spotbugs-exclude.xml")

@@ -31,6 +31,7 @@ abstract sealed class Tag<T extends C, C> {
         return arrayClass == clazz;
     }
 
+    @SuppressWarnings("nullness:argument") // CF incorrectly infers the type of front and back.
     final ArraySplit<T> splitArray(final T[] array, final int index) {
         final var length = array.length;
         assert index < length;

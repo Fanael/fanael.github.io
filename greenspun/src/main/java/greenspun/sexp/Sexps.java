@@ -47,7 +47,6 @@ public final class Sexps {
      * <p>
      * Note that empty lists represent the known symbol {@code nil}.
      */
-    @SuppressWarnings("nullness:switch.expression") // CF doesn't quite get pattern matching switch right.
     public static Sexp.@Nullable Symbol asSymbol(final Sexp sexp) {
         return switch (sexp) {
             case final Sexp.Symbol symbol -> symbol;

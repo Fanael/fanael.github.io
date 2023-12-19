@@ -213,7 +213,6 @@ public final class PygmentsServer implements AutoCloseable {
             }
         }
 
-        @SuppressWarnings("nullness:switching.nullable") // CF doesn't understand explicit "case null"
         private Seq<Node> receiveNodeStream() throws IOException {
             final var accumulator = new NodeAccumulator();
             loop:

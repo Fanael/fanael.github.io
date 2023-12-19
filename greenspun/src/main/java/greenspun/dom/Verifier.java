@@ -145,7 +145,6 @@ public final class Verifier {
         return ancestors.map(Node.Element::tag);
     }
 
-    @SuppressWarnings("nullness:switch.expression") // CF doesn't quite get pattern matching switch right.
     private static @Nullable Context getEffectiveChildContext(final Tag tag, final Context context) {
         return switch (tag.childContext()) {
             case final Context c -> c;
