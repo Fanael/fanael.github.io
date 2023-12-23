@@ -11,7 +11,6 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.article.Article;
 import greenspun.article.HtslConverter;
 import greenspun.article.Parser;
@@ -210,7 +209,6 @@ public final class Generator {
         }
     }
 
-    @SuppressFBWarnings(value = "DM_DEFAULT_ENCODING", justification = "It's always UTF-8, not the default encoding")
     private void serializeDomTree(final Path destinationRelativePath, final Node rootNode) {
         Verifier.verify(rootNode);
         final var destinationPath = destinationDirectory.resolve(destinationRelativePath);
@@ -336,7 +334,6 @@ public final class Generator {
         }
     }
 
-    @SuppressFBWarnings(value = "DM_DEFAULT_ENCODING", justification = "It's always UTF-8, not the default encoding")
     private void generateFeed(final Seq<ArchivedArticle> articles, final Instant buildTime) {
         try (final var trace = new Trace("Generating RSS feed")) {
             trace.use();
@@ -364,7 +361,6 @@ public final class Generator {
         }
     }
 
-    @SuppressFBWarnings(value = "DM_DEFAULT_ENCODING", justification = "It's always UTF-8, not the default encoding")
     private void writeFileList(final Seq<DomainRelativeUri> uris) {
         final var destinationPath = destinationDirectory.resolve(fileListName);
         try (final var writer = Files.newBufferedWriter(destinationPath)) {
