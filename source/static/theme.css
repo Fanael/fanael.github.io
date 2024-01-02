@@ -1,4 +1,4 @@
-/* Copyright © 2019-2023  Fanael Linithien */
+/* Copyright © 2019-2024  Fanael Linithien */
 /* SPDX-License-Identifier: AGPL-3.0-or-later OR CC-BY-SA-4.0 */
 /* Basics */
 * {
@@ -295,7 +295,7 @@ pre, code, samp, kbd, .program-name {
     /* Browsers completely break relative font sizing when the font family
        is just "monospace", so work around this misbehavior. */
     font-family: monospace, monospace;
-    font-size: 81.25%;
+    font-size: 87.5%;
 }
 
 pre code, pre samp, pre kbd {
@@ -368,7 +368,6 @@ figure, .code-block {
 
 .c-k, .c-se {
     color: #811;
-    font-weight: bold;
 }
 
 .c-s, .c-gi {
@@ -386,10 +385,6 @@ figure, .code-block {
 
 .c-gh, .c-gu, .c-nc, .c-nf {
     color: #153;
-}
-
-.c-nc {
-    font-weight: 550;
 }
 
 .c-gd, .c-nb {
