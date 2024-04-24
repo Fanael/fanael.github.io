@@ -6,8 +6,8 @@ import com.github.spotbugs.snom.SpotBugsTask
 
 plugins {
     id "application"
-    id "com.github.spotbugs" version "6.0.4"
-    id "org.checkerframework" version "0.6.37" apply false
+    id "com.github.spotbugs" version "6.0.12"
+    id "org.checkerframework" version "0.6.38" apply false
 }
 
 ext.withCF = project.hasProperty("withCF")
@@ -21,21 +21,21 @@ repositories {
 }
 
 dependencies {
-    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.3"
+    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.4"
     compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.42.0"
     compileOnly project(":auki")
     annotationProcessor project(":auki")
-    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.3"
+    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.4"
     testAnnotationProcessor project(":auki")
     testCompileOnly group: "org.checkerframework", name: "checker-qual", version: "3.42.0"
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.10.1"
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-params", version: "5.10.1"
-    testImplementation group: "org.assertj", name: "assertj-core", version: "3.24.2"
-    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.10.1"
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.10.2"
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-params", version: "5.10.2"
+    testImplementation group: "org.assertj", name: "assertj-core", version: "3.25.3"
+    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.10.2"
 }
 
 spotbugs {
-    toolVersion.set "4.8.3"
+    toolVersion.set "4.8.4"
     showProgress.set true
     includeFilter.set file("spotbugs-include.xml")
     excludeFilter.set file("spotbugs-exclude.xml")
