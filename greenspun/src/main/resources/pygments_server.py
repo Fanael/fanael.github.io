@@ -3,23 +3,25 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # pylint: disable=missing-function-docstring, missing-class-docstring
 '''
-A simple pygments server, communicating over pipes, to reuse the same process
-for multiple highlightings instead of spawning a new pygmentize process for
-every one.
+A simple pygments server, communicating over pipes, to allow the reuse of a
+process for highlighting multiple code blocks instead of spawning a new
+pygmentize process for each one.
 
-The protocol is very simple: there are two types, a simple string and a
-multiline string:
- - A simple string is a single line of text followed by a newline.
- - A multiline string consists of multiple lines that begin with ">", terminated
-   with a simple string ":done".
-Command names, arguments and responses are simple strings unless noted
-otherwise.
+The protocol consists of three types:
+ - A command: a single line of text that begins with ":", followed by a newline.
+ - A simple string: a single line of text that begins with ">", followed by a
+   newline.
+ - A multiline string: multiple lines of text, each beginning with ">",
+   terminated with the command ":done". The effective value is the concatenation
+   of all lines, *separated* with newlines, i.e. there's no implied newline at
+   the end.
 
-When the server is done processing a command, it sends the simple string
-":done".
+The term "newline" refers to the character U+000A LINE FEED.
 
-On recoverable errors, the server sends ":error" followed by a multiline string
-describing the error.
+When the server is done processing a request, it sends the command ":done".
+
+On recoverable errors, the server sends the command ":error" followed by a
+multiline string describing the error.
 
 List of known commands:
  - ":quit": initiate orderly shutdown of the server.
@@ -27,24 +29,20 @@ List of known commands:
    No response.
  - ":highlight": highlight the syntax of some code.
    Two arguments:
-    - pygments lexer name
+    - pygments lexer name (simple string)
     - source code to highlight (multiline string)
    Response: A stream of tokens.
    Each token consists of one or more strings. The first string is always a
    simple string indicating the type of the token and its format:
     - ":sc": sets the CSS class of following tokens. One simple string follows,
-      indicating the name of the CSS class. Empty string indicates that the
+      indicating the name of the CSS class. The empty string indicates that the
       following tokens require no special styling. The implied initial value is
       the empty string.
     - ":nl": the token is a single literal line feed. No values follow.
     - ":s": simple text. One simple string follows, indicating the text of the
       token.
-    - ":m": multiline text. One multiline string follows, indicating the text
-      of the token.
-    - ":mn": multiline text, *without* a new line at the end. One multiline
-      string follows, indicating the text of the token.
-   The simple strings ":done" and ":error" can also occur in place of a token
-   type, with their usual semantics.
+    - ":m": multiline text. One multiline string follows, indicating the text of
+      the token.
 '''
 from __future__ import annotations
 from typing import Callable, NoReturn, Optional, Protocol, TypeAlias
@@ -95,11 +93,18 @@ TOKEN_TYPE_CLASSES: dict[TokenType, str] = {
 def read_line(source: TextSource) -> str:
     return source.readline().rstrip('\n')
 
+def read_simple_string(source: TextSource) -> str:
+    result = read_line(source)
+    if result.startswith('>'):
+        return result[1:]
+    else:
+        raise ValueError(f'Expected a simple string, but got "{result}"')
+
 def send_done(sink: TextSink) -> None:
     sink.write(':done\n')
 
 def print_multiline_string(string: str, sink: TextSink) -> None:
-    for line in string.splitlines():
+    for line in string.split('\n'):
         sink.write(f'>{line}\n')
     send_done(sink)
 
@@ -109,14 +114,14 @@ def send_token_stream(code: str, lexer: lex.Lexer, sink: TextSink) -> None:
         class_name = TOKEN_TYPE_CLASSES[token_type]
         if current_class != class_name:
             current_class = class_name
-            sink.write(f':sc\n{class_name}\n')
+            sink.write(f':sc\n>{class_name}\n')
 
         if value == '\n':
             sink.write(':nl\n')
         elif '\n' not in value:
-            sink.write(f':s\n{value}\n')
+            sink.write(f':s\n>{value}\n')
         else:
-            sink.write(':m\n' if value[-1] == '\n' else ':mn\n')
+            sink.write(':m\n')
             print_multiline_string(value, sink)
 
 def read_multiline_string(source: TextSource) -> str:
@@ -129,7 +134,6 @@ def read_multiline_string(source: TextSource) -> str:
             break
         else:
             raise ValueError(f'Unexpected terminator of multiline string: "{line}"')
-    source_lines.append('')
     return '\n'.join(source_lines)
 
 def print_exception(exception: Exception, sink: TextSink) -> None:
@@ -154,7 +158,7 @@ def quit_server(_source: TextSource, sink: TextSink) -> NoReturn:
 
 @define_command(':highlight')
 def highlight_code(source: TextSource, sink: TextSink) -> None:
-    lexer_name = read_line(source)
+    lexer_name = read_simple_string(source)
     source_code = read_multiline_string(source)
     lexer = lxs.get_lexer_by_name(lexer_name, stripnl=False, ensurenl=False)
     send_token_stream(source_code, lexer, sink)

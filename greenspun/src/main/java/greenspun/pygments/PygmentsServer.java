@@ -166,7 +166,7 @@ public final class PygmentsServer implements AutoCloseable {
 
         private Seq<Node> highlightCode(final String code, final String languageName) {
             try {
-                sendSimpleString(":highlight");
+                sendCommand(":highlight\n");
                 sendSimpleString(languageName);
                 sendMultilineString(code);
                 writer.flush();
@@ -180,7 +180,7 @@ public final class PygmentsServer implements AutoCloseable {
         private void initiateShutdown() {
             try (final var trace = new Trace("Initiating the shutdown of a pygments server process")) {
                 trace.use();
-                sendSimpleString(":quit");
+                sendCommand(":quit\n");
                 writer.flush();
                 final var response = reader.readLine();
                 if (!":done".equals(response)) {
@@ -226,7 +226,6 @@ public final class PygmentsServer implements AutoCloseable {
                     case ":nl" -> accumulator.append("\n");
                     case ":s" -> accumulator.append(receiveSimpleString());
                     case ":m" -> accumulator.append(receiveMultilineString());
-                    case ":mn" -> accumulator.append(receiveMultilineString(true));
                     case null, default -> throw recoverFromServerError(response);
                 }
             }
@@ -234,29 +233,30 @@ public final class PygmentsServer implements AutoCloseable {
         }
 
         private void sendSimpleString(final String string) throws IOException {
-            assert string.indexOf('\n') == -1 : "Multiline string sent as a simple string";
+            sendSingleLineSubstring(string, 0, string.length());
+        }
+
+        private void sendCommand(final String string) throws IOException {
             writer.write(string);
-            writer.write('\n');
         }
 
         private void sendMultilineString(final String string) throws IOException {
             int index = 0;
             final var length = string.length();
-            while (index < length) {
+            while (true) {
                 final var lineFeedPosition = string.indexOf('\n', index);
+                final var effectiveLineEnd = (lineFeedPosition == -1) ? length : lineFeedPosition;
+                sendSingleLineSubstring(string, index, effectiveLineEnd);
                 if (lineFeedPosition == -1) {
                     break;
                 }
-                sendMultilineFragment(string, index, lineFeedPosition);
                 index = lineFeedPosition + 1;
             }
-            if (index < length) {
-                sendMultilineFragment(string, index, length);
-            }
-            sendSimpleString(":done");
+            sendCommand(":done\n");
         }
 
-        private void sendMultilineFragment(final String string, final int offset, final int end) throws IOException {
+        private void sendSingleLineSubstring(final String string, final int offset, final int end) throws IOException {
+            assert string.indexOf('\n', offset, end) == -1 : "Single line substring is not a single line";
             writer.write('>');
             writer.write(string, offset, end - offset);
             writer.write('\n');
@@ -264,25 +264,17 @@ public final class PygmentsServer implements AutoCloseable {
 
         private String receiveSimpleString() throws IOException {
             final var line = reader.readLine();
-            // NB: ":error" is a perfectly cromulent simple string that can occur as a token value in regular code, so
-            // do NOT check for it here.
-            if (line == null) {
-                throw recoverFromServerError(null);
+            if (line == null || !line.startsWith(">")) {
+                throw recoverFromServerError(line);
             }
-            return line;
+            return line.substring(1);
         }
 
         private String receiveMultilineString() throws IOException {
-            return receiveMultilineString(false);
-        }
-
-        private String receiveMultilineString(final boolean omitFinalLineFeed) throws IOException {
             final var builder = new StringBuilder();
             while (true) {
                 final var line = reader.readLine();
-                if (line == null) {
-                    throw recoverFromServerError(null);
-                } else if (line.startsWith(">")) {
+                if (line != null && line.startsWith(">")) {
                     builder.append(line, 1, line.length());
                     builder.append('\n');
                 } else if (":done".equals(line)) {
@@ -291,7 +283,8 @@ public final class PygmentsServer implements AutoCloseable {
                     throw recoverFromServerError(line);
                 }
             }
-            if (omitFinalLineFeed && !builder.isEmpty()) {
+            // Need to remove the final line feed, lines in a multiline string are merely separated with line feeds.
+            if (!builder.isEmpty()) {
                 builder.setLength(builder.length() - 1);
             }
             return builder.toString();
