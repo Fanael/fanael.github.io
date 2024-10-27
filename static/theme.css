@@ -483,11 +483,12 @@ table.perf-stat td:nth-child(4) {
 /* Table of contents */
 .toc {
     background-color: rgba(229, 209, 212, 0.266);
+    border-radius: 1.5ch;
     border: thin solid #aaa;
     border: var(--kill);
-    border-radius: 1.5ch;
     box-shadow: var(--box-shadow-specs);
-    padding: 1ch;
+    margin: 0.875em 0;
+    padding: 0.75em 1.5ch;
 }
 
 .toc ol {
