@@ -875,7 +875,9 @@ public abstract sealed class Seq<T> implements Collection<T> permits SeqImpl {
             // NB: the copy done by copyOf is important, even if the effective length is equal to buffer length: since
             // Shallow.ofUnits creates a Shallow directly backed by the given array, we cannot pass our buffer there,
             // because our buffer is mutable.
-            sequence = sequence.concat(Shallow.ofUnits(Arrays.copyOf(buffer, effectiveLength)));
+            @SuppressWarnings("nullness:argument") // We only take the filled prefix of the buffer here.
+            final var suffix = Shallow.ofUnits(Arrays.copyOf(buffer, effectiveLength));
+            sequence = sequence.concat(suffix);
             bufferIndex = 0;
         }
 

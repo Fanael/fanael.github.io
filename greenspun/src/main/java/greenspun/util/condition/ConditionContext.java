@@ -4,6 +4,7 @@ package greenspun.util.condition;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.util.SneakyThrow;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -196,6 +197,10 @@ public final class ConditionContext {
      */
     @FunctionalInterface
     public interface ThrowingCallback {
+        @SuppressFBWarnings(
+            value = "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION",
+            justification = "Don't want to constrain implementers"
+        )
         void run() throws Exception;
     }
 

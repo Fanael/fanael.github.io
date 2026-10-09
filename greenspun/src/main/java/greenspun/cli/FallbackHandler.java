@@ -4,6 +4,7 @@ package greenspun.cli;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.util.Trace;
 import greenspun.util.collection.seq.Seq;
 import greenspun.util.condition.Condition;
@@ -58,6 +59,10 @@ final class FallbackHandler implements HandlerProcedure.ThreadSafe {
         err.println();
     }
 
+    @SuppressFBWarnings(
+        value = "THROWS_METHOD_THROWS_RUNTIMEEXCEPTION",
+        justification = "Nobody is supposed to catch it"
+    )
     private static Restart chooseRestart(
         final Streams streams,
         final Seq<Restart> restarts

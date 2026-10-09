@@ -55,7 +55,7 @@ public final class CollectionExecutorService {
         final Iterable<? extends T> iterable,
         final Consumer<? super T> consumer
     ) {
-        final Function<? super @NonNull T, @Nullable Object> function = value -> {
+        final Function<? super T, @Nullable Object> function = value -> {
             consumer.accept(value);
             return null;
         };
@@ -64,10 +64,10 @@ public final class CollectionExecutorService {
 
     private <T, R> Seq<Future<R>> submitTasks(
         final Iterable<? extends T> iterable,
-        final Function<? super @NonNull T, ? extends R> function
+        final Function<? super T, ? extends R> function
     ) {
         final var inheritedState = ConditionContext.saveInheritableState();
-        return Seq.mapIterable(iterable, item -> executorService.submit(() -> {
+        return Seq.mapIterable(iterable, (T item) -> executorService.submit(() -> {
             final var previousState = ConditionContext.inheritState(inheritedState);
             try (final var trace = new Trace(() -> "Executing a task in thread " + Thread.currentThread().getName())) {
                 trace.use();

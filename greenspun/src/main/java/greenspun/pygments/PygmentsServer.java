@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import greenspun.dom.Attribute;
 import greenspun.dom.Node;
 import greenspun.dom.Tag;
@@ -110,6 +111,7 @@ public final class PygmentsServer implements AutoCloseable {
         return openNewConnection();
     }
 
+    @SuppressFBWarnings(value = "CWO_CLOSED_WITHOUT_OPENED", justification = "false positive")
     private void releaseConnection(final Connection connection) {
         if (connection.stillAlive) {
             lock.lock();

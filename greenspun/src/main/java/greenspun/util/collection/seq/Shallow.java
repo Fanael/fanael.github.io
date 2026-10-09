@@ -214,7 +214,7 @@ final class Shallow<T extends C, C> extends SeqImpl<T, C> {
     final T[] values;
 
     private static final int maxLength = Chunk.maxLength;
-    private static final Shallow<?, Object> emptyUnit = makeEmpty(Tag.unit());
+    private static final Shallow<?, @Nullable Object> emptyUnit = makeEmpty(Tag.unit());
     private static final Shallow<? extends Chunk<?>, Chunk<?>> emptyChunk = makeEmpty(Tag.chunk());
 
     static final class Itr<T> extends Seq.Itr<T> {

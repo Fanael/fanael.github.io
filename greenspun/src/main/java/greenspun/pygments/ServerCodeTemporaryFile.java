@@ -27,7 +27,6 @@ public final class ServerCodeTemporaryFile implements AutoCloseable {
         try (final var trace = new Trace("Saving the pygments server code to a temporary file")) {
             trace.use();
             try (final var input = openInputStream()) {
-                @SuppressWarnings("nullness:argument") // null is actually valid there, CF is wrong
                 final var path = Files.createTempFile(null, ".py");
                 try (final var output = Files.newOutputStream(path)) {
                     input.transferTo(output);
