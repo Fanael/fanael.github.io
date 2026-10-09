@@ -1,4 +1,4 @@
-// Copyright © 2021-2024  Fanael Linithien
+// Copyright © 2021-2026  Fanael Linithien
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import com.github.spotbugs.snom.Confidence
 import com.github.spotbugs.snom.Effort
@@ -21,17 +21,18 @@ repositories {
 }
 
 dependencies {
-    compileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.6"
-    compileOnly group: "org.checkerframework", name: "checker-qual", version: "3.42.0"
+    compileOnly "com.github.spotbugs:spotbugs-annotations:4.8.6"
+    compileOnly "org.checkerframework:checker-qual:3.42.0"
     compileOnly project(":auki")
     annotationProcessor project(":auki")
-    testCompileOnly group: "com.github.spotbugs", name: "spotbugs-annotations", version: "4.8.6"
+    testCompileOnly "com.github.spotbugs:spotbugs-annotations:4.8.6"
     testAnnotationProcessor project(":auki")
-    testCompileOnly group: "org.checkerframework", name: "checker-qual", version: "3.42.0"
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.11.3"
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-params", version: "5.11.3"
-    testImplementation group: "org.assertj", name: "assertj-core", version: "3.26.3"
-    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.11.3"
+    testCompileOnly "org.checkerframework:checker-qual:3.42.0"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:5.11.3"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:5.11.3"
+    testImplementation "org.assertj:assertj-core:3.26.3"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.11.3"
 }
 
 spotbugs {
